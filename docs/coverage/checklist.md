@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,400 spec requirements:
-810 cover catalog features, 590 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,402 spec requirements:
+810 cover catalog features, 592 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>590 requirements</summary>
+<summary>592 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3125,6 +3125,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-262 | Admin area › Settings › Storage is one page of the stored content | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-263 | The sections Connections and Availability | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-264 | The section Encryption | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-265 | The sections Integrity and Problems | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-266 | The dashboard's card Storage is the page's summary | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-220 | The page of a name: a namespace, a scope or a path prefix, in every format that has one | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
@@ -3544,6 +3545,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-STOR-108 | A copy found damaged is a finding, resolved by what happens to its copy | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-109 | A connection a replica cannot reach, and a start check that fails, are intervals | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-110 | What the reads and writes absorbed is counted per hour, and the history is kept bounded | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-111 | The history in the API: the cells, the problems and the findings of a period, and the acknowledgement | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-046 | Storage work per role and across replicas | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-047 | Storage state in backups and restores | MVP | [storage.md](../spec/storage.md) |
 | R-VULN-014 | History and retention | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |

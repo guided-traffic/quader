@@ -49,7 +49,24 @@ import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, defini
 import { mirrorFilled } from './mirror';
 import { formsHead, headLoading, longReadmeHead, manyVersionsHead, rowCommand, threeRepositoriesHead, versionHead } from './version-heads';
 import { deprecatedCollection, deprecationActs } from './deprecations';
-import { damagedBlobs, noDamagedBlob, oneConnection, overviewOne, overviewSeveral, overviewTwo, severalConnections, twoForThePage } from './storage';
+import {
+  damagedBlobs,
+  findingsSeveral,
+  findingsTwo,
+  historyFor,
+  historySeveral,
+  historyTwo,
+  listOf,
+  noDamagedBlob,
+  oneConnection,
+  overviewOne,
+  overviewSeveral,
+  overviewTwo,
+  problemsSeveral,
+  problemsTwo,
+  severalConnections,
+  twoForThePage,
+} from './storage';
 import { auditDataKeys, bastionLimits, bastionLimitsPage, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { auditRows } from './audit-rows';
 import { downloadsWalk } from './downloads';
@@ -756,27 +773,42 @@ async function* systemScanners(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * **Settings › Storage** (R-UI-262 to R-UI-264): as the render profile answers it (one connection, perhaps before the first storage
- * summary), then answered in the browser (storage.ts): one connection with its summary; the plan's two connections (one encrypted, one
- * nearly full, one filling and unreachable on one replica) with both folds and the keys of the encrypted one open; six connections in
- * every state, a detached one among them, with blobs no connection holds whole and their section open.
+ * **Settings › Storage** (R-UI-262 to R-UI-265): as the render profile answers it (one connection, perhaps before the first storage
+ * summary), then answered in the browser (storage.ts): one connection with its summary and a quiet period; the plan's two connections (one
+ * encrypted, one nearly full, one filling and unreachable on one replica) with both folds and the keys of the encrypted one open, an
+ * outage a week ago and three copies the scrub repaired, the Integrity marks of a plain and an encrypted connection; six connections in
+ * every state, a detached one among them, with blobs no connection holds whole, an open damaged copy no other copy held, refused uploads
+ * and the acknowledge dialog of a finding; the period of 24 hours.
  */
 async function* storagePage(page: Page): AsyncGenerator<string> {
-  const overview = '**/api/v1/storage/overview';
+  const overview = '**/api/v1/storage/overview**';
   const connections = '**/api/v1/system/storage-connections';
   const damaged = '**/api/v1/storage/damaged-blobs**';
+  const history = '**/api/v1/storage/history**';
+  const problems = '**/api/v1/storage/problems**';
+  const findings = '**/api/v1/storage/findings**';
   const main = page.locator('main quader-storage-page');
   await expect(main.locator('quader-storage-summary')).toBeVisible();
   await expect(main.locator('#connections quader-data-table')).toBeVisible();
+  await expect(main.locator('#problems quader-storage-timeline').first()).toBeVisible();
   yield '';
   await routeWith(page, damaged, noDamagedBlob());
   await routeWith(page, overview, overviewOne());
+  await routeWith(page, history, historyFor(['default']));
+  await routeWith(page, problems, listOf([]));
+  await routeWith(page, findings, listOf([]));
   await answerWith(page, connections, oneConnection());
   await expect(main.locator('#connections tbody tr:not(.expansion)')).toHaveCount(1);
+  await expect(main.locator('#problems quader-storage-timeline')).toHaveCount(1);
+  await expect(main.locator('#problems tbody tr')).toHaveCount(0);
   yield 'one';
   await routeWith(page, overview, overviewTwo());
+  await routeWith(page, history, historyTwo());
+  await routeWith(page, problems, problemsTwo());
+  await routeWith(page, findings, findingsTwo());
   await answerWith(page, connections, twoForThePage());
   await expect(main.locator('#connections tbody tr:not(.expansion)')).toHaveCount(2);
+  await expect(main.locator('#problems quader-storage-timeline')).toHaveCount(2);
   // Each fold by its place, and its state awaited before the next: a list of the closed toggles shrinks under the loop.
   for (let i = 0; i < 2; i++) {
     const toggle = main.locator('#connections tbody th button').nth(i);
@@ -786,10 +818,16 @@ async function* storagePage(page: Page): AsyncGenerator<string> {
   const keys = main.locator('#encryption td button[aria-expanded]').first();
   await keys.click();
   await expect(keys).toHaveAttribute('aria-expanded', 'true');
+  // A cell of the outage named under its strip (Q-UI-1600).
+  await main.locator('#problems button.cell[data-tone="warning"]').first().click();
+  await expect(main.locator('#problems .picked')).toBeVisible();
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   yield 'two';
   await routeWith(page, damaged, damagedBlobs());
   await routeWith(page, overview, overviewSeveral());
+  await routeWith(page, history, historySeveral());
+  await routeWith(page, problems, problemsSeveral());
+  await routeWith(page, findings, findingsSeveral());
   await answerWith(page, connections, severalConnections());
   await expect(main.locator('#connections tbody tr:not(.expansion)')).toHaveCount(6);
   const fold = main.locator('quader-storage-damaged-blobs quader-disclosure > .disclosure > .heading > button.toggle');
@@ -797,15 +835,26 @@ async function* storagePage(page: Page): AsyncGenerator<string> {
   await expect(fold).toHaveAttribute('aria-expanded', 'true');
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   yield 'several-detached';
-  await page.unroute(overview);
-  await page.unroute(connections);
-  await page.unroute(damaged);
+  // The acknowledge dialog of the open damaged copy no other copy held (Q-UI-1607), through the row's menu (R-UI-163).
+  await main.locator('quader-storage-findings td.actions button').first().click();
+  await page.locator('.cdk-overlay-container .menu-item').filter({ hasText: /Acknowledge|Quittieren/ }).click();
+  await expect(page.locator('quader-storage-acknowledge-dialog')).toBeVisible();
+  await page.locator('quader-storage-acknowledge-dialog textarea').fill('The bucket lifecycle rule removed it; the platform team fixed the rule.');
+  yield 'acknowledge';
+  await page.keyboard.press('Escape');
+  await expect(page.locator('quader-storage-acknowledge-dialog')).toHaveCount(0);
+  // The period of 24 hours: the group pressed, every read of the period asked anew.
+  await main.locator('quader-page-header .period button').first().click();
+  await expect(main.locator('quader-page-header .period button[aria-pressed="true"]')).toHaveText(/24/);
+  await expect(main.locator('#problems quader-storage-timeline').first().locator('button.cell')).toHaveCount(24);
+  yield 'period-24h';
+  for (const url of [overview, connections, damaged, history, problems, findings]) await page.unroute(url);
 }
 
 /** The dashboard (R-UI-266): as it opens, then the card Storage with the plan's two connections, one unreachable on a replica. */
 async function* dashboardStorage(page: Page): AsyncGenerator<string> {
   yield '';
-  const overview = '**/api/v1/storage/overview';
+  const overview = '**/api/v1/storage/overview**';
   await answerWith(page, overview, overviewTwo());
   await expect(page.locator('main section[aria-labelledby="dash-s3"] quader-storage-summary .tile')).toHaveCount(6);
   yield 'storage';

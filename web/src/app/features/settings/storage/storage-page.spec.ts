@@ -27,7 +27,10 @@ const storage = (get: Get) => get(StorageApi) as FakeStorageApi;
  */
 function twoConnections(): StorageConnection[] {
   return [
-    sampleConnection({ capacityBytes: 2 * TIB }, { presentBytes: Math.round(0.85 * 2 * TIB), soleCopies: 1_234, soleBytes: 12 * 1024 ** 3 }),
+    sampleConnection(
+      { capacityBytes: 2 * TIB, capabilities: { ...sampleConnection().capabilities!, sseApplied: { algorithm: 'AES256', kmsKeyId: '' } } },
+      { presentBytes: Math.round(0.85 * 2 * TIB), soleCopies: 1_234, soleBytes: 12 * 1024 ** 3 },
+    ),
     sampleConnection(
       {
         id: 'archive',
@@ -48,6 +51,7 @@ function twoConnections(): StorageConnection[] {
           { id: 'sk-archive-1', generation: 1, state: 'retired', createdAt: '2026-11-22T08:02:11Z', retiredAt: '2026-11-24T08:02:11Z', destroyedAt: null, copies: 859 },
         ],
         settings: { ...sampleConnection().settings!, region: 'eu-central-1', sseMode: 'kms', sseKmsKeyId: 'alias/quader' },
+        capabilities: { ...sampleConnection().capabilities!, sseApplied: { algorithm: 'aws:kms', kmsKeyId: 'alias/quader' } },
       },
       { presentCopies: 410_859, presentBytes: Math.round(0.96 * TIB), keyedCopies: 410_859, fillRatio: 0.997 },
     ),
@@ -70,8 +74,9 @@ function twoOverview(): StorageOverview {
       belowTarget: { blobs: 1_234, bytes: 12_884_901_888 },
       loss: [{ connection: 'default', blobs: 1_234, bytes: 12_884_901_888 }],
     },
-    encryption: { state: 'partly', encrypted: ['archive'], plain: ['default'], providerConfigured: ['archive'], encryptedShare: 0.5 },
+    encryption: { state: 'partly', encrypted: ['archive'], plain: ['default'], providerConfigured: ['archive'], providerApplied: ['default', 'archive'], encryptedShare: 0.5 },
     integrity: { ...o.integrity, authenticatedReads: ['archive'] },
+    problems: { period: '30d', state: 'ongoing', count: 1, open: 0, acknowledged: 0, worst: null },
   };
 }
 
@@ -108,7 +113,14 @@ describe('Admin area › Settings › Storage (R-UI-262)', () => {
     // Green only for a positive state: the tiles of a plain single store are no success.
     expect(root.querySelector('[data-tile="availability"] [data-tone]')?.getAttribute('data-tone')).toBe('neutral');
     expect(root.querySelector('[data-tile="encryption"] [data-tone]')?.getAttribute('data-tone')).toBe('neutral');
-    expect([...root.querySelectorAll('h2')].map(text).filter((h) => h !== 'Summary')).toEqual(['Connections 1', 'Availability', 'Encryption', 'Download links']);
+    expect([...root.querySelectorAll('h2')].map(text).filter((h) => h !== 'Summary')).toEqual([
+      'Connections 1',
+      'Availability',
+      'Encryption',
+      'Integrity',
+      'Problems',
+      'Download links',
+    ]);
     expect(text(section(root, 'availability'))).toContain('One store: no copy elsewhere');
     expect(root.querySelector('[data-tile="connections"] a')?.getAttribute('href')).toBe('/admin/settings/storage#connections');
     await expectAccessible(root);
@@ -189,17 +201,20 @@ describe('Admin area › Settings › Storage (R-UI-262)', () => {
     expect(facts.get('First seen')).toContain('20.11.2026');
   });
 
-  it('R-UI-264 encryption: Quader on since its first key with the share in the format, the store configured beside "not checked yet", the keys by identifier, what Quader encrypts and the root key', async () => {
+  it('R-UI-264 encryption: Quader on since its first key with the share in the format, the store configured beside what it applied, the keys by identifier, what Quader encrypts and the root key', async () => {
     const { root, fixture } = await renderScreen(StoragePage, { setup: two });
     const enc = section(root, 'encryption');
     const [plain, encrypted] = rows(enc);
     expect(text(plain!)).toContain('Off');
     expect(text(plain!)).toContain('Configured none');
+    expect(text(plain!)).toContain('Actual AES256');
+    expect(text(plain!)).toContain('bucket default');
+    expect(text(plain!)).not.toContain('Differs');
     expect(text(encrypted!)).toContain('On since 22.11.2026');
     expect(text(encrypted!)).toContain('100 % in the format');
     expect(text(encrypted!)).toContain('Keyed names');
     expect(text(encrypted!)).toContain('Configured kms alias/quader');
-    expect(text(encrypted!)).toContain('Actual not checked yet');
+    expect(text(encrypted!)).toContain('Actual aws:kms alias/quader');
     expect(text(encrypted!)).not.toContain('Differs');
     expect(text(encrypted!)).toContain('sk-archive-2');
     expect(text(encrypted!)).toContain('active, generation 2');
@@ -226,10 +241,27 @@ describe('Admin area › Settings › Storage (R-UI-262)', () => {
     expect(text(row.querySelector('span.warn')!)).toContain('Differs');
   });
 
+  it('R-UI-264 a store that did not apply what it is asked for differs; one whose start check wrote no probe is not checked yet', async () => {
+    const { root } = await renderScreen(StoragePage, {
+      setup: (get) =>
+        (storage(get).connectionsResult = [
+          sampleConnection({
+            settings: { ...sampleConnection().settings!, sseMode: 'kms', sseKmsKeyId: 'alias/quader' },
+            capabilities: { ...sampleConnection().capabilities!, sseApplied: { algorithm: 'AES256', kmsKeyId: '' } },
+          }),
+          sampleConnection({ id: 'new', position: 2, capabilities: null }),
+        ]),
+    });
+    const [kms, fresh] = rows(section(root, 'encryption'));
+    expect(text(kms!)).toContain('Actual AES256');
+    expect(text(kms!.querySelector('span.warn')!)).toContain('Differs');
+    expect(text(fresh!)).toContain('Actual not checked yet');
+  });
+
   it('R-UI-262 the auditor reads the page and is offered no act; the administrator counts now and runs the reconciliation', async () => {
     const reader = await renderScreen(StoragePage, { capabilities: ['settings:read'], setup: two });
     const acts = [...reader.root.querySelectorAll('button')].map((b) => text(b));
-    expect(acts.some((a) => /Count now|Run the reconciliation now|Check again|Save changes|Test link/.test(a))).toBe(false);
+    expect(acts.some((a) => /Count now|Run the reconciliation now|Check again|Acknowledge|Scrub now|Save changes|Test link/.test(a))).toBe(false);
     expect(text(reader.root)).toContain('Read only: changing this needs the permission settings:write');
 
     const admin = await renderScreen(StoragePage, { setup: two });

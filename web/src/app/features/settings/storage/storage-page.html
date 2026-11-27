@@ -1,4 +1,18 @@
-<quader-page-header heading="Storage" i18n-heading="@@storage.settings.heading" />
+<quader-page-header heading="Storage" i18n-heading="@@storage.settings.heading">
+  <div actions class="period" role="group" [attr.aria-label]="periodLabel">
+    @for (p of periods; track p) {
+      <button
+        class="btn btn-default btn-sm"
+        type="button"
+        [attr.aria-pressed]="activePeriod() === p"
+        [attr.aria-label]="periodTitle(p)"
+        (click)="setPeriod(p)"
+      >
+        {{ periodWord(p) }}
+      </button>
+    }
+  </div>
+</quader-page-header>
 <quader-needs capability="settings:write" />
 
 @if (failure(); as f) {
@@ -41,7 +55,7 @@
     @if (connectionsFailure(); as f) {
       <quader-error-notice [error]="f" (retry)="connectionsFailure.retry()" />
     } @else if (connections(); as list) {
-      <quader-storage-connections [connections]="list" [links]="links()" />
+      <quader-storage-connections [connections]="list" [links]="links()" [history]="history()" [period]="activePeriod()" />
     } @else {
       <quader-loading i18n="@@storage.connections.loading">Loading the connections.</quader-loading>
     }
@@ -58,6 +72,8 @@
       <quader-storage-availability
         [overview]="o"
         [connections]="list"
+        [history]="history()"
+        [period]="activePeriod()"
         [now]="now()"
         [canRun]="canWrite()"
         [running]="running('storage-reconcile')"
@@ -87,6 +103,42 @@
     } @else if (!connectionsFailure()) {
       <quader-loading i18n="@@storage.encryption.loading">Loading the encryption.</quader-loading>
     }
+  </section>
+
+  <section id="integrity" class="page-section" aria-labelledby="storage-integrity-heading">
+    <div class="section-head">
+      <h2 id="storage-integrity-heading" tabindex="-1" i18n="@@storage.integrity.heading">Integrity</h2>
+      <a class="help-link" routerLink="/help/admin/storage" fragment="integrity" [quaderTooltip]="integrityHelp" i18n-aria-label="@@storage.integrity.about" aria-label="About the integrity">
+        <span class="material-icons" aria-hidden="true">help_outline</span>
+      </a>
+    </div>
+    @if (historyFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="historyFailure.retry()" />
+    }
+    @if (connections(); as list) {
+      <quader-storage-integrity
+        [overview]="o"
+        [connections]="list"
+        [history]="history()"
+        [period]="activePeriod()"
+        [canWrite]="canWrite()"
+        [scrubbing]="scrubbing()"
+        (scrub)="run('scrub', $event)"
+        (changed)="changed()"
+      />
+    } @else if (!connectionsFailure()) {
+      <quader-loading i18n="@@storage.integrity.loading">Loading the checks.</quader-loading>
+    }
+  </section>
+
+  <section id="problems" class="page-section" aria-labelledby="storage-problems-heading">
+    <div class="section-head">
+      <h2 id="storage-problems-heading" tabindex="-1" i18n="@@storage.problems.heading">Problems</h2>
+      <a class="help-link" routerLink="/help/admin/storage" fragment="problems" [quaderTooltip]="problemsHelp" i18n-aria-label="@@storage.problems.about" aria-label="About the problems">
+        <span class="material-icons" aria-hidden="true">help_outline</span>
+      </a>
+    </div>
+    <quader-storage-problems [period]="activePeriod()" [history]="history()" />
   </section>
 
   <div class="page-section links-section">

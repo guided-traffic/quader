@@ -59,12 +59,12 @@ export class Dashboard {
   protected readonly overview = resource({ loader: () => this.system.overview() });
   protected readonly encryption = resource({ loader: () => this.encryptionApi.status() });
   /**
-   * The storage overview of now (R-STOR-107, R-UI-266), for a holder of `settings:read`; refused or failing, the card keeps its
-   * readiness check and the instance bar says nothing of the connections.
+   * The storage overview of now, its problems of the last 24 hours (R-STOR-107, R-UI-266, B.13), for a holder of `settings:read`;
+   * refused or failing, the card keeps its readiness check and the instance bar says nothing of the connections.
    */
   protected readonly storage = resource({
     params: () => (this.session.has('settings:read') ? true : undefined),
-    loader: () => this.storageApi.overview(),
+    loader: () => this.storageApi.overview('24h'),
   });
   /** The Backups tab's own summary; refused or failing, the card leaves the backup out (R-UI-165). */
   protected readonly backup = resource({ loader: () => this.backups.summary() });

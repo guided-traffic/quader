@@ -44,7 +44,10 @@ func storageFixture() (summary.Summary, []summary.View) {
 		{
 			ID: "default", Bucket: "quader-blobs", Prefix: "quader", Configured: 3, LiveReplicas: 3, Undrained: true, FilledAt: &filled, HoldsCopies: true,
 			FirstSeenAt: firstSeen, PassStartedAt: &pass,
-			Capabilities: &blob.Capabilities{PayloadChecksumEnforced: true, BatchDelete: true, Metadata: true, ServerSideCopyFrom: map[string]bool{"secondary": true}},
+			Capabilities: &blob.Capabilities{
+				PayloadChecksumEnforced: true, BatchDelete: true, Metadata: true, ServerSideCopyFrom: map[string]bool{"secondary": true},
+				SSEApplied: &blob.SSEApplied{Algorithm: "AES256"},
+			},
 		},
 		{
 			ID: "secondary", Bucket: "quader-copy", Prefix: "quader", Encrypted: true, Configured: 3, LiveReplicas: 3, CircuitOpen: 1, Undrained: true,
@@ -116,6 +119,18 @@ func TestR_STOR_061_TheConnectionsInTheAPI(t *testing.T) {
 			k1.RetiredAt == nil || !k1.RetiredAt.Equal(filled.Add(24*time.Hour)) || k2.RetiredAt != nil ||
 			sec.Settings.SseMode != "kms" || sec.Settings.SseKmsKeyId != "arn:aws:kms:eu-central-1:111122223333:alias/quader" || !sec.Settings.SseBucketKey {
 			t.Errorf("secondary = %+v", sec)
+		}
+	})
+
+	t.Run("R-STOR-032 R-STOR-111 what a store applied stands beside what it is asked for: a bucket default under none", func(t *testing.T) {
+		w := httpRecorder(h, http.MethodGet, "/api/v1/system/storage-connections")
+		var out gen.StorageConnectionList
+		if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &out) != nil {
+			t.Fatalf("%d %s", w.Code, w.Body.String())
+		}
+		d := out.Connections[0]
+		if d.Capabilities.SseApplied == nil || d.Capabilities.SseApplied.Algorithm != "AES256" || d.Capabilities.SseApplied.KmsKeyId != "" || d.Settings.SseMode != "none" {
+			t.Errorf("default = %+v %+v", d.Capabilities, d.Settings)
 		}
 	})
 

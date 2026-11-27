@@ -69,7 +69,7 @@
   }
 </div>
 
-<quader-data-table [caption]="caption" [columns]="columns" [empty]="rows().length === 0">
+<quader-data-table [caption]="caption" [columns]="columns()" [empty]="rows().length === 0">
   @for (c of rows(); track c.id) {
     <tr>
       <th scope="row"><span class="connection-name" translate="no">{{ c.id }}</span></th>
@@ -133,6 +133,36 @@
           </div>
         } @else {
           <quader-no-value />
+        }
+      </td>
+      <td class="lines-cell">
+        @if (sumsOf(c); as s) {
+          @if (s.readFallovers + s.writeFallovers + s.copiesFailed > 0) {
+            <div class="lines">
+              @if (s.readFallovers > 0) {
+                <span class="line" i18n="@@storage.absorbed.reads"
+                  >{s.readFallovers, plural, =1 {1 read from another copy} other {{{ s.readFallovers | number }} reads from another copy}}</span
+                >
+              }
+              @if (s.writeFallovers > 0) {
+                <span class="line" i18n="@@storage.absorbed.writes"
+                  >{s.writeFallovers, plural, =1 {1 write to the next connection} other {{{ s.writeFallovers | number }} writes to the next connection}}</span
+                >
+              }
+              @if (s.copiesFailed > 0) {
+                <span class="line warn"
+                  ><span class="material-icons" aria-hidden="true">warning</span
+                  ><ng-container i18n="@@storage.absorbed.copies-failed"
+                    >{s.copiesFailed, plural, =1 {1 copy failed} other {{{ s.copiesFailed | number }} copies failed}}</ng-container
+                  ></span
+                >
+              }
+            </div>
+          } @else {
+            <quader-no-value />
+          }
+        } @else {
+          <quader-loading i18n="@@storage.absorbed.loading">Loading the period.</quader-loading>
         }
       </td>
     </tr>

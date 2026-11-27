@@ -1,5 +1,17 @@
 // Settings › Storage (R-UI-262): the content panel's width (Q-UI-1580); the header's line of the figures, the summary, then each section
 // under its heading with its help on demand.
+// The period in the header (Q-UI-1602): five buttons, the pressed one in the selection's fill, as the usage screens' period.
+.period {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-1);
+
+  button[aria-pressed='true'] {
+    background: var(--quader-accent-container);
+    color: var(--quader-on-accent-container);
+  }
+}
+
 .figures-line {
   display: flex;
   flex-wrap: wrap;

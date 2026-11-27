@@ -85,7 +85,27 @@ func init() {
 	})
 	registerDownloadLinks()
 	registerBlobRechecked()
+	registerFindingAcknowledged()
 }
+
+// >>> finding acknowledged
+
+// EventStorageFindingAcknowledged: an administrator acknowledged an unresolved finding of a damaged copy (POST
+// /api/v1/storage/findings/{id}/acknowledge, storage.md R-STOR-111, Q-OPS-472): the data name the finding's id, its connection, its
+// blob's digest and the note (at most 500 characters, empty without one). Transactional with the acknowledgement; not journaled, since
+// an acknowledgement resolves, writes and grants nothing (Q-STOR-530).
+const EventStorageFindingAcknowledged = "storage.finding.acknowledged"
+
+func registerFindingAcknowledged() {
+	Register(EventType{
+		Name: EventStorageFindingAcknowledged, Category: CategorySystem, Mode: Transactional,
+		Schema: `{"type":"object","properties":{"finding":{"type":"integer","minimum":1},"connection":{"type":"string","maxLength":32},` +
+			`"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"note":{"type":"string","maxLength":500}},` +
+			`"required":["finding","connection","sha256","note"],"additionalProperties":false}`,
+	})
+}
+
+// <<< finding acknowledged
 
 // >>> blob rechecked
 

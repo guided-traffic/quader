@@ -4985,9 +4985,18 @@
         <target>Gespeicherter Inhalt erneut geprüft</target>
       </segment>
     </unit>
-    <unit id="audit.action.storage.download_links.changed">
+    <unit id="audit.action.storage.finding.acknowledged">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:387</note>
+      </notes>
+      <segment>
+        <source>Damaged copy acknowledged</source>
+        <target>Beschädigte Kopie quittiert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.storage.download_links.changed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:389</note>
       </notes>
       <segment>
         <source>Download link setting changed</source>
@@ -4996,7 +5005,7 @@
     </unit>
     <unit id="audit.action.system.backup.completed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:389</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:391</note>
       </notes>
       <segment>
         <source>Backup completed</source>
@@ -5005,7 +5014,7 @@
     </unit>
     <unit id="audit.action.system.backup.deleted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:391</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:393</note>
       </notes>
       <segment>
         <source>Backup deleted</source>
@@ -5014,7 +5023,7 @@
     </unit>
     <unit id="audit.action.system.backup.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:393</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:395</note>
       </notes>
       <segment>
         <source>Backup failed</source>
@@ -5023,7 +5032,7 @@
     </unit>
     <unit id="audit.action.system.backup.target_adopted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:395</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:397</note>
       </notes>
       <segment>
         <source>Backup target taken over</source>
@@ -5032,7 +5041,7 @@
     </unit>
     <unit id="audit.action.system.banner_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:397</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:399</note>
       </notes>
       <segment>
         <source>Banner changed</source>
@@ -5041,7 +5050,7 @@
     </unit>
     <unit id="audit.action.system.time_format_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:399</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:401</note>
       </notes>
       <segment>
         <source>Default time format changed</source>
@@ -5050,7 +5059,7 @@
     </unit>
     <unit id="audit.action.system.deletions_paused">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:401</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:403</note>
       </notes>
       <segment>
         <source>Deletions paused</source>
@@ -5059,7 +5068,7 @@
     </unit>
     <unit id="audit.action.system.deletions_resumed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:403</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:405</note>
       </notes>
       <segment>
         <source>Deletions resumed</source>
@@ -5068,7 +5077,7 @@
     </unit>
     <unit id="audit.action.system.job.cancelled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:405</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:407</note>
       </notes>
       <segment>
         <source>Job cancelled</source>
@@ -5077,7 +5086,7 @@
     </unit>
     <unit id="audit.action.system.maintenance_mode_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:407</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:409</note>
       </notes>
       <segment>
         <source>Maintenance mode changed</source>
@@ -5086,7 +5095,7 @@
     </unit>
     <unit id="audit.action.system.restore.journal_replayed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:409</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:411</note>
       </notes>
       <segment>
         <source>Revocation journal replayed after a restore</source>
@@ -5095,7 +5104,7 @@
     </unit>
     <unit id="audit.action.system.restored">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:411</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:413</note>
       </notes>
       <segment>
         <source>Installation restored</source>
@@ -5104,7 +5113,7 @@
     </unit>
     <unit id="audit.action.system.storage.blob_damaged">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:413</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:415</note>
       </notes>
       <segment>
         <source>Stored content found damaged</source>
@@ -5113,7 +5122,7 @@
     </unit>
     <unit id="audit.action.system.storage.connection_added">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:415</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:417</note>
       </notes>
       <segment>
         <source>Object-store connection seen for the first time</source>
@@ -5122,7 +5131,7 @@
     </unit>
     <unit id="audit.action.system.storage.connection_drained">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:417</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:419</note>
       </notes>
       <segment>
         <source>Object-store connection drained</source>
@@ -5131,7 +5140,7 @@
     </unit>
     <unit id="audit.action.system.storage.connection_forgotten">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:419</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:421</note>
       </notes>
       <segment>
         <source>Object-store connection forgotten</source>
@@ -5140,7 +5149,7 @@
     </unit>
     <unit id="audit.action.system.storage.key_generation_added">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:421</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:423</note>
       </notes>
       <segment>
         <source>New generation of a storage key drawn</source>
@@ -5149,7 +5158,7 @@
     </unit>
     <unit id="audit.action.system.storage.keys_destroyed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:423</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:425</note>
       </notes>
       <segment>
         <source>Storage keys of a retired connection destroyed</source>
@@ -5158,7 +5167,7 @@
     </unit>
     <unit id="audit.action.system.storage.keys_exported">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:425</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:427</note>
       </notes>
       <segment>
         <source>Storage keys exported</source>
@@ -5167,7 +5176,7 @@
     </unit>
     <unit id="audit.action.system.storage.keys_imported">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:427</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:429</note>
       </notes>
       <segment>
         <source>Storage keys imported</source>
@@ -5176,7 +5185,7 @@
     </unit>
     <unit id="audit.action.system.storage.versions_restored">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:429</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:431</note>
       </notes>
       <segment>
         <source>Deleted storage objects restored</source>
@@ -5185,7 +5194,7 @@
     </unit>
     <unit id="audit.action.system.task_triggered">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:431</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:433</note>
       </notes>
       <segment>
         <source>Maintenance task started</source>
@@ -5194,7 +5203,7 @@
     </unit>
     <unit id="audit.action.token.created">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:433</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:435</note>
       </notes>
       <segment>
         <source>Token created</source>
@@ -5203,7 +5212,7 @@
     </unit>
     <unit id="audit.action.token.expiring">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:435</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:437</note>
       </notes>
       <segment>
         <source>Token about to expire</source>
@@ -5212,7 +5221,7 @@
     </unit>
     <unit id="audit.action.token.rejected">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:437</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:439</note>
       </notes>
       <segment>
         <source>Token rejected</source>
@@ -5221,7 +5230,7 @@
     </unit>
     <unit id="audit.action.token.revoked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:439</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:441</note>
       </notes>
       <segment>
         <source>Token revoked</source>
@@ -5230,7 +5239,7 @@
     </unit>
     <unit id="audit.action.token.rotated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:441</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:443</note>
       </notes>
       <segment>
         <source>Token rotated</source>
@@ -5239,7 +5248,7 @@
     </unit>
     <unit id="audit.action.user.avatar.removed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:443</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:445</note>
       </notes>
       <segment>
         <source>Avatar removed</source>
@@ -5248,7 +5257,7 @@
     </unit>
     <unit id="audit.action.user.avatar.set">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:445</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:447</note>
       </notes>
       <segment>
         <source>Avatar uploaded</source>
@@ -5257,7 +5266,7 @@
     </unit>
     <unit id="audit.action.user.created">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:447</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:449</note>
       </notes>
       <segment>
         <source>User created</source>
@@ -5266,7 +5275,7 @@
     </unit>
     <unit id="audit.action.user.deleted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:449</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:451</note>
       </notes>
       <segment>
         <source>User deleted</source>
@@ -5275,7 +5284,7 @@
     </unit>
     <unit id="audit.action.user.external_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:451</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:453</note>
       </notes>
       <segment>
         <source>User&apos;s external flag changed</source>
@@ -5284,7 +5293,7 @@
     </unit>
     <unit id="audit.action.user.disabled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:453</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:455</note>
       </notes>
       <segment>
         <source>User disabled</source>
@@ -5293,7 +5302,7 @@
     </unit>
     <unit id="audit.action.user.dormancy_warning">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:455</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:457</note>
       </notes>
       <segment>
         <source>User close to dormancy</source>
@@ -5302,7 +5311,7 @@
     </unit>
     <unit id="audit.action.user.enabled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:457</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:459</note>
       </notes>
       <segment>
         <source>User enabled</source>
@@ -5311,7 +5320,7 @@
     </unit>
     <unit id="audit.action.user.groups.claim_missing">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:459</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:461</note>
       </notes>
       <segment>
         <source>Group claim missing at sign-in</source>
@@ -5320,7 +5329,7 @@
     </unit>
     <unit id="audit.action.user.groups.claim_returned">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:461</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:463</note>
       </notes>
       <segment>
         <source>Group claim back at sign-in</source>
@@ -5329,7 +5338,7 @@
     </unit>
     <unit id="audit.action.user.groups.result_skipped">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:463</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:465</note>
       </notes>
       <segment>
         <source>Invalid group name skipped at sign-in</source>
@@ -5338,7 +5347,7 @@
     </unit>
     <unit id="audit.action.user.groups.synced">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:465</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:467</note>
       </notes>
       <segment>
         <source>Group memberships synchronised</source>
@@ -5347,7 +5356,7 @@
     </unit>
     <unit id="audit.action.user.rename_conflict">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:467</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:469</note>
       </notes>
       <segment>
         <source>User rename conflict</source>
@@ -5356,7 +5365,7 @@
     </unit>
     <unit id="audit.action.user.renamed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:469</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:471</note>
       </notes>
       <segment>
         <source>User renamed</source>
@@ -5365,7 +5374,7 @@
     </unit>
     <unit id="audit.action.user.updated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:471</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:473</note>
       </notes>
       <segment>
         <source>User changed</source>
@@ -5374,7 +5383,7 @@
     </unit>
     <unit id="audit.action.vulnerability.advisory.kind_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:473</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:475</note>
       </notes>
       <segment>
         <source>Advisory kind changed</source>
@@ -5383,7 +5392,7 @@
     </unit>
     <unit id="audit.action.vulnerability.claimed_name_match">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:475</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:477</note>
       </notes>
       <segment>
         <source>Advisory matches a claimed package name</source>
@@ -5392,7 +5401,7 @@
     </unit>
     <unit id="audit.action.vulnerability.download_blocked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:477</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:479</note>
       </notes>
       <segment>
         <source>Download blocked by a finding</source>
@@ -5401,7 +5410,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.reopened">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:479</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:481</note>
       </notes>
       <segment>
         <source>Finding reopened</source>
@@ -5410,7 +5419,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.status_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:481</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:483</note>
       </notes>
       <segment>
         <source>Finding status changed</source>
@@ -5419,7 +5428,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:483</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:485</note>
       </notes>
       <segment>
         <source>Advisory sync failed</source>
@@ -5428,7 +5437,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.imported">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:485</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:487</note>
       </notes>
       <segment>
         <source>Advisory data imported</source>
@@ -5437,7 +5446,7 @@
     </unit>
     <unit id="audit.category.auth">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:517</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:519</note>
       </notes>
       <segment>
         <source>Authentication</source>
@@ -5446,7 +5455,7 @@
     </unit>
     <unit id="audit.category.token">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:519</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:521</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -5455,7 +5464,7 @@
     </unit>
     <unit id="audit.category.identity">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:521</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:523</note>
       </notes>
       <segment>
         <source>Identities</source>
@@ -5464,7 +5473,7 @@
     </unit>
     <unit id="audit.category.authz">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:523</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:525</note>
       </notes>
       <segment>
         <source>Authorization</source>
@@ -5473,7 +5482,7 @@
     </unit>
     <unit id="audit.category.repository">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:525</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:527</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -5482,7 +5491,7 @@
     </unit>
     <unit id="audit.category.content">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:527</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:529</note>
       </notes>
       <segment>
         <source>Content</source>
@@ -5491,7 +5500,7 @@
     </unit>
     <unit id="audit.category.system">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:529</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:531</note>
       </notes>
       <segment>
         <source>System</source>
@@ -5500,7 +5509,7 @@
     </unit>
     <unit id="audit.category.config">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:531</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:533</note>
       </notes>
       <segment>
         <source>Configuration</source>
@@ -5509,7 +5518,7 @@
     </unit>
     <unit id="audit.category.webhook">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:533</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:535</note>
       </notes>
       <segment>
         <source>Webhooks</source>
@@ -5518,7 +5527,7 @@
     </unit>
     <unit id="audit.outcome.success">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:542</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:544</note>
       </notes>
       <segment>
         <source>Success</source>
@@ -5527,7 +5536,7 @@
     </unit>
     <unit id="audit.outcome.failure">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:544</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:546</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -5536,7 +5545,7 @@
     </unit>
     <unit id="audit.outcome.denied">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:546</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:548</note>
       </notes>
       <segment>
         <source>Denied</source>
@@ -5545,7 +5554,7 @@
     </unit>
     <unit id="audit.outcome.warning">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:548</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:550</note>
       </notes>
       <segment>
         <source>Warning</source>
@@ -12532,6 +12541,7 @@
         <note category="location">src/app/features/repositories/content/repository-items.ts:244</note>
         <note category="location">src/app/features/repositories/repository-list.ts:411</note>
         <note category="location">src/app/features/settings/storage/damaged-blobs.ts:119</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:192</note>
         <note category="location">src/app/features/system/backups/backups-page.html:156,158</note>
         <note category="location">src/app/features/system/job-table.ts:151</note>
         <note category="location">src/app/features/system/tasks-card.ts:123</note>
@@ -40338,6 +40348,87 @@
         <target>Die Identität ist außer Dienst gestellt.</target>
       </segment>
     </unit>
+    <unit id="storage.ack.title">
+      <notes>
+        <note category="location">src/app/features/settings/storage/acknowledge-dialog.ts:26,27</note>
+      </notes>
+      <segment>
+        <source>Acknowledge the damaged copy?</source>
+        <target>Beschädigte Kopie quittieren?</target>
+      </segment>
+    </unit>
+    <unit id="storage.ack.copy">
+      <notes>
+        <note category="location">src/app/features/settings/storage/acknowledge-dialog.ts:35,37</note>
+      </notes>
+      <segment>
+        <source>Copy</source>
+        <target>Kopie</target>
+      </segment>
+    </unit>
+    <unit id="storage.ack.found">
+      <notes>
+        <note category="location">src/app/features/settings/storage/acknowledge-dialog.ts:40,41</note>
+      </notes>
+      <segment>
+        <source>Found</source>
+        <target>Gefunden</target>
+      </segment>
+    </unit>
+    <unit id="storage.ack.effect">
+      <notes>
+        <note category="location">src/app/features/settings/storage/acknowledge-dialog.ts:43,45</note>
+      </notes>
+      <segment>
+        <source>Acknowledging records that you know of it. It repairs nothing: the finding stays open until its copy is written again, found again or deleted.</source>
+        <target>Quittieren hält fest, dass Sie davon wissen. Es repariert nichts: Der Befund bleibt offen, bis seine Kopie neu geschrieben, wiedergefunden oder gelöscht ist.</target>
+      </segment>
+    </unit>
+    <unit id="storage.ack.note">
+      <notes>
+        <note category="location">src/app/features/settings/storage/acknowledge-dialog.ts:48,49</note>
+      </notes>
+      <segment>
+        <source>Note</source>
+        <target>Notiz</target>
+      </segment>
+    </unit>
+    <unit id="storage.ack.cancel">
+      <notes>
+        <note category="location">src/app/features/settings/storage/acknowledge-dialog.ts:56,57</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="storage.ack.submit">
+      <notes>
+        <note category="location">src/app/features/settings/storage/acknowledge-dialog.ts:57,59</note>
+      </notes>
+      <segment>
+        <source>Acknowledge</source>
+        <target>Quittieren</target>
+      </segment>
+    </unit>
+    <unit id="storage.ack.note-hint">
+      <notes>
+        <note category="location">src/app/features/settings/storage/acknowledge-dialog.ts:89</note>
+      </notes>
+      <segment>
+        <source>Optional, at most 500 characters. Every reader of this page sees it.</source>
+        <target>Optional, höchstens 500 Zeichen. Jeder Leser dieser Seite sieht sie.</target>
+      </segment>
+    </unit>
+    <unit id="storage.ack.note-long">
+      <notes>
+        <note category="location">src/app/features/settings/storage/acknowledge-dialog.ts:91</note>
+      </notes>
+      <segment>
+        <source>The note is longer than 500 characters.</source>
+        <target>Die Notiz ist länger als 500 Zeichen.</target>
+      </segment>
+    </unit>
     <unit id="7972068310845773242">
       <notes>
         <note category="location">src/app/features/settings/storage/availability-section.html:4</note>
@@ -40418,7 +40509,7 @@
       <notes>
         <note category="location">src/app/features/settings/storage/availability-section.html:43,44</note>
         <note category="location">src/app/features/settings/storage/availability-section.html:57,58</note>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:80</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:84</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 blob} other {<ph id="0" equiv="INTERPOLATION"/> blobs}}</source>
@@ -40546,9 +40637,45 @@
         <target>Letzter voller Durchlauf <ph id="0" equiv="INTERPOLATION" disp="{{ at | time }}"/></target>
       </segment>
     </unit>
+    <unit id="storage.absorbed.reads">
+      <notes>
+        <note category="location">src/app/features/settings/storage/availability-section.html:144,145</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 read from another copy} other {<ph id="0" equiv="INTERPOLATION"/> reads from another copy}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Lesezugriff über eine andere Kopie} other {<ph id="0" equiv="INTERPOLATION"/> Lesezugriffe über eine andere Kopie}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.absorbed.writes">
+      <notes>
+        <note category="location">src/app/features/settings/storage/availability-section.html:149,150</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 write to the next connection} other {<ph id="0" equiv="INTERPOLATION"/> writes to the next connection}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Schreibvorgang auf die nächste Verbindung} other {<ph id="0" equiv="INTERPOLATION"/> Schreibvorgänge auf die nächste Verbindung}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.absorbed.copies-failed">
+      <notes>
+        <note category="location">src/app/features/settings/storage/availability-section.html:156,157</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 copy failed} other {<ph id="0" equiv="INTERPOLATION"/> copies failed}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Kopie fehlgeschlagen} other {<ph id="0" equiv="INTERPOLATION"/> Kopien fehlgeschlagen}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.absorbed.loading">
+      <notes>
+        <note category="location">src/app/features/settings/storage/availability-section.html:165,167</note>
+      </notes>
+      <segment>
+        <source>Loading the period.</source>
+        <target>Der Zeitraum wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="storage.reconcile.run">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:145,147</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:175,177</note>
       </notes>
       <segment>
         <source>Run the reconciliation now</source>
@@ -40557,7 +40684,7 @@
     </unit>
     <unit id="storage.availability.caption">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:48</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:53</note>
       </notes>
       <segment>
         <source>Copies per connection</source>
@@ -40566,9 +40693,12 @@
     </unit>
     <unit id="storage.col.connection">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:50</note>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:48</note>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:36</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:55</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:53</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:38</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:187</note>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:69</note>
+        <note category="location">src/app/features/settings/storage/problems-section.ts:44</note>
       </notes>
       <segment>
         <source>Connection</source>
@@ -40577,7 +40707,7 @@
     </unit>
     <unit id="storage.col.holds">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:53</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:58</note>
       </notes>
       <segment>
         <source>Holds</source>
@@ -40586,7 +40716,7 @@
     </unit>
     <unit id="storage.col.holds.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:55</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:60</note>
       </notes>
       <segment>
         <source>The share of every blob with a whole copy on the connection, from the hourly count.</source>
@@ -40595,7 +40725,7 @@
     </unit>
     <unit id="storage.col.only-here">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:59</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:64</note>
       </notes>
       <segment>
         <source>Only here</source>
@@ -40604,7 +40734,7 @@
     </unit>
     <unit id="storage.col.only-here.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:61</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:66</note>
       </notes>
       <segment>
         <source>Blobs whose only copy lies on this connection: unavailable if it is lost.</source>
@@ -40613,7 +40743,7 @@
     </unit>
     <unit id="storage.col.backlog">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:63</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:68</note>
       </notes>
       <segment>
         <source>Backlog</source>
@@ -40622,7 +40752,7 @@
     </unit>
     <unit id="storage.col.reconciliation">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:66</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:71</note>
       </notes>
       <segment>
         <source>Reconciliation</source>
@@ -40631,16 +40761,25 @@
     </unit>
     <unit id="storage.col.reconciliation.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:68</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:73</note>
       </notes>
       <segment>
         <source>The task storage-reconcile copies every missing copy, one full pass after another.</source>
         <target>Die Aufgabe storage-reconcile kopiert jede fehlende Kopie, ein voller Durchlauf nach dem anderen.</target>
       </segment>
     </unit>
+    <unit id="storage.col.absorbed.help">
+      <notes>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:79</note>
+      </notes>
+      <segment>
+        <source>What the copies absorbed in the period: reads served from another copy, writes taken by the next connection, copies the reconciliation could not make.</source>
+        <target>Was die Kopien im Zeitraum aufgefangen haben: Lesezugriffe über eine andere Kopie, Schreibvorgänge auf die nächste Verbindung, Kopien, die der Abgleich nicht anlegen konnte.</target>
+      </segment>
+    </unit>
     <unit id="storage.availability.target.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:73</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:91</note>
       </notes>
       <segment>
         <source>Target: every connection without drain in storage.connections. Written before answering: storage.replication.min_copies.</source>
@@ -40649,7 +40788,7 @@
     </unit>
     <unit id="storage.holds.meter">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:99</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:117</note>
       </notes>
       <segment>
         <source>Share of every blob on <ph id="0" equiv="id" disp="c.id"/></source>
@@ -40838,7 +40977,7 @@
     </unit>
     <unit id="storage.fold.endpoint">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:173</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:180</note>
       </notes>
       <segment>
         <source>Endpoint</source>
@@ -40847,7 +40986,7 @@
     </unit>
     <unit id="storage.fold.endpoint-aws">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:178,179</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:185,186</note>
       </notes>
       <segment>
         <source>The AWS endpoint of the region</source>
@@ -40856,7 +40995,7 @@
     </unit>
     <unit id="storage.fold.bucket">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:183</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:190</note>
       </notes>
       <segment>
         <source>Bucket and prefix</source>
@@ -40865,7 +41004,7 @@
     </unit>
     <unit id="storage.fold.position">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:185,187</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:192,194</note>
       </notes>
       <segment>
         <source>Order</source>
@@ -40874,7 +41013,7 @@
     </unit>
     <unit id="storage.fold.position-value">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:188,189</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:195,196</note>
       </notes>
       <segment>
         <source>Number <ph id="0" equiv="INTERPOLATION" disp="{{ c.position }}"/> in <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">storage.connections</pc></source>
@@ -40883,7 +41022,7 @@
     </unit>
     <unit id="storage.fold.not-configured">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:190,192</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:197,199</note>
       </notes>
       <segment>
         <source>Not in the configuration of the replica that answered</source>
@@ -40892,7 +41031,7 @@
     </unit>
     <unit id="storage.fold.region">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:194</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:201</note>
       </notes>
       <segment>
         <source>Region</source>
@@ -40901,7 +41040,7 @@
     </unit>
     <unit id="storage.fold.credentials">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:202</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:209</note>
       </notes>
       <segment>
         <source>Credentials</source>
@@ -40910,7 +41049,7 @@
     </unit>
     <unit id="storage.fold.path-style">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:204</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:211</note>
       </notes>
       <segment>
         <source>Path-style addressing</source>
@@ -40919,7 +41058,7 @@
     </unit>
     <unit id="storage.fold.checksums">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:207,208</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:214,215</note>
       </notes>
       <segment>
         <source>Checksums</source>
@@ -40928,7 +41067,7 @@
     </unit>
     <unit id="storage.fold.batch-delete">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:211</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:218</note>
       </notes>
       <segment>
         <source>Batch delete</source>
@@ -40937,7 +41076,7 @@
     </unit>
     <unit id="storage.fold.storage-class">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:213</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:220</note>
       </notes>
       <segment>
         <source>Storage class</source>
@@ -40946,7 +41085,7 @@
     </unit>
     <unit id="storage.fold.storage-class-default">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:218,220</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:225,227</note>
       </notes>
       <segment>
         <source>The bucket&apos;s default</source>
@@ -40955,7 +41094,7 @@
     </unit>
     <unit id="storage.fold.sse">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:221</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:228</note>
       </notes>
       <segment>
         <source>Server-side encryption</source>
@@ -40964,7 +41103,7 @@
     </unit>
     <unit id="storage.fold.scrub">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:228</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:235</note>
       </notes>
       <segment>
         <source>Scrub</source>
@@ -40973,7 +41112,7 @@
     </unit>
     <unit id="1018731800513135901">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:232</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:239</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {every day} other {every <ph id="0" equiv="INTERPOLATION"/> days}}</source>
@@ -40982,7 +41121,7 @@
     </unit>
     <unit id="storage.fold.scrub-short">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:232,233</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:239,240</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="ICU" disp="{days, plural, =1 {every day} other {every {{ days }} days}}" subFlows="826589987996281221"/>, at most <ph id="1" equiv="INTERPOLATION_1" disp="{{ rate }}"/>/s</source>
@@ -40991,7 +41130,7 @@
     </unit>
     <unit id="storage.fold.capacity">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:235</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:242</note>
       </notes>
       <segment>
         <source>Capacity</source>
@@ -41000,7 +41139,7 @@
     </unit>
     <unit id="storage.fold.encrypted">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:244</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:251</note>
       </notes>
       <segment>
         <source>Encrypted by Quader</source>
@@ -41009,7 +41148,7 @@
     </unit>
     <unit id="storage.fold.capabilities">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:246,248</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:253,255</note>
       </notes>
       <segment>
         <source>Found by the start check</source>
@@ -41018,7 +41157,7 @@
     </unit>
     <unit id="storage.cap.checksum-yes">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:252,253</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:259,260</note>
       </notes>
       <segment>
         <source>Payload checksums enforced</source>
@@ -41027,7 +41166,7 @@
     </unit>
     <unit id="storage.cap.checksum-no">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:254,255</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:261,262</note>
       </notes>
       <segment>
         <source>Payload checksums not enforced: new copies are verified by the scrub</source>
@@ -41036,7 +41175,7 @@
     </unit>
     <unit id="storage.cap.metadata-yes">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:259,260</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:266,267</note>
       </notes>
       <segment>
         <source>Copies keep and replace metadata</source>
@@ -41045,7 +41184,7 @@
     </unit>
     <unit id="storage.cap.metadata-keep">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:261,262</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:268,269</note>
       </notes>
       <segment>
         <source>Copies keep metadata and do not replace it</source>
@@ -41054,7 +41193,7 @@
     </unit>
     <unit id="storage.cap.metadata-no">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:263,264</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:270,271</note>
       </notes>
       <segment>
         <source>Objects keep no metadata</source>
@@ -41063,7 +41202,7 @@
     </unit>
     <unit id="storage.cap.server-copy-yes">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:269,270</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:276,277</note>
       </notes>
       <segment>
         <source>Server-side copy from <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ p.id }}"/></pc></source>
@@ -41072,7 +41211,7 @@
     </unit>
     <unit id="storage.cap.server-copy-no">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:272,273</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:279,280</note>
       </notes>
       <segment>
         <source>No server-side copy from <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ p.id }}"/></pc>: copies are streamed</source>
@@ -41081,7 +41220,7 @@
     </unit>
     <unit id="storage.cap.none">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:282,283</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:289,290</note>
       </notes>
       <segment>
         <source>No start check has recorded it yet</source>
@@ -41090,7 +41229,7 @@
     </unit>
     <unit id="storage.fold.first-seen">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:285,286</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:292,293</note>
       </notes>
       <segment>
         <source>First seen</source>
@@ -41099,7 +41238,7 @@
     </unit>
     <unit id="storage.fold.filled">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:287,289</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:294,296</note>
       </notes>
       <segment>
         <source>Filled</source>
@@ -41108,7 +41247,7 @@
     </unit>
     <unit id="storage.fold.pass">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:295,297</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:302,304</note>
       </notes>
       <segment>
         <source>Current pass since</source>
@@ -41117,7 +41256,7 @@
     </unit>
     <unit id="storage.fold.last-pass">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:303,305</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:310,312</note>
       </notes>
       <segment>
         <source>Last full pass</source>
@@ -41126,7 +41265,7 @@
     </unit>
     <unit id="storage.retired">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.html:322</note>
+        <note category="location">src/app/features/settings/storage/connections-section.html:329</note>
       </notes>
       <segment>
         <source>Retired, their ids are not used again:</source>
@@ -41135,7 +41274,7 @@
     </unit>
     <unit id="storage.yes">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:43</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:48</note>
       </notes>
       <segment>
         <source>Yes</source>
@@ -41144,7 +41283,7 @@
     </unit>
     <unit id="storage.no">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:44</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:49</note>
       </notes>
       <segment>
         <source>No</source>
@@ -41153,7 +41292,7 @@
     </unit>
     <unit id="storage.connections.caption">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:45</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:50</note>
       </notes>
       <segment>
         <source>Object-store connections in the order of the configuration</source>
@@ -41162,7 +41301,7 @@
     </unit>
     <unit id="storage.connections.empty">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:46</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:51</note>
       </notes>
       <segment>
         <source>No replica has recorded a connection yet.</source>
@@ -41171,7 +41310,7 @@
     </unit>
     <unit id="storage.col.state">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:49</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:54</note>
       </notes>
       <segment>
         <source>State</source>
@@ -41180,7 +41319,7 @@
     </unit>
     <unit id="storage.col.role">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:52</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:57</note>
       </notes>
       <segment>
         <source>Role</source>
@@ -41189,7 +41328,7 @@
     </unit>
     <unit id="storage.col.role.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:54</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:59</note>
       </notes>
       <segment>
         <source>Uploads go to the first connection that takes them, reads try the copies in this order. Links: clients get signed links. Bastion: a Bastion reads it directly.</source>
@@ -41198,7 +41337,7 @@
     </unit>
     <unit id="storage.col.region">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:56</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:61</note>
       </notes>
       <segment>
         <source>Region</source>
@@ -41207,7 +41346,7 @@
     </unit>
     <unit id="storage.col.use">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:59</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:64</note>
       </notes>
       <segment>
         <source>Use</source>
@@ -41216,25 +41355,43 @@
     </unit>
     <unit id="storage.col.use.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:61</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:66</note>
       </notes>
       <segment>
         <source>The stored bytes against the capacity set in the connection&apos;s element (capacity). Shown, never enforced.</source>
         <target>Die gespeicherten Bytes gegen die im Element der Verbindung gesetzte Kapazität (capacity). Angezeigt, nie durchgesetzt.</target>
       </segment>
     </unit>
+    <unit id="storage.col.period.help">
+      <notes>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:73</note>
+      </notes>
+      <segment>
+        <source>The cells of the period: red when clients were refused, amber when Quader absorbed it. The section Problems names each.</source>
+        <target>Die Zellen des Zeitraums: rot, wenn Clients abgewiesen wurden, gelb, wenn Quader es aufgefangen hat. Der Abschnitt Probleme nennt jede.</target>
+      </segment>
+    </unit>
     <unit id="storage.fold.label">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:83</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:95</note>
       </notes>
       <segment>
         <source>Details of the connection <ph id="0" equiv="id" disp="c.id"/></source>
         <target>Details der Verbindung <ph id="0" equiv="id" disp="c.id"/></target>
       </segment>
     </unit>
+    <unit id="storage.connections.strip">
+      <notes>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:129</note>
+      </notes>
+      <segment>
+        <source>Cells of <ph id="0" equiv="id" disp="c.id"/> in the period</source>
+        <target>Zellen von <ph id="0" equiv="id" disp="c.id"/> im Zeitraum</target>
+      </segment>
+    </unit>
     <unit id="storage.use.meter">
       <notes>
-        <note category="location">src/app/features/settings/storage/connections-section.ts:112</note>
+        <note category="location">src/app/features/settings/storage/connections-section.ts:133</note>
       </notes>
       <segment>
         <source>Use of <ph id="0" equiv="id" disp="c.id"/></source>
@@ -41904,6 +42061,7 @@
     <unit id="storage.differs">
       <notes>
         <note category="location">src/app/features/settings/storage/encryption-section.html:23,24</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:59,60</note>
       </notes>
       <segment>
         <source>Differs</source>
@@ -41939,7 +42097,8 @@
     </unit>
     <unit id="storage.actual">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:45</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:47</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:51</note>
       </notes>
       <segment>
         <source>Actual</source>
@@ -41948,16 +42107,34 @@
     </unit>
     <unit id="storage.not-checked">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:45,46</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:47,48</note>
       </notes>
       <segment>
         <source>not checked yet</source>
         <target>noch nicht geprüft</target>
       </segment>
     </unit>
+    <unit id="storage.applied.none">
+      <notes>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:54,55</note>
+      </notes>
+      <segment>
+        <source>not reported</source>
+        <target>nicht gemeldet</target>
+      </segment>
+    </unit>
+    <unit id="storage.applied.bucket-default">
+      <notes>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:62,65</note>
+      </notes>
+      <segment>
+        <source>bucket default</source>
+        <target>Bucket-Standard</target>
+      </segment>
+    </unit>
     <unit id="storage.keys.active">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:58,59</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:76,77</note>
       </notes>
       <segment>
         <source>active, generation <ph id="0" equiv="INTERPOLATION" disp="{{ k.generation }}"/></source>
@@ -41966,7 +42143,7 @@
     </unit>
     <unit id="storage.keys.others">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:62,63</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:80,81</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ ring.retired }}"/> retired · <ph id="1" equiv="INTERPOLATION_1" disp="{{ ring.destroyed }}"/> destroyed</source>
@@ -41975,7 +42152,7 @@
     </unit>
     <unit id="storage.keys.all">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:74</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:92</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 key} other {<ph id="0" equiv="INTERPOLATION"/> keys}}</source>
@@ -41984,7 +42161,7 @@
     </unit>
     <unit id="storage.keys.item">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:82,83</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:100,101</note>
       </notes>
       <segment>
         <source>generation <ph id="0" equiv="INTERPOLATION" disp="{{ k.generation }}"/>, <ph id="1" equiv="INTERPOLATION_1" disp="{{ keyState(k.state) }}"/>, created <ph id="2" equiv="INTERPOLATION_2" disp="{{ k.createdAt | time: &apos;date&apos; }}"/>, <ph id="3" equiv="INTERPOLATION_3" disp="{{ k.copies === null ? &apos;–&apos; : (k.copies | number) }}"/> copies</source>
@@ -41993,7 +42170,7 @@
     </unit>
     <unit id="storage.encrypts.heading">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:97,98</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:115,116</note>
       </notes>
       <segment>
         <source>What Quader encrypts</source>
@@ -42002,7 +42179,7 @@
     </unit>
     <unit id="storage.root-key">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:115</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:133</note>
       </notes>
       <segment>
         <source>Root key</source>
@@ -42011,7 +42188,7 @@
     </unit>
     <unit id="storage.root-key.count">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:117,118</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:135,136</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 key} other {<ph id="0" equiv="INTERPOLATION"/> keys}}</source>
@@ -42020,7 +42197,7 @@
     </unit>
     <unit id="storage.root-key.agree">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:120,122</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:138,140</note>
       </notes>
       <segment>
         <source>Rings agree</source>
@@ -42029,7 +42206,7 @@
     </unit>
     <unit id="storage.root-key.differ">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:124,127</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:142,145</note>
       </notes>
       <segment>
         <source>Rings differ</source>
@@ -42038,7 +42215,7 @@
     </unit>
     <unit id="storage.root-key.resealed">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:128,130</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:146,148</note>
       </notes>
       <segment>
         <source>Last re-sealing <ph id="0" equiv="INTERPOLATION" disp="{{ at | time }}"/></source>
@@ -42047,7 +42224,7 @@
     </unit>
     <unit id="storage.encryption.caption">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:34</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:36</note>
       </notes>
       <segment>
         <source>Encryption per connection</source>
@@ -42056,7 +42233,7 @@
     </unit>
     <unit id="storage.col.quader">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:39</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:41</note>
       </notes>
       <segment>
         <source>Quader</source>
@@ -42065,7 +42242,7 @@
     </unit>
     <unit id="storage.col.quader.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:42</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:44</note>
       </notes>
       <segment>
         <source>Quader encrypts every blob in its own format before it leaves the pod (encrypted). Every read is authenticated.</source>
@@ -42074,7 +42251,7 @@
     </unit>
     <unit id="storage.col.object-store">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:46</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:48</note>
       </notes>
       <segment>
         <source>Object store</source>
@@ -42083,7 +42260,7 @@
     </unit>
     <unit id="storage.col.object-store.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:48</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:50</note>
       </notes>
       <segment>
         <source>The server-side encryption the store is asked for (sse_mode), beside the one it applied.</source>
@@ -42092,7 +42269,7 @@
     </unit>
     <unit id="storage.col.storage-keys">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:50</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:52</note>
       </notes>
       <segment>
         <source>Storage keys</source>
@@ -42101,7 +42278,7 @@
     </unit>
     <unit id="storage.keys.state.active">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:69</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:71</note>
       </notes>
       <segment>
         <source>active</source>
@@ -42110,7 +42287,7 @@
     </unit>
     <unit id="storage.keys.state.retired">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:71</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:73</note>
       </notes>
       <segment>
         <source>retired</source>
@@ -42119,7 +42296,7 @@
     </unit>
     <unit id="storage.keys.state.destroyed">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:73</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:75</note>
       </notes>
       <segment>
         <source>destroyed</source>
@@ -42128,7 +42305,7 @@
     </unit>
     <unit id="storage.keys.toggle">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:79</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:81</note>
       </notes>
       <segment>
         <source>Storage keys of <ph id="0" equiv="id" disp="c.id"/></source>
@@ -42137,7 +42314,7 @@
     </unit>
     <unit id="storage.format.meter">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:83</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:85</note>
       </notes>
       <segment>
         <source>Copies of <ph id="0" equiv="id" disp="c.id"/> in Quader&apos;s format</source>
@@ -42146,7 +42323,7 @@
     </unit>
     <unit id="storage.encrypts.artifacts">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:91</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:93</note>
       </notes>
       <segment>
         <source>Artifacts on <ph id="0" equiv="connections" disp="on"/></source>
@@ -42155,7 +42332,7 @@
     </unit>
     <unit id="storage.encrypts.upload-parts">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:93</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:95</note>
       </notes>
       <segment>
         <source>Upload parts on <ph id="0" equiv="connections" disp="on"/></source>
@@ -42164,7 +42341,7 @@
     </unit>
     <unit id="storage.encrypts.upload-spool">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:95</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:97</note>
       </notes>
       <segment>
         <source>Upload spool (pod disk)</source>
@@ -42173,7 +42350,7 @@
     </unit>
     <unit id="storage.encrypts.database-secrets">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:97</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:99</note>
       </notes>
       <segment>
         <source>Secrets in the database</source>
@@ -42182,7 +42359,7 @@
     </unit>
     <unit id="storage.encrypts.database-other">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:99</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:101</note>
       </notes>
       <segment>
         <source>Other database content</source>
@@ -42191,7 +42368,7 @@
     </unit>
     <unit id="storage.encrypts.backup-artifacts">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:101</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:103</note>
       </notes>
       <segment>
         <source>Backups: artifacts as stored</source>
@@ -42200,7 +42377,7 @@
     </unit>
     <unit id="storage.encrypts.backup-database">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:103</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:105</note>
       </notes>
       <segment>
         <source>Backups: database</source>
@@ -42209,7 +42386,7 @@
     </unit>
     <unit id="storage.encrypts.journal">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:105</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:107</note>
       </notes>
       <segment>
         <source>Journal, marker, probes: plain on purpose</source>
@@ -42218,7 +42395,7 @@
     </unit>
     <unit id="storage.encrypts.bastion-caches">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:107</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:109</note>
       </notes>
       <segment>
         <source>Bastion caches: per Bastion</source>
@@ -42227,7 +42404,7 @@
     </unit>
     <unit id="storage.encrypts.artifacts.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:115</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:117</note>
       </notes>
       <segment>
         <source>A plain connection beside an encrypted one keeps the content in the clear.</source>
@@ -42236,7 +42413,7 @@
     </unit>
     <unit id="storage.encrypts.upload-spool.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:117</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:119</note>
       </notes>
       <segment>
         <source>An upload waits on the pod&apos;s disk in the clear until it is stored.</source>
@@ -42245,7 +42422,7 @@
     </unit>
     <unit id="storage.encrypts.database-secrets.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:119</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:121</note>
       </notes>
       <segment>
         <source>Credentials, signing keys and storage keys are sealed under the root key.</source>
@@ -42254,7 +42431,7 @@
     </unit>
     <unit id="storage.encrypts.database-other.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:121</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:123</note>
       </notes>
       <segment>
         <source>Names, metadata and the audit log stand in the clear; encrypt the database&apos;s volume.</source>
@@ -42263,7 +42440,7 @@
     </unit>
     <unit id="storage.encrypts.backup-artifacts.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:123</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:125</note>
       </notes>
       <segment>
         <source>A backup&apos;s pool keeps each blob as its connection stores it.</source>
@@ -42272,7 +42449,7 @@
     </unit>
     <unit id="storage.encrypts.backup-database.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:125</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:127</note>
       </notes>
       <segment>
         <source>A backup&apos;s database files are not encrypted by Quader.</source>
@@ -42281,7 +42458,7 @@
     </unit>
     <unit id="storage.encrypts.journal.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:127</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:129</note>
       </notes>
       <segment>
         <source>The revocation journal, the marker and the probes hold no content.</source>
@@ -42290,7 +42467,7 @@
     </unit>
     <unit id="storage.encrypts.bastion-caches.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:129</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:131</note>
       </notes>
       <segment>
         <source>A Bastion encrypts its cache when its chart gives it a key.</source>
@@ -42299,7 +42476,7 @@
     </unit>
     <unit id="storage.encrypts.about">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:135</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:137</note>
       </notes>
       <segment>
         <source>About: <ph id="0" equiv="family" disp="this.familyText(r)"/></source>
@@ -42308,7 +42485,7 @@
     </unit>
     <unit id="storage.encrypts.mark.yes">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:153</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:155</note>
       </notes>
       <segment>
         <source>Encrypted</source>
@@ -42317,7 +42494,7 @@
     </unit>
     <unit id="storage.encrypts.mark.partly">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:155</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:157</note>
       </notes>
       <segment>
         <source>Depends</source>
@@ -42326,7 +42503,7 @@
     </unit>
     <unit id="storage.encrypts.mark.plain">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:157</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:159</note>
       </notes>
       <segment>
         <source>Plain on purpose</source>
@@ -42335,16 +42512,1161 @@
     </unit>
     <unit id="storage.encrypts.mark.no">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:159</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:161</note>
       </notes>
       <segment>
         <source>Not encrypted</source>
         <target>Nicht verschlüsselt</target>
       </segment>
     </unit>
+    <unit id="storage.findings.heading">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:35,36</note>
+      </notes>
+      <segment>
+        <source>Findings</source>
+        <target>Befunde</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.filter">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:36,37</note>
+      </notes>
+      <segment>
+        <source>Findings shown</source>
+        <target>Gezeigte Befunde</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.open">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:37,38</note>
+      </notes>
+      <segment>
+        <source>Open</source>
+        <target>Offen</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.all">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:38,41</note>
+      </notes>
+      <segment>
+        <source>All</source>
+        <target>Alle</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.more-items">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:71,72</note>
+      </notes>
+      <segment>
+        <source>+ <ph id="0" equiv="INTERPOLATION" disp="{{ f.itemCount - 1 }}"/> more</source>
+        <target>+ <ph id="0" equiv="INTERPOLATION" disp="{{ f.itemCount - 1 }}"/> weitere</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.no-other-copy">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:87,89</note>
+      </notes>
+      <segment>
+        <source>No other copy</source>
+        <target>Keine andere Kopie</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.acknowledged-by">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:92,93</note>
+      </notes>
+      <segment>
+        <source>by <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ by.name }}"/></pc>, <ph id="2" equiv="INTERPOLATION_1" disp="{{ a.at | time }}"/></source>
+        <target>von <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ by.name }}"/></pc>, <ph id="2" equiv="INTERPOLATION_1" disp="{{ a.at | time }}"/></target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.check">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:118,119</note>
+      </notes>
+      <segment>
+        <source>Check again</source>
+        <target>Erneut prüfen</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.acknowledge">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:120,121</note>
+      </notes>
+      <segment>
+        <source> Acknowledge </source>
+        <target> Quittieren </target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.caption">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:183</note>
+      </notes>
+      <segment>
+        <source>Damaged copies of the period</source>
+        <target>Beschädigte Kopien des Zeitraums</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.loading">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:184</note>
+      </notes>
+      <segment>
+        <source>Loading the findings.</source>
+        <target>Die Befunde werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.when">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:186</note>
+        <note category="location">src/app/features/settings/storage/problems-section.ts:43</note>
+      </notes>
+      <segment>
+        <source>When</source>
+        <target>Wann</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.blob">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:188</note>
+      </notes>
+      <segment>
+        <source>Blob</source>
+        <target>Blob</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.bytes">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:189</note>
+      </notes>
+      <segment>
+        <source>Bytes</source>
+        <target>Bytes</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.found-by">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:190</note>
+      </notes>
+      <segment>
+        <source>Found by</source>
+        <target>Gefunden durch</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.finding-state">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:191</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Zustand</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.empty-open">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:196</note>
+      </notes>
+      <segment>
+        <source>No open damaged copy in this period.</source>
+        <target>Keine offene beschädigte Kopie in diesem Zeitraum.</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.empty">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:197</note>
+      </notes>
+      <segment>
+        <source>No damaged copy in this period.</source>
+        <target>Keine beschädigte Kopie in diesem Zeitraum.</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.actions-label">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:230</note>
+      </notes>
+      <segment>
+        <source>Actions for the damaged copy of <ph id="0" equiv="digest" disp="f.sha256.slice(0, 12)"/> on <ph id="1" equiv="connection" disp="f.connection"/></source>
+        <target>Aktionen für die beschädigte Kopie von <ph id="0" equiv="digest" disp="f.sha256.slice(0, 12)"/> auf <ph id="1" equiv="connection" disp="f.connection"/></target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.checked-ok">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:240</note>
+      </notes>
+      <segment>
+        <source>A connection holds <ph id="0" equiv="digest" disp="f.sha256.slice(0, 12)"/> whole.</source>
+        <target>Eine Verbindung hält <ph id="0" equiv="digest" disp="f.sha256.slice(0, 12)"/> vollständig.</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.checked-still">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:241</note>
+      </notes>
+      <segment>
+        <source>No connection holds <ph id="0" equiv="digest" disp="f.sha256.slice(0, 12)"/> whole yet.</source>
+        <target>Noch keine Verbindung hält <ph id="0" equiv="digest" disp="f.sha256.slice(0, 12)"/> vollständig.</target>
+      </segment>
+    </unit>
+    <unit id="storage.findings.acknowledged">
+      <notes>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:258</note>
+      </notes>
+      <segment>
+        <source>The damaged copy is acknowledged. It stays open until its copy is repaired.</source>
+        <target>Die beschädigte Kopie ist quittiert. Sie bleibt offen, bis ihre Kopie repariert ist.</target>
+      </segment>
+    </unit>
+    <unit id="storage.check.every-read-since">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:15,16</note>
+      </notes>
+      <segment>
+        <source>since <ph id="0" equiv="INTERPOLATION" disp="{{ since | time: &apos;date&apos; }}"/></source>
+        <target>seit <ph id="0" equiv="INTERPOLATION" disp="{{ since | time: &apos;date&apos; }}"/></target>
+      </segment>
+    </unit>
+    <unit id="storage.check.in-format">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:21</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ percent(share) }}"/> % in the format</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ percent(share) }}"/> % im Format</target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.coverage">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:37,38</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ percent(cov) }}"/> % within <ph id="1" equiv="INTERPOLATION_1" disp="{{ days }}"/> days</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ percent(cov) }}"/> % in <ph id="1" equiv="INTERPOLATION_1" disp="{{ days }}"/> Tagen</target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.overdue">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:45</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 copy overdue} other {<ph id="0" equiv="INTERPOLATION"/> copies overdue}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Kopie überfällig} other {<ph id="0" equiv="INTERPOLATION"/> Kopien überfällig}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.running">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:50,51</note>
+      </notes>
+      <segment>
+        <source>Running now</source>
+        <target>Läuft gerade</target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.last">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:53,54</note>
+      </notes>
+      <segment>
+        <source>last <ph id="0" equiv="INTERPOLATION" disp="{{ last | time: &apos;minutes&apos; }}"/></source>
+        <target>zuletzt <ph id="0" equiv="INTERPOLATION" disp="{{ last | time: &apos;minutes&apos; }}"/></target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.next">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:54</note>
+      </notes>
+      <segment>
+        <source>next <ph id="0" equiv="INTERPOLATION" disp="{{ next | time: &apos;minutes&apos; }}"/></source>
+        <target>nächster <ph id="0" equiv="INTERPOLATION" disp="{{ next | time: &apos;minutes&apos; }}"/></target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.now">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:68,69</note>
+      </notes>
+      <segment>
+        <source> Scrub now </source>
+        <target> Jetzt prüfen </target>
+      </segment>
+    </unit>
+    <unit id="2009201153347703486">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:85</note>
+        <note category="location">src/app/features/settings/storage/problems-section.html:60</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 copy} other {<ph id="0" equiv="INTERPOLATION"/> copies}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Kopie} other {<ph id="0" equiv="INTERPOLATION"/> Kopien}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.count">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:85,86</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="ICU" disp="{h.findings.count, plural, =1 {1 copy} other {{{ h.findings.count | number }} copies}}" subFlows="7692822555071684735"/> (<ph id="1" equiv="INTERPOLATION_1" disp="{{ size(h.findings.bytes) }}"/>)</source>
+        <target><ph id="0" equiv="ICU" disp="{h.findings.count, plural, =1 {1 copy} other {{{ h.findings.count | number }} copies}}" subFlows="7692822555071684735"/> (<ph id="1" equiv="INTERPOLATION_1" disp="{{ size(h.findings.bytes) }}"/>)</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.open">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:90</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ open | number }}"/> open</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ open | number }}"/> offen</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.acknowledged">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:93,94</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ acked | number }}"/> acknowledged</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ acked | number }}"/> quittiert</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.all-resolved">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:95,98</note>
+      </notes>
+      <segment>
+        <source>all resolved</source>
+        <target>alle behoben</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.unknown-key">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:100,102</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 read refused: unknown key} other {<ph id="0" equiv="INTERPOLATION"/> reads refused: unknown key}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Lesezugriff abgelehnt: unbekannter Schlüssel} other {<ph id="0" equiv="INTERPOLATION"/> Lesezugriffe abgelehnt: unbekannter Schlüssel}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.integrity.history-loading">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.html:108,111</note>
+      </notes>
+      <segment>
+        <source>Loading the period.</source>
+        <target>Der Zeitraum wird geladen.</target>
+      </segment>
+    </unit>
+    <unit id="storage.integrity.caption">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:67</note>
+      </notes>
+      <segment>
+        <source>Integrity per connection</source>
+        <target>Integrität je Verbindung</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.checks">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:72</note>
+      </notes>
+      <segment>
+        <source>Checks</source>
+        <target>Prüfungen</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.checks.help">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:75</note>
+      </notes>
+      <segment>
+        <source>Every upload&apos;s digests are kept. A whole download is checked against them (storage.download.verify). On an encrypted connection Quader&apos;s format authenticates every 64 KiB of every read.</source>
+        <target>Die Prüfsummen jedes Uploads werden gespeichert. Ein vollständiger Download wird gegen sie geprüft (storage.download.verify). Auf einer verschlüsselten Verbindung prüft Quaders Format je 64 KiB jedes Lesezugriffs.</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.scrub">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:79</note>
+      </notes>
+      <segment>
+        <source>Scrub</source>
+        <target>Prüflauf</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.scrub.help">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:81</note>
+      </notes>
+      <segment>
+        <source>The scrub reads every copy whole once per scrub_period and replaces a damaged one from another copy in the same run.</source>
+        <target>Der Prüflauf liest jede Kopie einmal je scrub_period vollständig und ersetzt eine beschädigte im selben Lauf aus einer anderen Kopie.</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.damaged-period">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:83</note>
+      </notes>
+      <segment>
+        <source>Damaged · <ph id="0" equiv="period" disp="periodWord(this.period())"/></source>
+        <target>Beschädigt · <ph id="0" equiv="period" disp="periodWord(this.period())"/></target>
+      </segment>
+    </unit>
+    <unit id="storage.check.upload">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:106</note>
+      </notes>
+      <segment>
+        <source>Digest at upload</source>
+        <target>Prüfsumme beim Upload</target>
+      </segment>
+    </unit>
+    <unit id="storage.check.download">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:108</note>
+      </notes>
+      <segment>
+        <source>Download check</source>
+        <target>Prüfung beim Download</target>
+      </segment>
+    </unit>
+    <unit id="storage.check.download-off">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:108</note>
+      </notes>
+      <segment>
+        <source>Download check off</source>
+        <target>Prüfung beim Download aus</target>
+      </segment>
+    </unit>
+    <unit id="storage.check.every-read">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:110</note>
+      </notes>
+      <segment>
+        <source>Every read checked</source>
+        <target>Jeder Lesezugriff geprüft</target>
+      </segment>
+    </unit>
+    <unit id="storage.check.digest-only">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:112</note>
+      </notes>
+      <segment>
+        <source>Digest checks only</source>
+        <target>Nur Prüfsummen</target>
+      </segment>
+    </unit>
+    <unit id="storage.check.writes">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:114</note>
+      </notes>
+      <segment>
+        <source>Writes confirmed</source>
+        <target>Schreiben bestätigt</target>
+      </segment>
+    </unit>
+    <unit id="storage.check.writes-off">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:114</note>
+      </notes>
+      <segment>
+        <source>Writes not confirmed</source>
+        <target>Schreiben nicht bestätigt</target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.meter">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:129</note>
+      </notes>
+      <segment>
+        <source>Copies of <ph id="0" equiv="id" disp="c.id"/> read whole within the period</source>
+        <target>Kopien von <ph id="0" equiv="id" disp="c.id"/>, im Zeitraum vollständig gelesen</target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.now-label">
+      <notes>
+        <note category="location">src/app/features/settings/storage/integrity-section.ts:133</note>
+      </notes>
+      <segment>
+        <source>Scrub <ph id="0" equiv="id" disp="c.id"/> now</source>
+        <target><ph id="0" equiv="id" disp="c.id"/> jetzt prüfen</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.history-loading">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.html:15,19</note>
+      </notes>
+      <segment>
+        <source>Loading the cells.</source>
+        <target>Die Zellen werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.replicas">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.html:45,48</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {on 1 replica} other {on <ph id="0" equiv="INTERPOLATION"/> replicas}}</source>
+        <target>{VAR_PLURAL, plural, =1 {auf 1 Replikat} other {auf <ph id="0" equiv="INTERPOLATION"/> Replikaten}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.unavailable">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.html:50,52</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 without another copy} other {<ph id="0" equiv="INTERPOLATION"/> without another copy}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 ohne andere Kopie} other {<ph id="0" equiv="INTERPOLATION"/> ohne andere Kopie}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.copies">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.html:60,61</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="ICU" disp="{p.count, plural, =1 {1 copy} other {{{ p.count | number }} copies}}" subFlows="7692822555071684735"/> (<ph id="1" equiv="INTERPOLATION_1" disp="{{ size(p.bytes) }}"/>)</source>
+        <target><ph id="0" equiv="ICU" disp="{p.count, plural, =1 {1 copy} other {{{ p.count | number }} copies}}" subFlows="7692822555071684735"/> (<ph id="1" equiv="INTERPOLATION_1" disp="{{ size(p.bytes) }}"/>)</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.uploads">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.html:64,66</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 upload} other {<ph id="0" equiv="INTERPOLATION"/> uploads}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Upload} other {<ph id="0" equiv="INTERPOLATION"/> Uploads}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.reads">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.html:67,69</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 read} other {<ph id="0" equiv="INTERPOLATION"/> reads}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Lesezugriff} other {<ph id="0" equiv="INTERPOLATION"/> Lesezugriffe}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.ongoing">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.html:78,80</note>
+      </notes>
+      <segment>
+        <source>Ongoing</source>
+        <target>Andauernd</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.ended">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.html:80,82</note>
+      </notes>
+      <segment>
+        <source>Ended</source>
+        <target>Beendet</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.open-acknowledged">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.html:83,84</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ p.open | number }}"/> open · <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.acknowledged | number }}"/> acknowledged</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ p.open | number }}"/> offen · <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.acknowledged | number }}"/> quittiert</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.caption">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.ts:39</note>
+      </notes>
+      <segment>
+        <source>Problems of the period</source>
+        <target>Probleme des Zeitraums</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.loading">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.ts:40</note>
+      </notes>
+      <segment>
+        <source>Loading the problems.</source>
+        <target>Die Probleme werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.empty">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.ts:41</note>
+      </notes>
+      <segment>
+        <source>No problem in this period.</source>
+        <target>Kein Problem in diesem Zeitraum.</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.what">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.ts:45</note>
+      </notes>
+      <segment>
+        <source>What</source>
+        <target>Was</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.duration-amount">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.ts:46</note>
+      </notes>
+      <segment>
+        <source>Duration / amount</source>
+        <target>Dauer / Umfang</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.problem-state">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.ts:47</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Zustand</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.strip">
+      <notes>
+        <note category="location">src/app/features/settings/storage/problems-section.ts:64</note>
+      </notes>
+      <segment>
+        <source>Cells of <ph id="0" equiv="id" disp="id"/></source>
+        <target>Zellen von <ph id="0" equiv="id" disp="id"/></target>
+      </segment>
+    </unit>
+    <unit id="storage.period.24h">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:15</note>
+      </notes>
+      <segment>
+        <source>24 h</source>
+        <target>24 Std.</target>
+      </segment>
+    </unit>
+    <unit id="storage.period.7d">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:17</note>
+      </notes>
+      <segment>
+        <source>7 d</source>
+        <target>7 Tage</target>
+      </segment>
+    </unit>
+    <unit id="storage.period.30d">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:19</note>
+      </notes>
+      <segment>
+        <source>30 d</source>
+        <target>30 Tage</target>
+      </segment>
+    </unit>
+    <unit id="storage.period.90d">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:21</note>
+      </notes>
+      <segment>
+        <source>90 d</source>
+        <target>90 Tage</target>
+      </segment>
+    </unit>
+    <unit id="storage.period.1y">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:23</note>
+      </notes>
+      <segment>
+        <source>1 year</source>
+        <target>1 Jahr</target>
+      </segment>
+    </unit>
+    <unit id="storage.period.24h.long">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:30</note>
+      </notes>
+      <segment>
+        <source>the last 24 hours</source>
+        <target>die letzten 24 Stunden</target>
+      </segment>
+    </unit>
+    <unit id="storage.period.7d.long">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:32</note>
+      </notes>
+      <segment>
+        <source>the last 7 days</source>
+        <target>die letzten 7 Tage</target>
+      </segment>
+    </unit>
+    <unit id="storage.period.30d.long">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:34</note>
+      </notes>
+      <segment>
+        <source>the last 30 days</source>
+        <target>die letzten 30 Tage</target>
+      </segment>
+    </unit>
+    <unit id="storage.period.90d.long">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:36</note>
+      </notes>
+      <segment>
+        <source>the last 90 days</source>
+        <target>die letzten 90 Tage</target>
+      </segment>
+    </unit>
+    <unit id="storage.period.1y.long">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:38</note>
+      </notes>
+      <segment>
+        <source>the last year</source>
+        <target>das letzte Jahr</target>
+      </segment>
+    </unit>
+    <unit id="storage.duration.dh">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:47</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="days" disp="d"/> d <ph id="1" equiv="hours" disp="h"/> h</source>
+        <target><ph id="0" equiv="days" disp="d"/> T. <ph id="1" equiv="hours" disp="h"/> Std.</target>
+      </segment>
+    </unit>
+    <unit id="storage.duration.d">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:47</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="days" disp="d"/> d</source>
+        <target><ph id="0" equiv="days" disp="d"/> T.</target>
+      </segment>
+    </unit>
+    <unit id="storage.duration.hm">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:48</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="hours" disp="h"/> h <ph id="1" equiv="minutes" disp="m"/> min</source>
+        <target><ph id="0" equiv="hours" disp="h"/> Std. <ph id="1" equiv="minutes" disp="m"/> Min.</target>
+      </segment>
+    </unit>
+    <unit id="storage.duration.h">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:48</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="hours" disp="h"/> h</source>
+        <target><ph id="0" equiv="hours" disp="h"/> Std.</target>
+      </segment>
+    </unit>
+    <unit id="storage.duration.m">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:49</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="minutes" disp="m"/> min</source>
+        <target><ph id="0" equiv="minutes" disp="m"/> Min.</target>
+      </segment>
+    </unit>
+    <unit id="storage.duration.short">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:50</note>
+      </notes>
+      <segment>
+        <source>less than a minute</source>
+        <target>weniger als eine Minute</target>
+      </segment>
+    </unit>
+    <unit id="storage.problem.unreachable">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:57</note>
+      </notes>
+      <segment>
+        <source>Unreachable</source>
+        <target>Nicht erreichbar</target>
+      </segment>
+    </unit>
+    <unit id="storage.problem.start-check-failed">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:59</note>
+      </notes>
+      <segment>
+        <source>Start check failed</source>
+        <target>Startprüfung fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="storage.problem.copies-damaged">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:61</note>
+      </notes>
+      <segment>
+        <source>Copies damaged</source>
+        <target>Kopien beschädigt</target>
+      </segment>
+    </unit>
+    <unit id="storage.problem.uploads-refused">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:63</note>
+      </notes>
+      <segment>
+        <source>Uploads refused</source>
+        <target>Uploads abgelehnt</target>
+      </segment>
+    </unit>
+    <unit id="storage.problem.reads-unavailable">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:65</note>
+      </notes>
+      <segment>
+        <source>Reads not served</source>
+        <target>Lesen nicht möglich</target>
+      </segment>
+    </unit>
+    <unit id="storage.source.download">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:72</note>
+      </notes>
+      <segment>
+        <source>Download</source>
+        <target>Download</target>
+      </segment>
+    </unit>
+    <unit id="storage.source.read">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:74</note>
+      </notes>
+      <segment>
+        <source>Read</source>
+        <target>Lesezugriff</target>
+      </segment>
+    </unit>
+    <unit id="storage.source.scrub">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:76</note>
+      </notes>
+      <segment>
+        <source>Scrub</source>
+        <target>Prüflauf</target>
+      </segment>
+    </unit>
+    <unit id="storage.source.recheck">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:78</note>
+      </notes>
+      <segment>
+        <source>Recheck</source>
+        <target>Nachprüfung</target>
+      </segment>
+    </unit>
+    <unit id="storage.source.reconcile">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:80</note>
+      </notes>
+      <segment>
+        <source>Copy</source>
+        <target>Kopie</target>
+      </segment>
+    </unit>
+    <unit id="storage.source.drain">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:82</note>
+      </notes>
+      <segment>
+        <source>Drain</source>
+        <target>Leerung</target>
+      </segment>
+    </unit>
+    <unit id="storage.source.sweep">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:84</note>
+      </notes>
+      <segment>
+        <source>Sweep</source>
+        <target>Aufräumen</target>
+      </segment>
+    </unit>
+    <unit id="storage.source.other">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:86</note>
+      </notes>
+      <segment>
+        <source>Other</source>
+        <target>Sonstiges</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.not-found">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:94</note>
+      </notes>
+      <segment>
+        <source>Not found</source>
+        <target>Nicht gefunden</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.size">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:96</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.digest">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:99</note>
+      </notes>
+      <segment>
+        <source>Digest</source>
+        <target>Prüfsumme</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.record">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:101</note>
+      </notes>
+      <segment>
+        <source>Record</source>
+        <target>Schlüsseleintrag</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.commitment">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:103</note>
+      </notes>
+      <segment>
+        <source>Commitment</source>
+        <target>Bindung</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.segment">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:105</note>
+      </notes>
+      <segment>
+        <source>Segment</source>
+        <target>Segment</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.final">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:107</note>
+      </notes>
+      <segment>
+        <source>Final segment</source>
+        <target>Schlusssegment</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.format">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:109</note>
+      </notes>
+      <segment>
+        <source>Format</source>
+        <target>Format</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.destroyed-key">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:111</note>
+      </notes>
+      <segment>
+        <source>Destroyed key</source>
+        <target>Zerstörter Schlüssel</target>
+      </segment>
+    </unit>
+    <unit id="storage.reason.unknown-key">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:113</note>
+      </notes>
+      <segment>
+        <source>Unknown key</source>
+        <target>Unbekannter Schlüssel</target>
+      </segment>
+    </unit>
+    <unit id="storage.finding.open">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:130</note>
+      </notes>
+      <segment>
+        <source>Open</source>
+        <target>Offen</target>
+      </segment>
+    </unit>
+    <unit id="storage.finding.acknowledged">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:132</note>
+      </notes>
+      <segment>
+        <source>Acknowledged</source>
+        <target>Quittiert</target>
+      </segment>
+    </unit>
+    <unit id="storage.finding.rewritten">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:134</note>
+      </notes>
+      <segment>
+        <source>Repaired</source>
+        <target>Repariert</target>
+      </segment>
+    </unit>
+    <unit id="storage.finding.found-again">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:136</note>
+      </notes>
+      <segment>
+        <source>Found again</source>
+        <target>Wieder da</target>
+      </segment>
+    </unit>
+    <unit id="storage.finding.superseded">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:138</note>
+      </notes>
+      <segment>
+        <source>Superseded</source>
+        <target>Abgelöst</target>
+      </segment>
+    </unit>
+    <unit id="storage.finding.deleted">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:140</note>
+      </notes>
+      <segment>
+        <source>Deleted</source>
+        <target>Gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="storage.finding.reconciled">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:142</note>
+      </notes>
+      <segment>
+        <source>Resolved</source>
+        <target>Behoben</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.unreachable">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:199</note>
+      </notes>
+      <segment>
+        <source>unreachable <ph id="0" equiv="duration" disp="durationText(b.unreachableSeconds)"/> on <ph id="1" equiv="replicas" disp="b.replicas"/> replicas</source>
+        <target><ph id="0" equiv="duration" disp="durationText(b.unreachableSeconds)"/> nicht erreichbar auf <ph id="1" equiv="replicas" disp="b.replicas"/> Replikaten</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.start-checks">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:201</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="b.startChecksFailed"/> failed start checks</source>
+        <target><ph id="0" equiv="count" disp="b.startChecksFailed"/> fehlgeschlagene Startprüfungen</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.damaged">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:203</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="b.damagedCopies"/> copies damaged (<ph id="1" equiv="size" disp="formatSize(b.damagedBytes)"/>)</source>
+        <target><ph id="0" equiv="count" disp="b.damagedCopies"/> Kopien beschädigt (<ph id="1" equiv="size" disp="formatSize(b.damagedBytes)"/>)</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.unavailable">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:205</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="b.unavailableBlobs"/> blobs without another copy</source>
+        <target><ph id="0" equiv="count" disp="b.unavailableBlobs"/> Blobs ohne andere Kopie</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.reads-unavailable">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:206</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="b.readsUnavailable"/> reads not served</source>
+        <target><ph id="0" equiv="count" disp="b.readsUnavailable"/> Lesezugriffe nicht bedient</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.uploads-refused">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:207</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="b.uploadsRefused"/> uploads refused</source>
+        <target><ph id="0" equiv="count" disp="b.uploadsRefused"/> Uploads abgelehnt</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.read-fallovers">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:208</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="b.readFallovers"/> reads from another copy</source>
+        <target><ph id="0" equiv="count" disp="b.readFallovers"/> Lesezugriffe über eine andere Kopie</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.write-fallovers">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:209</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="b.writeFallovers"/> writes to the next connection</source>
+        <target><ph id="0" equiv="count" disp="b.writeFallovers"/> Schreibvorgänge auf die nächste Verbindung</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.copies-failed">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:210</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="b.copiesFailed"/> copies failed</source>
+        <target><ph id="0" equiv="count" disp="b.copiesFailed"/> Kopien fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.reads-refused">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:211</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="b.readsRefused"/> reads refused by the format</source>
+        <target><ph id="0" equiv="count" disp="b.readsRefused"/> Lesezugriffe vom Format abgelehnt</target>
+      </segment>
+    </unit>
+    <unit id="storage.cell.nothing">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:218</note>
+      </notes>
+      <segment>
+        <source>nothing</source>
+        <target>nichts</target>
+      </segment>
+    </unit>
+    <unit id="storage.strip.quiet">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:226</note>
+      </notes>
+      <segment>
+        <source>Nothing happened in this period.</source>
+        <target>In diesem Zeitraum ist nichts geschehen.</target>
+      </segment>
+    </unit>
+    <unit id="storage.strip.summary">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-history.ts:227</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="cells" disp="buckets.length"/> cells: <ph id="1" equiv="errors" disp="bad"/> with clients refused, <ph id="2" equiv="warnings" disp="warn"/> absorbed by Quader.</source>
+        <target><ph id="0" equiv="cells" disp="buckets.length"/> Zellen: <ph id="1" equiv="errors" disp="bad"/> mit abgewiesenen Clients, <ph id="2" equiv="warnings" disp="warn"/> von Quader aufgefangen.</target>
+      </segment>
+    </unit>
     <unit id="storage.tile.connections.healthy">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:270</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:281</note>
       </notes>
       <segment>
         <source>Healthy</source>
@@ -42353,7 +43675,7 @@
     </unit>
     <unit id="storage.tile.connections.degraded">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:272</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:283</note>
       </notes>
       <segment>
         <source>Degraded</source>
@@ -42362,7 +43684,7 @@
     </unit>
     <unit id="storage.tile.connections.unreachable">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:274</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:285</note>
       </notes>
       <segment>
         <source>Unreachable</source>
@@ -42371,7 +43693,7 @@
     </unit>
     <unit id="storage.tile.availability.redundant">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:276</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:287</note>
       </notes>
       <segment>
         <source>Redundant</source>
@@ -42380,7 +43702,7 @@
     </unit>
     <unit id="storage.tile.availability.catching-up">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:278</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:289</note>
       </notes>
       <segment>
         <source>Catching up</source>
@@ -42389,7 +43711,7 @@
     </unit>
     <unit id="storage.tile.availability.at-risk">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:280</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:291</note>
       </notes>
       <segment>
         <source>At risk</source>
@@ -42398,7 +43720,7 @@
     </unit>
     <unit id="storage.tile.availability.one-store">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:282</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:293</note>
       </notes>
       <segment>
         <source>One store</source>
@@ -42407,7 +43729,7 @@
     </unit>
     <unit id="storage.tile.encryption.encrypted">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:284</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:295</note>
       </notes>
       <segment>
         <source>Encrypted</source>
@@ -42416,7 +43738,7 @@
     </unit>
     <unit id="storage.tile.encryption.partly">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:286</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:297</note>
       </notes>
       <segment>
         <source>Partly</source>
@@ -42425,7 +43747,7 @@
     </unit>
     <unit id="storage.tile.encryption.provider-only">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:288</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:299</note>
       </notes>
       <segment>
         <source>Provider only</source>
@@ -42434,7 +43756,7 @@
     </unit>
     <unit id="storage.tile.encryption.off">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:290</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:301</note>
       </notes>
       <segment>
         <source>Off</source>
@@ -42443,7 +43765,7 @@
     </unit>
     <unit id="storage.tile.integrity.verified">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:292</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:303</note>
       </notes>
       <segment>
         <source>Verified</source>
@@ -42452,7 +43774,7 @@
     </unit>
     <unit id="storage.tile.integrity.checking">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:294</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:305</note>
       </notes>
       <segment>
         <source>Checking</source>
@@ -42461,7 +43783,7 @@
     </unit>
     <unit id="storage.tile.integrity.behind">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:296</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:307</note>
       </notes>
       <segment>
         <source>Behind</source>
@@ -42470,7 +43792,7 @@
     </unit>
     <unit id="storage.tile.integrity.repairing">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:298</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:309</note>
       </notes>
       <segment>
         <source>Repairing</source>
@@ -42479,7 +43801,7 @@
     </unit>
     <unit id="storage.tile.integrity.damaged">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:300</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:311</note>
       </notes>
       <segment>
         <source>Damaged</source>
@@ -42488,16 +43810,25 @@
     </unit>
     <unit id="storage.tile.problems.none">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:302</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:313</note>
       </notes>
       <segment>
         <source>None</source>
         <target>Keine</target>
       </segment>
     </unit>
+    <unit id="storage.tile.problems.resolved">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:315</note>
+      </notes>
+      <segment>
+        <source>Resolved</source>
+        <target>Behoben</target>
+      </segment>
+    </unit>
     <unit id="storage.tile.problems.open">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:304</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:317</note>
       </notes>
       <segment>
         <source>Open</source>
@@ -42506,7 +43837,7 @@
     </unit>
     <unit id="storage.tile.problems.ongoing">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-model.ts:306</note>
+        <note category="location">src/app/features/settings/storage/storage-model.ts:319</note>
       </notes>
       <segment>
         <source>Ongoing</source>
@@ -42524,7 +43855,7 @@
     </unit>
     <unit id="storage.figures-at">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:11,12</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:25,26</note>
       </notes>
       <segment>
         <source>Figures counted <ph id="0" equiv="INTERPOLATION" disp="{{ at | time }}"/></source>
@@ -42533,7 +43864,7 @@
     </unit>
     <unit id="storage.figures-none">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:13,15</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:27,29</note>
       </notes>
       <segment>
         <source>Figures not counted yet</source>
@@ -42542,7 +43873,7 @@
     </unit>
     <unit id="storage.counting">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:18,19</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:32,33</note>
       </notes>
       <segment>
         <source>Counting…</source>
@@ -42551,7 +43882,7 @@
     </unit>
     <unit id="storage.count-now">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:20,22</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:34,36</note>
       </notes>
       <segment>
         <source>Count now</source>
@@ -42560,7 +43891,7 @@
     </unit>
     <unit id="storage.summary.heading">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:26,27</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:40,41</note>
       </notes>
       <segment>
         <source>Summary</source>
@@ -42569,7 +43900,7 @@
     </unit>
     <unit id="storage.connections.heading">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:32,33</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:46,47</note>
       </notes>
       <segment>
         <source>Connections</source>
@@ -42578,7 +43909,7 @@
     </unit>
     <unit id="storage.connections.about">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:37,38</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:51,52</note>
       </notes>
       <segment>
         <source>About the connections</source>
@@ -42587,7 +43918,7 @@
     </unit>
     <unit id="storage.connections.loading">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:46,50</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:60,64</note>
       </notes>
       <segment>
         <source>Loading the connections.</source>
@@ -42596,7 +43927,7 @@
     </unit>
     <unit id="storage.availability.heading">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:52,53</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:66,67</note>
       </notes>
       <segment>
         <source>Availability</source>
@@ -42605,7 +43936,7 @@
     </unit>
     <unit id="storage.availability.about">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:53,54</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:67,68</note>
       </notes>
       <segment>
         <source>About the availability</source>
@@ -42614,7 +43945,7 @@
     </unit>
     <unit id="storage.availability.loading">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:67,69</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:83,85</note>
       </notes>
       <segment>
         <source>Loading the copies.</source>
@@ -42623,7 +43954,7 @@
     </unit>
     <unit id="storage.encryption.heading">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:80,81</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:96,97</note>
       </notes>
       <segment>
         <source>Encryption</source>
@@ -42632,7 +43963,7 @@
     </unit>
     <unit id="storage.encryption.about">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:81,82</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:97,98</note>
       </notes>
       <segment>
         <source>About the encryption</source>
@@ -42641,25 +43972,79 @@
     </unit>
     <unit id="storage.encryption.loading">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:88,92</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:104,108</note>
       </notes>
       <segment>
         <source>Loading the encryption.</source>
         <target>Die Verschlüsselung wird geladen.</target>
       </segment>
     </unit>
+    <unit id="storage.integrity.heading">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-page.html:110,111</note>
+      </notes>
+      <segment>
+        <source>Integrity</source>
+        <target>Integrität</target>
+      </segment>
+    </unit>
+    <unit id="storage.integrity.about">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-page.html:111,112</note>
+      </notes>
+      <segment>
+        <source>About the integrity</source>
+        <target>Über die Integrität</target>
+      </segment>
+    </unit>
+    <unit id="storage.integrity.loading">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-page.html:130,134</note>
+      </notes>
+      <segment>
+        <source>Loading the checks.</source>
+        <target>Die Prüfungen werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.heading">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-page.html:136,137</note>
+      </notes>
+      <segment>
+        <source>Problems</source>
+        <target>Probleme</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.about">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-page.html:137,138</note>
+      </notes>
+      <segment>
+        <source>About the problems</source>
+        <target>Über die Probleme</target>
+      </segment>
+    </unit>
     <unit id="storage.loading">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.html:96,98</note>
+        <note category="location">src/app/features/settings/storage/storage-page.html:148,150</note>
       </notes>
       <segment>
         <source>Loading the storage.</source>
         <target>Der Speicher wird geladen.</target>
       </segment>
     </unit>
+    <unit id="storage.period">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-page.ts:135</note>
+      </notes>
+      <segment>
+        <source>Period</source>
+        <target>Zeitraum</target>
+      </segment>
+    </unit>
     <unit id="storage.connections.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.ts:101</note>
+        <note category="location">src/app/features/settings/storage/storage-page.ts:136</note>
       </notes>
       <segment>
         <source>Set in config.storage.connections and only shown here. The manual says how to add or remove one.</source>
@@ -42668,7 +44053,7 @@
     </unit>
     <unit id="storage.availability.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.ts:102</note>
+        <note category="location">src/app/features/settings/storage/storage-page.ts:137</note>
       </notes>
       <segment>
         <source>Every connection without drain holds every blob. A blob whose only copy is lost is unavailable until a copy returns.</source>
@@ -42677,25 +44062,52 @@
     </unit>
     <unit id="storage.encryption.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.ts:103</note>
+        <note category="location">src/app/features/settings/storage/storage-page.ts:138</note>
       </notes>
       <segment>
         <source>Quader&apos;s own encryption is set per connection (encrypted). The object store&apos;s server-side encryption is the store&apos;s.</source>
         <target>Die eigene Verschlüsselung von Quader wird je Verbindung gesetzt (encrypted). Die serverseitige Verschlüsselung ist die des Objektspeichers.</target>
       </segment>
     </unit>
+    <unit id="storage.integrity.help">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-page.ts:139</note>
+      </notes>
+      <segment>
+        <source>Repaired by itself from another copy. A blob without a whole copy is not served.</source>
+        <target>Wird selbst aus einer anderen Kopie repariert. Ein Blob ohne heile Kopie wird nicht ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="storage.problems.help">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-page.ts:140</note>
+      </notes>
+      <segment>
+        <source>A cell is red when clients were refused, amber when Quader absorbed it. Reads and writes that went to another copy are counted in Availability.</source>
+        <target>Eine Zelle ist rot, wenn Clients abgewiesen wurden, gelb, wenn Quader es aufgefangen hat. Lese- und Schreibvorgänge über eine andere Kopie zählt der Abschnitt Ausfallsicherheit.</target>
+      </segment>
+    </unit>
     <unit id="storage.counted">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-page.ts:191</note>
+        <note category="location">src/app/features/settings/storage/storage-page.ts:257</note>
       </notes>
       <segment>
         <source>The figures are counted again.</source>
         <target>Die Zahlen sind neu gezählt.</target>
       </segment>
     </unit>
+    <unit id="storage.scrubbed">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-page.ts:263</note>
+      </notes>
+      <segment>
+        <source>The scrub of <ph id="0" equiv="id" disp="r.connection"/> ended.</source>
+        <target>Der Prüflauf von <ph id="0" equiv="id" disp="r.connection"/> ist beendet.</target>
+      </segment>
+    </unit>
     <unit id="storage.tile.connections.reachable">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:62,64</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:66,68</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ o.connections.reachable }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ o.connections.configured }}"/> reachable</source>
@@ -42704,7 +44116,7 @@
     </unit>
     <unit id="storage.tile.connections.unreachable-on">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:67,68</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:71,72</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ u.id }}"/></pc> unreachable on <ph id="2" equiv="INTERPOLATION_1" disp="{{ u.circuitOpen }}"/> of <ph id="3" equiv="INTERPOLATION_2" disp="{{ u.configured }}"/> replicas</source>
@@ -42713,7 +44125,7 @@
     </unit>
     <unit id="storage.tile.connections.detached">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:72,73</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:76,77</note>
       </notes>
       <segment>
         <source>Detached: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ o.connections.detached.join(&apos;, &apos;) }}"/></pc></source>
@@ -42722,7 +44134,7 @@
     </unit>
     <unit id="storage.tile.availability.below">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:80,83</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:84,87</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="ICU" disp="{o.availability.belowTarget.blobs, plural, =1 {1 blob} other {{{ o.availability.belowTarget.blobs | number }} blobs}}" subFlows="7877143411740521869"/> (<ph id="1" equiv="INTERPOLATION_1" disp="{{
@@ -42735,7 +44147,7 @@
     </unit>
     <unit id="storage.tile.availability.one">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:85,87</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:89,91</note>
       </notes>
       <segment>
         <source>No copy elsewhere</source>
@@ -42744,7 +44156,7 @@
     </unit>
     <unit id="storage.tile.availability.every">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:88,89</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:92,93</note>
       </notes>
       <segment>
         <source>Every blob on <ph id="0" equiv="INTERPOLATION" disp="{{ o.availability.target }}"/> connections</source>
@@ -42753,7 +44165,7 @@
     </unit>
     <unit id="storage.tile.encryption.connections">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:94,96</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:98,100</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ o.encryption.encrypted.length }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ o.encryption.encrypted.length + o.encryption.plain.length }}"/> connections</source>
@@ -42762,7 +44174,7 @@
     </unit>
     <unit id="storage.tile.encryption.share">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:97,98</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:101,102</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ percent(o.encryption.encryptedShare) }}"/> % of the bytes</source>
@@ -42771,7 +44183,7 @@
     </unit>
     <unit id="storage.tile.integrity.damaged-blobs">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:104</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:108</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 blob without a whole copy} other {<ph id="0" equiv="INTERPOLATION"/> blobs without a whole copy}}</source>
@@ -42780,7 +44192,7 @@
     </unit>
     <unit id="storage.tile.integrity.damaged-copies">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:109</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:113</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 damaged copy} other {<ph id="0" equiv="INTERPOLATION"/> damaged copies}}</source>
@@ -42789,7 +44201,7 @@
     </unit>
     <unit id="storage.tile.integrity.overdue">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:114</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:118</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 copy overdue} other {<ph id="0" equiv="INTERPOLATION"/> copies overdue}}</source>
@@ -42798,7 +44210,7 @@
     </unit>
     <unit id="storage.tile.integrity.scrub">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:118,119</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:122,123</note>
       </notes>
       <segment>
         <source>Scrub <ph id="0" equiv="INTERPOLATION" disp="{{ percent(o.integrity.scrub.coverage) }}"/> %</source>
@@ -42807,7 +44219,7 @@
     </unit>
     <unit id="storage.tile.integrity.every-read">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:124,125</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:128,129</note>
       </notes>
       <segment>
         <source>Every read checked: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ o.integrity.authenticatedReads.join(&apos;, &apos;) }}"/></pc></source>
@@ -42816,7 +44228,7 @@
     </unit>
     <unit id="storage.tile.integrity.last">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:128,129</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:132,133</note>
       </notes>
       <segment>
         <source>Last scrub <ph id="0" equiv="INTERPOLATION" disp="{{ at | time }}"/></source>
@@ -42825,7 +44237,7 @@
     </unit>
     <unit id="storage.tile.problems.unavailable">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:137</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:142</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 blob unavailable} other {<ph id="0" equiv="INTERPOLATION"/> blobs unavailable}}</source>
@@ -42834,34 +44246,106 @@
     </unit>
     <unit id="storage.tile.problems.unreachable">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:141,142</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:146,147</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ u.id }}"/></pc> unreachable</source>
         <target><pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ u.id }}"/></pc> nicht erreichbar</target>
       </segment>
     </unit>
-    <unit id="storage.tile.problems.repairing">
+    <unit id="storage.tile.problems.count">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:146</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:149,152</note>
       </notes>
       <segment>
-        <source>{VAR_PLURAL, plural, =1 {1 copy to repair} other {<ph id="0" equiv="INTERPOLATION"/> copies to repair}}</source>
-        <target>{VAR_PLURAL, plural, =1 {1 Kopie zu reparieren} other {<ph id="0" equiv="INTERPOLATION"/> Kopien zu reparieren}}</target>
+        <source>{VAR_PLURAL, plural, =1 {1 in <ph id="0" equiv="INTERPOLATION"/>} other {<ph id="1" equiv="INTERPOLATION_1"/> in <ph id="2" equiv="INTERPOLATION"/>}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 in <ph id="0" equiv="INTERPOLATION"/>} other {<ph id="1" equiv="INTERPOLATION_1"/> in <ph id="2" equiv="INTERPOLATION"/>}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.tile.problems.open-findings">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:154,157</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 damaged copy open} other {<ph id="0" equiv="INTERPOLATION"/> damaged copies open}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 beschädigte Kopie offen} other {<ph id="0" equiv="INTERPOLATION"/> beschädigte Kopien offen}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.tile.problems.resolved-count">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:158,161</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 resolved} other {<ph id="0" equiv="INTERPOLATION"/> resolved}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 behoben} other {<ph id="0" equiv="INTERPOLATION"/> behoben}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.tile.problems.acknowledged">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:163,164</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ pr.acknowledged | number }}"/> acknowledged</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ pr.acknowledged | number }}"/> quittiert</target>
       </segment>
     </unit>
     <unit id="storage.tile.stored.blobs">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:155,157</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:174,176</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {in 1 blob} other {in <ph id="0" equiv="INTERPOLATION"/> blobs}}</source>
         <target>{VAR_PLURAL, plural, =1 {in 1 Blob} other {in <ph id="0" equiv="INTERPOLATION"/> Blobs}}</target>
       </segment>
     </unit>
+    <unit id="storage.tile.problems.worst-unreachable">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:206</note>
+      </notes>
+      <segment>
+        <source>Worst: <ph id="0" equiv="id" disp="id"/> unreachable <ph id="1" equiv="duration" disp="durationText(w.seconds)"/></source>
+        <target>Schwerstes: <ph id="0" equiv="id" disp="id"/> <ph id="1" equiv="duration" disp="durationText(w.seconds)"/> nicht erreichbar</target>
+      </segment>
+    </unit>
+    <unit id="storage.tile.problems.worst-start-check">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:208</note>
+      </notes>
+      <segment>
+        <source>Worst: <ph id="0" equiv="id" disp="id"/> start check failed <ph id="1" equiv="duration" disp="durationText(w.seconds)"/></source>
+        <target>Schwerstes: <ph id="0" equiv="id" disp="id"/> Startprüfung <ph id="1" equiv="duration" disp="durationText(w.seconds)"/> fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="storage.tile.problems.worst-damaged">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:210</note>
+      </notes>
+      <segment>
+        <source>Worst: <ph id="0" equiv="id" disp="id"/> copies damaged</source>
+        <target>Schwerstes: <ph id="0" equiv="id" disp="id"/> Kopien beschädigt</target>
+      </segment>
+    </unit>
+    <unit id="storage.tile.problems.worst-uploads">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:212</note>
+      </notes>
+      <segment>
+        <source>Worst: <ph id="0" equiv="id" disp="id"/> uploads refused</source>
+        <target>Schwerstes: <ph id="0" equiv="id" disp="id"/> Uploads abgelehnt</target>
+      </segment>
+    </unit>
+    <unit id="storage.tile.problems.worst-reads">
+      <notes>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:214</note>
+      </notes>
+      <segment>
+        <source>Worst: <ph id="0" equiv="id" disp="id"/> reads not served</source>
+        <target>Schwerstes: <ph id="0" equiv="id" disp="id"/> Lesen nicht möglich</target>
+      </segment>
+    </unit>
     <unit id="storage.tile.connections">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:188</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:228</note>
       </notes>
       <segment>
         <source>Connections</source>
@@ -42870,7 +44354,7 @@
     </unit>
     <unit id="storage.tile.availability">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:189</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:229</note>
       </notes>
       <segment>
         <source>Availability</source>
@@ -42879,7 +44363,7 @@
     </unit>
     <unit id="storage.tile.encryption">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:190</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:230</note>
       </notes>
       <segment>
         <source>Encryption</source>
@@ -42888,25 +44372,25 @@
     </unit>
     <unit id="storage.tile.integrity">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:191</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:231</note>
       </notes>
       <segment>
         <source>Integrity</source>
         <target>Integrität</target>
       </segment>
     </unit>
-    <unit id="storage.tile.problems-now">
+    <unit id="storage.tile.problems-period">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:192</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:232</note>
       </notes>
       <segment>
-        <source>Problems now</source>
-        <target>Probleme jetzt</target>
+        <source>Problems · <ph id="0" equiv="period" disp="periodWord(o.problems.period)"/></source>
+        <target>Probleme · <ph id="0" equiv="period" disp="periodWord(o.problems.period)"/></target>
       </segment>
     </unit>
     <unit id="storage.tile.stored">
       <notes>
-        <note category="location">src/app/features/settings/storage/storage-summary.ts:193</note>
+        <note category="location">src/app/features/settings/storage/storage-summary.ts:233</note>
       </notes>
       <segment>
         <source>Stored</source>

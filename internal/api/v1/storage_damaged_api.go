@@ -7,10 +7,12 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/history"
 	"github.com/guided-traffic/quader/internal/blob/scrub"
 	"github.com/guided-traffic/quader/internal/blob/summary"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -36,6 +38,15 @@ type StorageServices struct {
 	// Overview reads what the storage overview is derived from (R-STOR-107): the connections' list, the latest summary (nil before the
 	// first), the folded totals and the answering replica's min_copies and download check; the handler adds the scrub task's runs.
 	Overview func(ctx context.Context) (summary.OverviewInput, error)
+	// Problems reads the records the problems of [from, to) are derived from (history.ReadProblems, R-STOR-111).
+	Problems func(ctx context.Context, from, to time.Time) (history.ProblemRecords, error)
+	// Cells reads the records the cells of a period ending at to are derived from (history.ReadCells).
+	Cells func(ctx context.Context, p history.Period, to time.Time) (history.CellRecords, error)
+	// Findings reads one page of findings with the items behind them (history.ListFindings).
+	Findings func(ctx context.Context, q history.FindingQuery) ([]history.Finding, error)
+	// Acknowledge acknowledges an unresolved finding in tx (history.Acknowledge): history.ErrNoFinding for an unknown id,
+	// history.ErrFindingResolved for a resolved one.
+	Acknowledge func(ctx context.Context, tx meta.Tx, id int64, by, note string) (history.Finding, error)
 }
 
 // damagedConnectionPattern is the pattern of a connection's id (storage.md R-STOR-050).

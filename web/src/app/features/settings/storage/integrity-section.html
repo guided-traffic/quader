@@ -1,0 +1,115 @@
+@let o = overview();
+<quader-data-table [caption]="caption" [columns]="columns()" [empty]="rows().length === 0">
+  @for (c of rows(); track c.id) {
+    <tr>
+      <th scope="row"><span class="connection-name" translate="no">{{ c.id }}</span></th>
+      <td class="lines-cell">
+        <ul class="plain checks" role="list">
+          @for (m of marks(c); track m.kind) {
+            <li [class.on]="m.on">
+              <span class="material-icons" aria-hidden="true">{{ m.on ? 'check' : 'remove' }}</span>
+              <span>
+                {{ markText(m) }}
+                @if (m.kind === 'every-read') {
+                  @if (c.encryptedSince; as since) {
+                    <span class="state-words" i18n="@@storage.check.every-read-since">since {{ since | time: 'date' }}</span>
+                  }
+                  @let share = inFormat(c);
+                  @if (share !== null && share < 1) {
+                    <span class="warn"
+                      ><span class="material-icons" aria-hidden="true">warning</span
+                      ><ng-container i18n="@@storage.check.in-format">{{ percent(share) }} % in the format</ng-container></span
+                    >
+                  }
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      </td>
+      <td class="lines-cell">
+        @let cov = coverage(c);
+        <div class="lines">
+          @if (cov !== null) {
+            <span class="line meter-line">
+              <quader-storage-meter [ratio]="cov" [label]="coverageLabel(c)" />
+              @if (periodDays(c); as days) {
+                <span class="figure" i18n="@@storage.scrub.coverage">{{ percent(cov) }} % within {{ days }} days</span>
+              } @else {
+                <span class="figure">{{ percent(cov) }} %</span>
+              }
+            </span>
+            @if (c.summary && c.summary.scrubOverdue > 0) {
+              <span class="line warn"
+                ><span class="material-icons" aria-hidden="true">warning</span
+                ><ng-container i18n="@@storage.scrub.overdue">{c.summary.scrubOverdue, plural, =1 {1 copy overdue} other {{{ c.summary.scrubOverdue | number }} copies overdue}}</ng-container></span
+              >
+            }
+          }
+          @if (o.integrity.scrub.running) {
+            <span class="line state-words" i18n="@@storage.scrub.running">Running now</span>
+          } @else if (o.integrity.scrub.lastRunAt; as last) {
+            <span class="line state-words"
+              ><ng-container i18n="@@storage.scrub.last">last {{ last | time: 'minutes' }}</ng-container
+              >@if (o.integrity.scrub.nextRunAt; as next) {,&ngsp;<ng-container i18n="@@storage.scrub.next">next {{ next | time: 'minutes' }}</ng-container>}</span
+            >
+          }
+          @if (canWrite() && c.position !== null) {
+            <span class="line">
+              <button
+                type="button"
+                class="btn btn-default btn-sm"
+                [disabled]="scrubbing().has(c.id)"
+                [quaderBusy]="scrubbing().has(c.id)"
+                [attr.aria-label]="scrubLabel(c)"
+                (click)="scrub.emit(c.id)"
+                i18n="@@storage.scrub.now"
+              >
+                Scrub now
+              </button>
+            </span>
+          }
+        </div>
+      </td>
+      <td class="lines-cell">
+        @if (history()) {
+          @let h = historyOf(c);
+          @let unknown = h ? unknownKeyReads(h) : 0;
+          <!-- One block of lines, so that a stacked row keeps the cell's value beside its name (R-UI-174). -->
+          @if ((h && h.findings.count > 0) || unknown > 0) {
+            <div class="lines">
+              @if (h && h.findings.count > 0) {
+                @let open = (h.findings.byOutcome['open'] ?? 0);
+                @let acked = (h.findings.byOutcome['acknowledged'] ?? 0);
+                <span class="line figure" i18n="@@storage.damaged.count"
+                  >{h.findings.count, plural, =1 {1 copy} other {{{ h.findings.count | number }} copies}} ({{ size(h.findings.bytes) }})</span
+                >
+                @if (open > 0) {
+                  <span class="line warn"
+                    ><span class="material-icons" aria-hidden="true">warning</span
+                    ><ng-container i18n="@@storage.damaged.open">{{ open | number }} open</ng-container></span
+                  >
+                } @else if (acked > 0) {
+                  <span class="line state-words" i18n="@@storage.damaged.acknowledged">{{ acked | number }} acknowledged</span>
+                } @else {
+                  <span class="line state-words" i18n="@@storage.damaged.all-resolved">all resolved</span>
+                }
+              }
+              @if (unknown > 0) {
+                <span class="line state-words" i18n="@@storage.damaged.unknown-key"
+                  >{unknown, plural, =1 {1 read refused: unknown key} other {{{ unknown | number }} reads refused: unknown key}}</span
+                >
+              }
+            </div>
+          } @else {
+            <quader-no-value />
+          }
+        } @else {
+          <quader-loading i18n="@@storage.integrity.history-loading">Loading the period.</quader-loading>
+        }
+      </td>
+    </tr>
+  }
+</quader-data-table>
+
+<quader-storage-findings [period]="period()" [anyOpen]="anyOpen()" [canWrite]="canWrite()" (changed)="changed.emit()" />

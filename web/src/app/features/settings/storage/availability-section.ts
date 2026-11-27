@@ -1,13 +1,15 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, input, output, signal } from '@angular/core';
-import { StorageConnection, StorageOverview } from '../../../api/storage-api';
+import { DEFAULT_STORAGE_PERIOD, StorageConnection, StorageHistory, StorageOverview, StoragePeriod } from '../../../api/storage-api';
 import { TimePipe } from '../../../shared/time-pipe';
 import { Busy } from '../../../shared/ui/busy';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
+import { Loading } from '../../../shared/ui/loading';
 import { NoValue } from '../../../shared/ui/no-value';
 import { Tooltip } from '../../../shared/ui/tooltip';
 import { formatSize } from '../../packages/format-size';
 import { StorageMeter } from './storage-meter';
+import { PeriodSums, periodSums, periodWord } from './storage-history';
 import { backlog, holdingConnections, holds, percentOf } from './storage-model';
 
 /** One part of the bar of copies per blob. */
@@ -27,13 +29,16 @@ interface CopiesPart {
  */
 @Component({
   selector: 'quader-storage-availability',
-  imports: [Busy, DataTable, DecimalPipe, NoValue, StorageMeter, TimePipe, Tooltip],
+  imports: [Busy, DataTable, DecimalPipe, Loading, NoValue, StorageMeter, TimePipe, Tooltip],
   templateUrl: './availability-section.html',
   styleUrl: './storage-sections.scss',
 })
 export class AvailabilitySection {
   readonly overview = input.required<StorageOverview>();
   readonly connections = input.required<readonly StorageConnection[]>();
+  /** The period's cells, for what each connection absorbed in it; null while they are read. */
+  readonly history = input<StorageHistory | null>(null);
+  readonly period = input<StoragePeriod>(DEFAULT_STORAGE_PERIOD);
   /** The time the backlog's age is counted to. */
   readonly now = input.required<number>();
   /** Whether the reader may run the reconciliation (`settings:write`). */
@@ -46,7 +51,7 @@ export class AvailabilitySection {
   protected readonly holds = holds;
 
   protected readonly caption = $localize`:@@storage.availability.caption:Copies per connection`;
-  protected readonly columns: readonly TableColumn[] = [
+  protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'connection', label: $localize`:@@storage.col.connection:Connection`, width: '9rem', prefer: true },
     {
       id: 'holds',
@@ -67,7 +72,20 @@ export class AvailabilitySection {
       width: '12rem',
       help: $localize`:@@storage.col.reconciliation.help:The task storage-reconcile copies every missing copy, one full pass after another.`,
     },
-  ];
+    {
+      id: 'absorbed',
+      label: periodWord(this.period()),
+      width: '13rem',
+      help: $localize`:@@storage.col.absorbed.help:What the copies absorbed in the period: reads served from another copy, writes taken by the next connection, copies the reconciliation could not make.`,
+    },
+  ]);
+
+  /** A connection's sums of the period (Q-UI-1612); null while the history is read. */
+  protected sumsOf(c: StorageConnection): PeriodSums | null {
+    const h = this.history();
+    if (!h) return null;
+    return periodSums(h.connections.find((x) => x.id === c.id));
+  }
 
   protected readonly rows = computed(() => holdingConnections(this.connections()));
   protected readonly targetHelp = $localize`:@@storage.availability.target.help:Target: every connection without drain in storage.connections. Written before answering: storage.replication.min_copies.`;

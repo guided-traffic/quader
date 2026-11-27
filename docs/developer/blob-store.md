@@ -742,8 +742,8 @@ and the whole run 5 minutes.
 
 ## The history of the stored content (R-STOR-108 to R-STOR-110)
 
-What went wrong is recorded where it happens, in three tables of migration 00151 ([database.md](database.md), ADR-315). Nothing here reads
-it yet; the storage page's API (W-37 package P4) does.
+What went wrong is recorded where it happens, in three tables of migration 00151 ([database.md](database.md), ADR-315), and read for the
+storage page by the operations of R-STOR-111 (below, "The reads of the history").
 
 **Findings: the triggers.** A copy that becomes `missing` or `corrupt` opens a row of `storage_findings`, and the copy leaving that state
 or its row going resolves it (`rewritten`, `found_again`, `superseded`, `deleted`); the triggers of `blob_copies` do both, whatever
@@ -790,6 +790,26 @@ per replica and minute, an insert per interval; the tables hold a few rows norma
 `TestR_STOR_110_CountsAreFlushedPerHour` (`internal/blob/history`, a fake store and clock), the
 marks in the scrub's and the encrypted reads' tests. Integration (`test/integration/blob/history_test.go`):
 `TestR_STOR_108_AFindingFromMarkToRepair`, `TestR_STOR_110_TheRecordAgainstTheDatabase`, `TestR_STOR_110_TheTaskKeepsTheHistoryBounded`.
+
+### The reads of the history (R-STOR-111)
+
+| File | Responsibility |
+|---|---|
+| [history/period.go](../../internal/blob/history/period.go) | The five periods (`Periods`, `ParsePeriod`) and their window back from now |
+| [history/read.go](../../internal/blob/history/read.go) | `ReadProblems` and `ReadCells` (the records of a period, folded by PostgreSQL per cell and per UTC day, the intervals as rows), `ListFindings` with the first three items per page (`DamagedBlobItems`), `Acknowledge` in the caller's transaction |
+| [history/derive.go](../../internal/blob/history/derive.go) | `DeriveProblems` (intervals merged across replicas, a day of findings, a day of refusals; `Worse`, `Newer`) and `DeriveCells` (the union of the intervals per cell, the counts and findings per cell, the totals, the tones); pure |
+| [storage_history_read.sql](../../internal/meta/postgres/queries/storage_history_read.sql) | The statements; times travel as seconds or microseconds since the epoch (R-ARCH-002) |
+| [storage_history_api.go](../../internal/api/v1/storage_history_api.go) | `getStorageHistory`, `listStorageProblems` (paged in memory, Q-API-479), `listStorageFindings`, `acknowledgeStorageFinding` with its event |
+| [summary/overview.go](../../internal/blob/summary/overview.go) | The overview's `problems` of a period from `DeriveProblems`, and `providerApplied` from `capabilities.sseApplied` |
+
+The services are wired in `storageAPI` of [wire_storage_scrub.go](../../internal/app/wire_storage_scrub.go). A finding belongs to a period
+while it was unresolved at the period's start or later; a cell takes an hourly count by the hour's start (Q-STOR-527). The derivation is the
+only place a problem's rule lives: the overview, the list and the page's strips read it (Q-STOR-525). **Tests.** Unit:
+`TestR_STOR_111_ThePeriods`, `TestR_STOR_111_TheProblemsOfAPeriod`, `TestR_STOR_111_TheCellsOfAPeriod` (`internal/blob/history`),
+`TestR_STOR_111_TheWorstProblemOfThePeriod` (`internal/blob/summary`), `TestR_STOR_111_TheHistoryInTheAPI` (`internal/api/v1`, about 0.1 s).
+Integration: `TestR_STOR_111_AScrubFindingAndAnOutageReachThePage` (`test/integration/blob/history_read_test.go`, about 1.4 s, two objects
+of 1 KiB). **What a read costs** [estimate, not measured]: a handful of rows on a quiet installation; at worst the rows of the caps of the
+period (H-2437).
 
 ## Tests
 

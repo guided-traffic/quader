@@ -4408,7 +4408,8 @@ facts in [facts.go](../../internal/app/facts.go); the decisions Q-STOR-372 and
   when it states none or does not configure the connection,
   [Q-API-476](api-and-ui.md#q-api-476--the-connection-lists-additions-are-nullable-for-a-connection-the-replica-does-not-configure)),
   `summary.soleBytes` and `summary.keyedCopies`, and `settings.sseKmsKeyId` and `settings.sseBucketKey` (identifiers and switches of
-  R-STOR-032, no key material). What the store applied (`capabilities.sseApplied`) is W-37's packages P2 and P4.
+  R-STOR-032, no key material). With W-37's package P4, `capabilities.sseApplied` names what the store reported for the start check's
+  probe (`{"algorithm": "aws:kms", "kmsKeyId": "alias/quader"}`, `null` before a probe; R-STOR-032, Q-STOR-519).
 - `GET /api/v1/system/info` (R-OPS-004) replaces its object `objectStore` by `objectStore.connections[]` with `id`, `endpoint`, `bucket`,
   `prefix`, `credentialSource`, `encrypted` and `drain` per connection of the answering replica.
 - The storage summary (R-STOR-028) gains `connections[]` with the figures of `summary` above; `blobs` and `damaged` keep their meaning
@@ -5829,12 +5830,14 @@ Acceptance criteria:
 ### R-STOR-107 · The storage overview
 Priority: **P1** · Covers: quader-only
 
-*Built* (W-37's package P1, the state now; the period and the problems are package P4's):
+*Built* (W-37's package P1, the state now; package P4 on 2026-11-27, the period, the problems and the applied server-side encryption):
 [storage_overview_api.go](../../internal/api/v1/storage_overview_api.go) over `DeriveOverview` and `Stored` of
-[overview.go](../../internal/blob/summary/overview.go), the service in [wire_storage_summary.go](../../internal/app/wire_storage_summary.go).
+[overview.go](../../internal/blob/summary/overview.go), the service in [wire_storage_summary.go](../../internal/app/wire_storage_summary.go),
+the problems of R-STOR-111 from [history/derive.go](../../internal/blob/history/derive.go).
 
-`GET /api/v1/storage/overview` → `200` (operation `getStorageOverview`, `settings:read`): one call for the top of the storage page and the
-admin dashboard's card, an operation of its own ([Q-API-475](api-and-ui.md#q-api-475--the-storage-overview-is-an-operation-of-its-own)).
+`GET /api/v1/storage/overview?period=` → `200` (operation `getStorageOverview`, `settings:read`): one call for the top of the storage page and
+the admin dashboard's card, an operation of its own ([Q-API-475](api-and-ui.md#q-api-475--the-storage-overview-is-an-operation-of-its-own)).
+`period` is one of R-STOR-111's, `30d` unless named; the dashboard asks for `24h`.
 
 ```json
 {
@@ -5845,10 +5848,13 @@ admin dashboard's card, an operation of its own ([Q-API-475](api-and-ui.md#q-api
   "availability": {"state": "redundant", "target": 2, "minCopies": 1,
                    "perBlob": [{"copies": 2, "blobs": 412093, "bytes": 1893341184512}],
                    "belowTarget": {"blobs": 0, "bytes": 0}, "loss": []},
-  "encryption": {"state": "partly", "encrypted": ["archive"], "plain": ["default"], "providerConfigured": ["archive"], "encryptedShare": 0.5},
+  "encryption": {"state": "partly", "encrypted": ["archive"], "plain": ["default"], "providerConfigured": ["archive"],
+                 "providerApplied": ["default", "archive"], "encryptedShare": 0.5},
   "integrity": {"state": "verified", "downloadVerify": true, "authenticatedReads": ["archive"],
                 "scrub": {"coverage": 1.0, "overdue": 0, "lastRunAt": "2026-11-26T20:07:03Z", "nextRunAt": "2026-11-26T21:07:00Z", "running": false},
-                "damagedNow": {"copies": 0, "blobs": 0}}
+                "damagedNow": {"copies": 0, "blobs": 0}},
+  "problems": {"period": "30d", "state": "resolved", "count": 3, "open": 0, "acknowledged": 0,
+               "worst": {"kind": "unreachable", "connection": "archive", "startedAt": "2026-11-19T01:10:00Z", "seconds": 4320, "tone": "warning"}}
 }
 ```
 
@@ -5875,22 +5881,30 @@ admin dashboard's card, an operation of its own ([Q-API-475](api-and-ui.md#q-api
   | | `redundant` | otherwise |
   | `encryption` | `encrypted` | Quader encrypts every connection that holds content |
   | | `partly` | some ([object-store-connections.md](../security/object-store-connections.md) H-1317) |
-  | | `provider_only` | none, and each asks its store for server-side encryption in the answering replica's configuration |
+  | | `provider_only` | none, and the store of each reported server-side encryption for the start check's probe (`capabilities.sseApplied`, R-STOR-032) |
   | | `off` | otherwise |
   | `integrity` | `damaged` | a live blob has no whole copy |
   | | `repairing` | a copy is missing or corrupt, every blob whole somewhere |
   | | `behind` | copies are overdue for the scrub |
   | | `checking` | the scrub's coverage within the period is below 1, or no summary exists yet |
   | | `verified` | otherwise |
+  | `problems` | `ongoing` | a connection is unreachable now on a replica, a live blob has no whole copy, a finding of the period no other copy held is unresolved, or an outage, a failing start check, a refused upload or a read no copy served lasts or ended within the last hour ([Q-STOR-529](#q-stor-529--ongoing-means-within-the-last-hour)) |
+  | | `open` | a finding of the period is neither resolved nor acknowledged |
+  | | `resolved` | the period holds only ended problems, or findings acknowledged and not resolved |
+  | | `none` | the period holds no problem |
 
-- `encryption.providerConfigured` names what the configuration asks the stores for; what a store applied is W-37's packages P2 and P4
-  (`capabilities.sseApplied`), which then decide `provider_only` from it.
-- The member `problems` and the parameter `period` are W-37's package P4's.
+- `encryption.providerConfigured` names what the answering replica's configuration asks the stores for, `encryption.providerApplied` what
+  the stores reported for the start check's probe (`capabilities.sseApplied`, R-STOR-032; a bucket default under `none` included); the
+  state `provider_only` is decided by what was applied.
+- `problems` are R-STOR-111's of the period: how many, the findings open and acknowledged (an acknowledged one needs no act and is not
+  open), and the worst, chosen by tone, then duration, then bytes, then the newer
+  ([H-2433](../security/object-store-connections.md#h-2433--the-worst-problem-is-one-of-several-equal-ones)).
 - No secret, no credential, no key, no address of a store and no signed URL appears.
 
 Acceptance criteria:
 
-- Every state of the table from views built in memory (unit, `internal/blob/summary`, `TestR_STOR_107_TheStatesOfTheOverview`); the
+- Every state of the table from views and problems built in memory, the worst problem of a period (unit, `internal/blob/summary`,
+  `TestR_STOR_107_TheStatesOfTheOverview`, `TestR_STOR_111_TheWorstProblemOfThePeriod`); the
   operation answers the document's shape, `stored` from the totals, `403` without `settings:read`, and no field holds an address, a path
   or a secret (unit, `internal/api/v1`, `TestR_STOR_107_TheOverview`); the totals and the list's additions against PostgreSQL
   (integration, `TestR_STOR_106_TheCopiesInFigures`).
@@ -6027,6 +6041,85 @@ Acceptance criteria:
   (integration; `TestR_STOR_110_TheRecordAgainstTheDatabase`).
 - The task deletes by the retention and keeps an open finding, ends a dead replica's interval and resolves a stale finding `reconciled`
   (integration, `test/integration/blob`, rows only; `TestR_STOR_110_TheTaskKeepsTheHistoryBounded`).
+
+### R-STOR-111 · The history in the API: the cells, the problems and the findings of a period, and the acknowledgement
+Priority: **P1** · Covers: quader-only
+
+**Built** on 2026-11-27 (W-37 package P4: [storage_history_api.go](../../internal/api/v1/storage_history_api.go), the reads of
+[history/read.go](../../internal/blob/history/read.go) over [storage_history_read.sql](../../internal/meta/postgres/queries/storage_history_read.sql),
+the derivation of [history/derive.go](../../internal/blob/history/derive.go) and the periods of [history/period.go](../../internal/blob/history/period.go),
+the problems of the overview in [overview.go](../../internal/blob/summary/overview.go), the event in
+[events_storage.go](../../internal/audit/events_storage.go)).
+
+The records of R-STOR-108 to R-STOR-110 reach the storage page ([api-and-ui.md](api-and-ui.md) R-UI-265) through four operations, each
+under `settings:read` but the acknowledgement (`settings:write`). Nothing here deletes, drains, repairs or touches a key.
+
+- **The period** is `24h`, `7d`, `30d` (the default), `90d` or `1y`, back from now, cut into cells counted back from now and aligned to
+  no calendar ([Q-STOR-527](#q-stor-527--cells-are-counted-back-from-now)): 24 cells of an hour, 28 of six hours, 30 of a day, 30 of three
+  days, 52 of a week. A year is 52 weeks. Another name answers `400`.
+- **`GET /api/v1/storage/history?period=`** (`getStorageHistory`) answers per connection the period's cells and its findings' totals:
+  - a cell holds how long the connection was unreachable on at least one replica (the union of the replicas' intervals within the cell)
+    and on how many, the failing start checks that overlap it, the copies found damaged in it with their bytes (those beyond the day's cap
+    included, H-2428), the blobs of those findings no other copy held, and the counts of R-STOR-110: reads from another copy, reads not
+    served, writes to the next connection, refused uploads, copies the reconciliation could not make, reads the stored format refused and
+    of them those of an unknown key. An hourly count falls into the cell that holds the hour's start; an hour that began before the period
+    is the first cell's;
+  - a cell's `tone` is `error` when clients were refused (an upload, a read, a blob no other copy held), `warning` when Quader absorbed it,
+    `none` otherwise ([Q-STOR-528](#q-stor-528--the-tones-of-a-cell));
+  - the totals of a connection's findings count them and their bytes by outcome (`open`, `acknowledged`, or the resolution) and by source,
+    and the findings beyond the cap;
+  - every connection of the period is listed: the answering replica's in the order of its configuration, the others by id, one retired
+    before the period's start left out, and one the records alone name (a forgotten connection) by its id
+    ([Q-STOR-532](#q-stor-532--a-forgotten-connection-stays-in-the-history-by-id)).
+- **`GET /api/v1/storage/problems?period=&connection=&kind=&state=`** (`listStorageProblems`) answers the problems of the period, newest
+  first, derived at read time from the records ([Q-STOR-525](#q-stor-525--a-problem-is-derived-at-read-time-from-the-records)):
+  - `unreachable`: one connection's intervals of an open circuit, merged across replicas while they overlap, with the replicas, the
+    occurrences and the codes; `start_check_failed` merged the same way, with the steps;
+  - `copies_damaged`: one connection's findings of one UTC day, with their count and bytes (those beyond the cap counted in), sources and
+    reasons, how many are resolved, open and acknowledged, and how many had no other present copy;
+  - `uploads_refused` and `reads_unavailable`: one connection's refused uploads and reads no copy served of one UTC day, from the first
+    hour that counted one to the end of the last.
+
+  A problem overlaps the period: an outage that began before it is listed, and so is a day whose finding is still unresolved, whatever its
+  age. `endedAt` is `null` while it lasts; `tone` is `error` when clients were refused and `warning` when Quader absorbed it. Fall-overs are
+  no problems of their own ([Q-STOR-526](#q-stor-526--fall-overs-are-no-problems-of-their-own)): they are the symptoms the outages and the
+  damage already name, counted in the cells. The problems are derived for the whole period and paged in memory; the cursor is the start,
+  the kind and the connection ([api-and-ui.md](api-and-ui.md#q-api-479--the-problems-are-paged-in-memory) Q-API-479).
+- **`GET /api/v1/storage/findings?period=&connection=&state=`** (`listStorageFindings`) answers the copies found damaged of the period,
+  newest first (the detection, then the id): a finding belongs to the period while it was unresolved at its start or later, so an open one
+  of any age is listed. `state` is `open` (unresolved, not acknowledged), `acknowledged`, `resolved` or `all`. Each finding names the first
+  three items that reference its blob now and their number, read per page by digest
+  ([Q-STOR-531](#q-stor-531--the-items-of-a-finding-are-read-per-page-by-digest); H-2429), to every holder of `settings:read`
+  ([object-store-connections.md](../security/object-store-connections.md#h-2434--the-security-administrator-reads-the-item-paths-of-findings) H-2434).
+- **`POST /api/v1/storage/findings/{id}/acknowledge`** (`acknowledgeStorageFinding`, `settings:write`) takes an optional note of at most 500
+  characters and records the time, the caller and the note on an unresolved finding; a second acknowledgement replaces the first. It never
+  resolves ([Q-STOR-530](#q-stor-530--an-acknowledgement-never-resolves)): a finding resolves by what happens to its copy. A resolved
+  finding answers `409 finding_resolved`, an unknown one `404`. It is audited as `storage.finding.acknowledged` in the same transaction
+  ([operations-and-observability.md](operations-and-observability.md) R-OPS-014, Q-OPS-472); the note is shown to every reader of the page
+  (H-2436).
+- **The overview** (R-STOR-107) takes `period` and answers `problems` (see there).
+- **Bounded.** Every read is bounded by the history's caps (Q-STOR-516): the counts and the findings are folded by PostgreSQL per cell and
+  per day, the intervals read as rows ([H-2437](../security/object-store-connections.md#h-2437--a-year-of-the-history-is-read-in-the-worst-case-from-tens-of-thousands-of-rows)).
+- **Nothing secret.** Connections by id, digests, sizes, codes and steps; no key, credential, address of a store or text of the store.
+
+Acceptance criteria:
+
+- The periods and their cells (24, 28, 30, 30 and 52, counted back from now); two replicas' overlapping intervals as one outage with both
+  replicas, its occurrences and codes; an outage that lasts; a failing start check with its step; a day of findings as one problem with
+  the findings beyond the cap counted in; a day with an open finding no other copy held lasting as an error; refused uploads and reads not
+  served of a day; fall-overs no problem; the cells' union of the intervals, their replicas, their tones and a forgotten connection by id
+  (unit, `internal/blob/history`, records in memory; `TestR_STOR_111_ThePeriods`, `TestR_STOR_111_TheProblemsOfAPeriod`,
+  `TestR_STOR_111_TheCellsOfAPeriod`, milliseconds).
+- The four operations in the document's shape: the cells of 30 days by default and of 24 hours; the problems newest first, paged by the
+  cursor and narrowed; the findings paged with their items and the filters handed on; an unknown period, kind, state or cursor `400`; the
+  acknowledgement `200` with the caller and the note, audited in its transaction with the registered schema, `409 finding_resolved`, `404`,
+  `422` for a long note, nothing audited for a refusal and no answer the audit log does not hold; `403` for a caller without the permission,
+  whose request reads nothing; `503` without the services; the overview's problems of its period and its worst (unit, `internal/api/v1`;
+  `TestR_STOR_111_TheHistoryInTheAPI`, about 0.1 s).
+- Against PostgreSQL: a finding the scrub wrote and repaired, a copy missing without another copy, an outage the recorder wrote and the
+  counts of an hour reach the problems, the cells and the findings' list; the cursor of the findings is exact; an acknowledgement names
+  the person and never resolves, a resolved finding and an unknown one are refused (integration, `test/integration/blob`;
+  `TestR_STOR_111_AScrubFindingAndAnOutageReachThePage`, about 1.4 s, two objects of 1 KiB).
 
 ## Retention and cleanup
 
@@ -11408,7 +11501,7 @@ Context: the plan's table names the states and when each holds; three of its row
 |---|---|---|
 | Which connections count for Connections, Encryption and Integrity | Those neither retired nor drained, detached included | A drained or retired connection holds nothing; a detached one still holds content in the clear or encrypted |
 | "At risk": a backlog behind, or a target unreachable, "with sole copies" | Sole copies **and** (a target unreachable on a replica **or** the oldest gap of an active target older than an hour) | Without a blob on one connection only, the loss of a connection loses nothing; a filling connection's old gap is its filling |
-| "Provider only" before the store's applied mode is known | Every counted connection asks for server-side encryption in the answering replica's configuration | P1 knows only the configuration; P4 decides it by `sseApplied` |
+| "Provider only": asked for, or applied | Every counted connection whose store reported server-side encryption for the start check's probe (`capabilities.sseApplied`; W-37 P4, which replaced P1's reading by the configuration) | A store may encrypt under `none` (a bucket default) or ignore what it is asked for; what it applied is the fact |
 | The state before the first summary | Integrity `checking`; Availability `catching_up` while a gap is queued, otherwise by the target | Nothing is known to be damaged or verified yet |
 | No live replica configures a connection | Connections `degraded` | No connection can be said to be reachable, and none to be unreachable from every replica |
 
@@ -11541,6 +11634,84 @@ Task and kind `storage-history`, queue `maintenance`, exclusive, `37 * * * *` (a
 statement deletes or resolves at most 10,000 rows and the run repeats it until fewer come back, so no statement holds long locks. It writes
 no content, so it runs in read-only maintenance mode too (R-OPS-024). **Applied in the spec:** R-STOR-110,
 [operations-and-observability.md](operations-and-observability.md) R-OPS-019.
+
+### Q-STOR-525 · A problem is derived at read time from the records
+
+Status: **Decided by the development agent** (W-37 package P4, 2026-11-27) — selected from the options below; the owner reviews it.
+
+| Option | For | Against |
+|---|---|---|
+| (a) The problems are derived when they are read, from the intervals, the findings per day and the counts per day, by one pure function for the overview, the list and the cells (chosen) | One rule, tested once; nothing more is written; a change of the rule needs no migration | Each read derives again; bounded by the caps (H-2437) |
+| (b) A table of problems written by the recorder and the triggers | A list read by an index | A second record of the same events, which can disagree with the first; a merge across replicas would need a writer that sees them all |
+
+**Choice:** (a). A problem overlaps the period: an outage that began before it, and a day whose finding is still unresolved, are listed;
+a finding belongs to a period while it was unresolved at its start or later, in the list of findings, the totals and the problems alike.
+**Applied in the spec:** R-STOR-111; code: `DeriveProblems` in [history/derive.go](../../internal/blob/history/derive.go).
+
+### Q-STOR-526 · Fall-overs are no problems of their own
+
+Status: **Decided by the development agent** (W-37 package P4, 2026-11-27).
+
+A read that went to another copy, a write the next connection took and a copy the reconciliation could not make are the symptoms of an
+outage or a damaged copy that the list already names; a problem of their own would list one event twice. They colour the cells (a warning)
+and stand in the section Availability as the period's counts. **Applied in the spec:** R-STOR-111; [api-and-ui.md](api-and-ui.md)
+R-UI-263.
+
+### Q-STOR-527 · Cells are counted back from now
+
+Status: **Decided by the development agent** (W-37 package P4, 2026-11-27), after the plan's B.3.
+
+The cells of a period end at the answer's time and are aligned to no calendar, so no time zone decides a cell and the last cell is never a
+part of one. An hourly count belongs to the cell that holds the hour's start; an hour that began before the period and reaches into it
+belongs to the first cell, so no count of the period is lost. A finding belongs to the cell of its detection. **Applied in the spec:**
+R-STOR-111.
+
+### Q-STOR-528 · The tones of a cell
+
+Status: **Decided by the development agent** (W-37 package P4, 2026-11-27), after the plan's B.14.
+
+| Tone | When |
+|---|---|
+| `error` | clients were refused: an upload refused, a read no copy served, or a finding whose blob no other present copy held |
+| `warning` | Quader absorbed it: an outage on some replica, a failing start check, a copy found damaged, reads or writes that fell over, a copy that failed, a read the stored format refused |
+| `none` | nothing |
+
+A problem takes the same rule: `copies_damaged` is an error when one of its findings had no other copy, `uploads_refused` and
+`reads_unavailable` always, the intervals never. **Applied in the spec:** R-STOR-111; code: `Cell.tone` and `DeriveProblems`.
+
+### Q-STOR-529 · "Ongoing" means within the last hour
+
+Status: **Decided by the development agent** (W-37 package P4, 2026-11-27).
+
+The overview's problems are `ongoing` while an outage, a failing start check, a refused upload or a read no copy served lasts or ended
+within the last hour (an outage that ended a minute ago is not yet a thing of the past for the reader), while a connection is unreachable
+now, while a blob has no whole copy now, or while a finding no other copy held is unresolved. A failing start check counts as an outage: the
+replica cannot use the connection. A damaged copy that another copy covers is `open`, not `ongoing`. In the list, `ongoing` is a problem
+that has not ended (`endedAt` `null`). **Applied in the spec:** R-STOR-107, R-STOR-111.
+
+### Q-STOR-530 · An acknowledgement never resolves
+
+Status: **Decided by the development agent** (W-37 package P4, 2026-11-27), after the plan's B.11.
+
+A finding resolves by what happens to its copy (R-STOR-108), never by a click: **Acknowledge** records that a person knows of it (when, who,
+a note) and takes it out of what the overview counts as needing an act. A resolved finding cannot be acknowledged (`409 finding_resolved`);
+a second acknowledgement replaces the first, so the note says the latest knowledge. **Applied in the spec:** R-STOR-111.
+
+### Q-STOR-531 · The items of a finding are read per page by digest
+
+Status: **Decided by the development agent** (W-37 package P4, 2026-11-27).
+
+A finding stores no item: an item is deleted and uploaded long after its blob was damaged. The first three items that reference a page's
+blobs and their number are read with the page, by the statements of the damaged blobs' list (`DamagedBlobItems`, `DamagedBlobItemCounts`),
+two reads per page whatever its length; an item deleted since is not named (H-2429). **Applied in the spec:** R-STOR-111.
+
+### Q-STOR-532 · A forgotten connection stays in the history by id
+
+Status: **Decided by the development agent** (W-37 package P4, 2026-11-27).
+
+The history has no foreign key to `storage_connections` (migration 00151), so a connection given up with `forget-connection` keeps its
+intervals, counts and findings. The cells list it by its id after the connections the registry knows; a connection retired before the
+period's start is left out, since nothing of the period can be its. **Applied in the spec:** R-STOR-111; code: `DeriveCells`.
 
 ## What this does not cover
 

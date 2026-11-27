@@ -18,13 +18,20 @@ import (
 // storageScrubTask is the task of the scrub (R-STOR-027), whose last and next run the overview names.
 const storageScrubTask = "scrub"
 
-// GetStorageOverview implements GET /api/v1/storage/overview. The caller holds settings:read (declared).
-func (s *Server) GetStorageOverview(w http.ResponseWriter, r *http.Request) {
+// GetStorageOverview implements GET /api/v1/storage/overview. The caller holds settings:read (declared). The problems of the period
+// (R-STOR-111) are derived from the history of the period, 30 days unless the request names another.
+func (s *Server) GetStorageOverview(w http.ResponseWriter, r *http.Request, p gen.GetStorageOverviewParams) {
 	if s.o.Storage.Overview == nil {
 		httpserver.Problem(w, r, unavailable("The storage overview"))
 		return
 	}
+	period, err := parsePeriod(periodName(p.Period))
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	ctx := r.Context()
+	now := time.Now()
 	in, err := s.o.Storage.Overview(ctx)
 	if err != nil {
 		httpserver.Problem(w, r, errs.Wrap(err, "api.getStorageOverview"))
@@ -36,7 +43,12 @@ func (s *Server) GetStorageOverview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	in.Scrub = runs
-	writeJSON(w, r, http.StatusOK, storageOverviewView(summary.DeriveOverview(in, time.Now())))
+	in.Period = period.Name
+	if in.Problems, err = s.periodProblems(r, period, now); err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.getStorageOverview"))
+		return
+	}
+	writeJSON(w, r, http.StatusOK, storageOverviewView(summary.DeriveOverview(in, now)))
 }
 
 // scrubRuns is the scrub task's last finished run, its next scheduled run and whether a run is going on, from the task list's own read
@@ -91,12 +103,22 @@ func storageOverviewView(o summary.Overview) gen.StorageOverview {
 	}
 	e := &out.Encryption
 	e.State, e.EncryptedShare = gen.StorageOverviewEncryptionState(o.Encryption.State), o.Encryption.EncryptedShare
-	e.Encrypted, e.Plain, e.ProviderConfigured = o.Encryption.Encrypted, o.Encryption.Plain, o.Encryption.ProviderConfigured
+	e.Encrypted, e.Plain, e.ProviderConfigured, e.ProviderApplied = o.Encryption.Encrypted, o.Encryption.Plain, o.Encryption.ProviderConfigured,
+		o.Encryption.ProviderApplied
 	i := &out.Integrity
 	i.State, i.DownloadVerify, i.AuthenticatedReads = gen.StorageOverviewIntegrityState(o.Integrity.State), o.Integrity.DownloadVerify, o.Integrity.AuthenticatedReads
 	i.Scrub.Coverage, i.Scrub.Overdue, i.Scrub.Running = o.Integrity.Scrub.Coverage, o.Integrity.Scrub.Overdue, o.Integrity.Scrub.Running
 	i.Scrub.LastRunAt, i.Scrub.NextRunAt = utcOrNil(o.Integrity.Scrub.LastRunAt), utcOrNil(o.Integrity.Scrub.NextRunAt)
 	i.DamagedNow.Copies, i.DamagedNow.Blobs = o.Integrity.DamagedCopies, o.Integrity.DamagedBlobs
+	pr := &out.Problems
+	pr.Period, pr.State, pr.Count = gen.StorageOverviewProblemsPeriod(o.Problems.Period), gen.StorageOverviewProblemsState(o.Problems.State), o.Problems.Count
+	pr.Open, pr.Acknowledged = o.Problems.Open, o.Problems.Acknowledged
+	if wp := o.Problems.Worst; wp != nil {
+		pr.Worst = &gen.StorageOverviewWorstProblem{
+			Kind: gen.StorageProblemKind(wp.Kind), Connection: wp.Connection, StartedAt: wp.Started.UTC(), Seconds: wp.Seconds,
+			Tone: gen.StorageOverviewWorstProblemTone(wp.Tone),
+		}
+	}
 	return out
 }
 

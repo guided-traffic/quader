@@ -684,12 +684,122 @@ export interface paths {
          *     the loss of one connection would cost, which connections Quader encrypts, and the integrity checks with the scrub's coverage.
          *     Every state is derived by the server (Q-STOR-505, Q-STOR-506), so the page and the dashboard word it alike. The connections and
          *     `stored` are read now (the registry and the folded totals); the copies, the scrub's coverage and the damage are the latest
-         *     storage summary's, whose time is `figuresAt` (`null` before the first; H-2420). Reads PostgreSQL only and counts over no blob
-         *     or copy. No secret, no credential, no key and no address of a store appears.
+         *     storage summary's, whose time is `figuresAt` (`null` before the first; H-2420). `problems` are the problems of the period
+         *     (R-STOR-111), `30d` unless `period` names another, with the worst of them. Reads PostgreSQL only and counts over no blob or
+         *     copy. No secret, no credential, no key and no address of a store appears.
          */
         get: operations["getStorageOverview"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/storage/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The cells of a period per connection
+         * @description What happened to the stored content in a period, per connection and cell (storage.md R-STOR-111): the cells are counted back
+         *     from now and aligned to no calendar (Q-STOR-527), 24 of an hour for `24h`, 28 of six hours for `7d`, 30 of a day for `30d`, 30
+         *     of three days for `90d` and 52 of a week for `1y`. A cell holds how long the connection was unreachable on a replica and on how
+         *     many, the failing start checks, the copies found damaged with their bytes (those beyond the day's cap included, H-2428), the
+         *     blobs no other copy held then, and the counts of what the reads and writes absorbed; its `tone` is `error` when clients were
+         *     refused (an upload, a read, a blob no other copy held), `warning` when Quader absorbed it, `none` otherwise (Q-STOR-528). An
+         *     hourly count falls into the cell that holds the hour's start; an hour that began before the period is the first cell's. Every
+         *     connection of the period is listed: the answering replica's in the order of its configuration, the others by id, a forgotten
+         *     one included by its id (Q-STOR-532). Each carries the totals of its findings of the period by outcome and by source; a finding
+         *     belongs to a period while it was unresolved at its start or later. Reads PostgreSQL only.
+         */
+        get: operations["getStorageHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/storage/problems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the problems of a period
+         * @description The problems of the stored content in a period, newest first (storage.md R-STOR-111), derived at read time from the history
+         *     (Q-STOR-525): `unreachable` is one connection's intervals of an open circuit, merged across replicas while they overlap, with
+         *     the replicas that recorded them, their occurrences and failure codes; `start_check_failed` is merged the same way, with the
+         *     steps; `copies_damaged` is one connection's findings of one UTC day with their count, bytes, sources and reasons, how many are
+         *     resolved, open and acknowledged, and how many had no other present copy; `uploads_refused` and `reads_unavailable` are one
+         *     connection's refused uploads and reads no copy served of one UTC day. Fall-overs are no problems of their own: they are counted
+         *     in the cells (Q-STOR-526). A problem overlaps the period: an outage that began before it, or a finding still unresolved, is
+         *     listed. `endedAt` is `null` while it lasts; `tone` is `error` when clients were refused and `warning` when Quader absorbed it.
+         *     `state` narrows to the lasting (`ongoing`) or ended problems. Cursor pagination (R-API-010) over the start, the kind and the
+         *     connection.
+         */
+        get: operations["listStorageProblems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/storage/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the damaged copies of a period
+         * @description The copies found damaged in a period, newest first (storage.md R-STOR-108, R-STOR-111): each with its connection, digest,
+         *     status, source and reason, stored size, whether another present copy existed when it was found, its resolution and its
+         *     acknowledgement. A finding belongs to a period while it was unresolved at the period's start or later, so an open one of any
+         *     age is listed. `state` narrows to `open` (unresolved and not acknowledged), `acknowledged` (unresolved and acknowledged: an
+         *     acknowledgement never resolves, Q-STOR-530), `resolved` or `all`. Each finding names the first three items that reference its
+         *     blob now and their number, read per page by digest (Q-STOR-531); an item deleted since is not named (H-2429). The items are
+         *     named to every holder of `settings:read`, as the damaged blobs' list names them (H-2434). Cursor pagination (R-API-010) over the
+         *     detection and the id.
+         */
+        get: operations["listStorageFindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/storage/findings/{id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge a damaged copy
+         * @description Records that a person knows of an unresolved finding (storage.md R-STOR-111): the time, the caller and an optional note of at
+         *     most 500 characters, which every reader of the storage page reads (H-2436). It never resolves the finding: a finding resolves by
+         *     what happens to its copy, never by a click (Q-STOR-530); the overview counts it as acknowledged and no longer as needing an act.
+         *     A second acknowledgement replaces the first. A resolved finding answers `409 finding_resolved`. Audited as
+         *     `storage.finding.acknowledged` in the same transaction (Q-OPS-472). It deletes, drains and repairs nothing.
+         */
+        post: operations["acknowledgeStorageFinding"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10247,8 +10357,16 @@ export interface components {
             serverSideCopyFrom: {
                 [key: string]: boolean;
             };
+            /** @description The server-side encryption the store reported for the start check's probe (storage.md R-STOR-032, Q-STOR-519), the actual state of today's writes beside the configured `sseMode`; `null` when the check wrote no probe it could ask about. */
+            sseApplied: components["schemas"]["StorageConnectionSSEApplied"] | null;
             /** Format: date-time */
             checkedAt: string | null;
+        };
+        StorageConnectionSSEApplied: {
+            /** @description `AES256`, `aws:kms` or `aws:kms:dsse`; empty when the store reported none. */
+            algorithm: string;
+            /** @description The KMS key the store named, an identifier; empty otherwise. */
+            kmsKeyId: string;
         };
         StorageConnectionSettings: {
             region: string;
@@ -10349,14 +10467,16 @@ export interface components {
             /** @description Which connections that hold content Quader encrypts (R-STOR-075). */
             encryption: {
                 /**
-                 * @description `encrypted` when Quader encrypts every such connection, `partly` when some, `provider_only` when none but each asks its store for server-side encryption, `off` otherwise.
+                 * @description `encrypted` when Quader encrypts every such connection, `partly` when some, `provider_only` when none but the store of each reported server-side encryption for the start check's probe (`providerApplied`), `off` otherwise.
                  * @enum {string}
                  */
                 state: "encrypted" | "partly" | "provider_only" | "off";
                 encrypted: string[];
                 plain: string[];
-                /** @description Connections whose element in the answering replica's configuration asks the store for server-side encryption (`sse_mode` other than `none`); what the store applied is not known to this answer. */
+                /** @description Connections whose element in the answering replica's configuration asks the store for server-side encryption (`sse_mode` other than `none`). */
                 providerConfigured: string[];
+                /** @description Connections whose store reported server-side encryption for the start check's probe (`capabilities.sseApplied`, R-STOR-032), a bucket default under `none` included; it may differ from `providerConfigured`. */
+                providerApplied: string[];
                 /**
                  * Format: double
                  * @description The encrypted connections' stored bytes over all stored bytes, from the latest summary.
@@ -10405,6 +10525,228 @@ export interface components {
                     blobs: number;
                 };
             };
+            problems: components["schemas"]["StorageOverviewProblems"];
+        };
+        /** @description The problems of the period (storage.md R-STOR-111). */
+        StorageOverviewProblems: {
+            /** @enum {string} */
+            period: "24h" | "7d" | "30d" | "90d" | "1y";
+            /**
+             * @description `ongoing` while a connection is unreachable now, a blob has no whole copy, a finding no other copy held is unresolved, or an outage, a failing start check, a refused upload or a read no copy served lasts or ended within the last hour (Q-STOR-529); `open` while a finding is neither resolved nor acknowledged; `resolved` when the period holds only ended problems; `none` otherwise.
+             * @enum {string}
+             */
+            state: "none" | "resolved" | "open" | "ongoing";
+            /** @description The problems of the period. */
+            count: number;
+            /**
+             * Format: int64
+             * @description Findings of the period neither resolved nor acknowledged.
+             */
+            open: number;
+            /**
+             * Format: int64
+             * @description Findings of the period acknowledged and not resolved.
+             */
+            acknowledged: number;
+            /** @description The worst problem (H-2433) by tone, then duration, then bytes, then the newer; `null` without one. */
+            worst: components["schemas"]["StorageOverviewWorstProblem"] | null;
+        };
+        StorageOverviewWorstProblem: {
+            kind: components["schemas"]["StorageProblemKind"];
+            connection: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: int64 */
+            seconds: number;
+            /** @enum {string} */
+            tone: "warning" | "error";
+        };
+        /** @enum {string} */
+        StorageProblemKind: "unreachable" | "start_check_failed" | "copies_damaged" | "uploads_refused" | "reads_unavailable";
+        /** @description The cells of a period per connection (storage.md R-STOR-111). */
+        StorageHistory: {
+            /** @enum {string} */
+            period: "24h" | "7d" | "30d" | "90d" | "1y";
+            /** Format: date-time */
+            from: string;
+            /**
+             * Format: date-time
+             * @description The time of the answer; the cells are counted back from it.
+             */
+            to: string;
+            /** Format: int64 */
+            bucketSeconds: number;
+            connections: components["schemas"]["StorageHistoryConnection"][];
+        };
+        StorageHistoryConnection: {
+            id: string;
+            /** @description The period's cells, oldest first. */
+            buckets: components["schemas"]["StorageHistoryBucket"][];
+            findings: components["schemas"]["StorageFindingsTotal"];
+        };
+        StorageHistoryBucket: {
+            /** Format: date-time */
+            start: string;
+            /** @enum {string} */
+            tone: "none" | "warning" | "error";
+            /**
+             * Format: int64
+             * @description How long the connection was unreachable on at least one replica within the cell.
+             */
+            unreachableSeconds: number;
+            /** @description The replicas on which it was unreachable within the cell. */
+            replicas: number;
+            /** @description Intervals of a failing start check that overlap the cell. */
+            startChecksFailed: number;
+            /** Format: int64 */
+            damagedCopies: number;
+            /** Format: int64 */
+            damagedBytes: number;
+            /**
+             * Format: int64
+             * @description Blobs of the cell's findings that no other copy held when they were found.
+             */
+            unavailableBlobs: number;
+            /** Format: int64 */
+            readFallovers: number;
+            /** Format: int64 */
+            readsUnavailable: number;
+            /** Format: int64 */
+            writeFallovers: number;
+            /** Format: int64 */
+            uploadsRefused: number;
+            /** Format: int64 */
+            copiesFailed: number;
+            /**
+             * Format: int64
+             * @description Reads the stored format refused (R-STOR-082), `unknownKeyReads` included.
+             */
+            readsRefused: number;
+            /**
+             * Format: int64
+             * @description Reads refused because the copy names a storage key the replica does not know; they mark no copy.
+             */
+            unknownKeyReads: number;
+        };
+        /** @description A connection's findings of the period. */
+        StorageFindingsTotal: {
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            bytes: number;
+            /**
+             * Format: int64
+             * @description Findings beyond the cap of a day, counted and not listed (H-2428).
+             */
+            unlisted: number;
+            /** @description Per outcome (`open`, `acknowledged`, `rewritten`, `found_again`, `superseded`, `deleted`, `reconciled`), how many. */
+            byOutcome: {
+                [key: string]: number;
+            };
+            /** @description Per source (`download`, `read`, `scrub`, `recheck`, `reconcile`, `drain`, `sweep`, `other`), how many. */
+            bySource: {
+                [key: string]: number;
+            };
+        };
+        /** @description One problem of a period (storage.md R-STOR-111). The figures that do not apply to its kind are 0. */
+        StorageProblem: {
+            kind: components["schemas"]["StorageProblemKind"];
+            connection: string;
+            /** Format: date-time */
+            startedAt: string;
+            /**
+             * Format: date-time
+             * @description `null` while it lasts.
+             */
+            endedAt: string | null;
+            /**
+             * Format: int64
+             * @description From its start to its end, to now while it lasts.
+             */
+            seconds: number;
+            /** @enum {string} */
+            tone: "warning" | "error";
+            /** @description The replicas that recorded an interval of it. */
+            replicas: number;
+            /**
+             * Format: int64
+             * @description How often the connection fell away within it.
+             */
+            occurrences: number;
+            /**
+             * Format: int64
+             * @description The copies damaged, the uploads refused or the reads no copy served.
+             */
+            count: number;
+            /** Format: int64 */
+            bytes: number;
+            /** Format: int64 */
+            resolved: number;
+            /** Format: int64 */
+            open: number;
+            /** Format: int64 */
+            acknowledged: number;
+            /**
+             * Format: int64
+             * @description Findings whose blob no other present copy held when they were found.
+             */
+            unavailable: number;
+            /** @description The failure codes of an interval (never the store's text, Q-STOR-517), or the reasons of the counts and the findings. */
+            codes: string[];
+            /** @description The sources of the findings. */
+            sources: string[];
+            /** @description The steps of a failing start check. */
+            steps: string[];
+        };
+        StorageProblemList: {
+            items: components["schemas"]["StorageProblem"][];
+            nextCursor: string | null;
+        };
+        /** @description A copy found damaged (storage.md R-STOR-108). */
+        StorageFinding: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            detectedAt: string;
+            connection: string;
+            sha256: string;
+            /** @enum {string} */
+            status: "missing" | "corrupt";
+            /** @enum {string} */
+            source: "download" | "read" | "scrub" | "recheck" | "reconcile" | "drain" | "sweep" | "other";
+            /** @description `not_found`, `size`, `digest`, a step of the stored format (`record`, `commitment`, `segment`, `final`, `format`, `destroyed_key`), or the status when the writer named none. */
+            reason: string;
+            /** Format: int64 */
+            storedSize: number;
+            /** @description No other present copy existed when it was found. */
+            unavailable: boolean;
+            /** Format: date-time */
+            resolvedAt: string | null;
+            /** @enum {string|null} */
+            resolution: "rewritten" | "found_again" | "deleted" | "superseded" | "reconciled" | null;
+            acknowledged: components["schemas"]["StorageFindingAcknowledgement"] | null;
+            /** @description The first three items that reference the blob now. */
+            items: components["schemas"]["DamagedBlobItem"][];
+            /** Format: int64 */
+            itemCount: number;
+        };
+        StorageFindingAcknowledgement: {
+            /** Format: date-time */
+            at: string;
+            /** @description The person who acknowledged it; `null` when that person no longer exists. */
+            by: {
+                id: string;
+                name: string;
+            } | null;
+            note: string;
+        };
+        StorageFindingList: {
+            items: components["schemas"]["StorageFinding"][];
+            nextCursor: string | null;
+        };
+        StorageFindingAcknowledgeInput: {
+            /** @description Why the finding needs no act, shown to every reader of the page. */
+            note?: string;
         };
         /** @description A connection whose circuit is open on a live replica. */
         StorageOverviewUnreachable: {
@@ -20627,6 +20969,8 @@ export interface components {
         BastionInterface: number;
         /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
         Limit: number;
+        /** @description The period back from now (storage.md R-STOR-111) whose history is read. */
+        StoragePeriod: "24h" | "7d" | "30d" | "90d" | "1y";
         /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
         Cursor: string;
         /** @description The trust anchor's ID (R-SIG-015), the decimal `id` of the anchor; any other text names no anchor (`404`). */
@@ -21926,7 +22270,10 @@ export interface operations {
     };
     getStorageOverview: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The period back from now (storage.md R-STOR-111) whose history is read. */
+                period?: components["parameters"]["StoragePeriod"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -21942,8 +22289,255 @@ export interface operations {
                     "application/json": components["schemas"]["StorageOverview"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getStorageHistory: {
+        parameters: {
+            query?: {
+                /** @description The period back from now (storage.md R-STOR-111) whose history is read. */
+                period?: components["parameters"]["StoragePeriod"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cells of the period. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "period": "24h",
+                     *       "from": "2026-11-25T20:39:22Z",
+                     *       "to": "2026-11-26T20:39:22Z",
+                     *       "bucketSeconds": 3600,
+                     *       "connections": [
+                     *         {
+                     *           "id": "archive",
+                     *           "buckets": [
+                     *             {
+                     *               "start": "2026-11-25T20:39:22Z",
+                     *               "tone": "warning",
+                     *               "unreachableSeconds": 1260,
+                     *               "replicas": 3,
+                     *               "startChecksFailed": 0,
+                     *               "damagedCopies": 0,
+                     *               "damagedBytes": 0,
+                     *               "unavailableBlobs": 0,
+                     *               "readFallovers": 310,
+                     *               "readsUnavailable": 0,
+                     *               "writeFallovers": 41,
+                     *               "uploadsRefused": 0,
+                     *               "copiesFailed": 12,
+                     *               "readsRefused": 0,
+                     *               "unknownKeyReads": 0
+                     *             }
+                     *           ],
+                     *           "findings": {
+                     *             "count": 3,
+                     *             "bytes": 3250585,
+                     *             "unlisted": 0,
+                     *             "byOutcome": {
+                     *               "rewritten": 3
+                     *             },
+                     *             "bySource": {
+                     *               "scrub": 3
+                     *             }
+                     *           }
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["StorageHistory"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listStorageProblems: {
+        parameters: {
+            query?: {
+                /** @description The period back from now (storage.md R-STOR-111) whose history is read. */
+                period?: components["parameters"]["StoragePeriod"];
+                /** @description The id of a connection (storage.md R-STOR-050). */
+                connection?: string;
+                kind?: "unreachable" | "start_check_failed" | "copies_damaged" | "uploads_refused" | "reads_unavailable";
+                state?: "ongoing" | "ended" | "all";
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of problems. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "kind": "unreachable",
+                     *           "connection": "archive",
+                     *           "startedAt": "2026-11-19T01:10:00Z",
+                     *           "endedAt": "2026-11-19T02:22:00Z",
+                     *           "seconds": 4320,
+                     *           "tone": "warning",
+                     *           "replicas": 3,
+                     *           "occurrences": 4,
+                     *           "count": 0,
+                     *           "bytes": 0,
+                     *           "resolved": 0,
+                     *           "open": 0,
+                     *           "acknowledged": 0,
+                     *           "unavailable": 0,
+                     *           "codes": [
+                     *             "timeout"
+                     *           ],
+                     *           "sources": [],
+                     *           "steps": []
+                     *         }
+                     *       ],
+                     *       "nextCursor": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["StorageProblemList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listStorageFindings: {
+        parameters: {
+            query?: {
+                /** @description The period back from now (storage.md R-STOR-111) whose history is read. */
+                period?: components["parameters"]["StoragePeriod"];
+                /** @description The id of a connection (storage.md R-STOR-050). */
+                connection?: string;
+                state?: "open" | "acknowledged" | "resolved" | "all";
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of findings. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": 4182,
+                     *           "detectedAt": "2026-11-26T03:12:09Z",
+                     *           "connection": "default",
+                     *           "sha256": "5be0c1d2a3f4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+                     *           "status": "corrupt",
+                     *           "source": "scrub",
+                     *           "reason": "digest",
+                     *           "storedSize": 1153433,
+                     *           "unavailable": false,
+                     *           "resolvedAt": "2026-11-26T03:12:10Z",
+                     *           "resolution": "rewritten",
+                     *           "acknowledged": null,
+                     *           "items": [
+                     *             {
+                     *               "project": "web",
+                     *               "repository": "npm-local",
+                     *               "path": "lodash/-/lodash-4.17.21.tgz",
+                     *               "trashed": false
+                     *             }
+                     *           ],
+                     *           "itemCount": 3
+                     *         }
+                     *       ],
+                     *       "nextCursor": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["StorageFindingList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    acknowledgeStorageFinding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The finding's id. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                /**
+                 * @example {
+                 *       "note": "The bucket's lifecycle rule removed it; the platform team fixed the rule."
+                 *     }
+                 */
+                "application/json": components["schemas"]["StorageFindingAcknowledgeInput"];
+            };
+        };
+        responses: {
+            /** @description The finding, acknowledged. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageFinding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

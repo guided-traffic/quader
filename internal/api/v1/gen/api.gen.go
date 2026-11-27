@@ -5908,6 +5908,138 @@ func (e SnippetMarkKind) Valid() bool {
 	}
 }
 
+// Defines values for StorageFindingResolution.
+const (
+	StorageFindingResolutionDeleted     StorageFindingResolution = "deleted"
+	StorageFindingResolutionFoundAgain  StorageFindingResolution = "found_again"
+	StorageFindingResolutionLessThannil StorageFindingResolution = "<nil>"
+	StorageFindingResolutionReconciled  StorageFindingResolution = "reconciled"
+	StorageFindingResolutionRewritten   StorageFindingResolution = "rewritten"
+	StorageFindingResolutionSuperseded  StorageFindingResolution = "superseded"
+)
+
+// Valid indicates whether the value is a known member of the StorageFindingResolution enum.
+func (e StorageFindingResolution) Valid() bool {
+	switch e {
+	case StorageFindingResolutionDeleted:
+		return true
+	case StorageFindingResolutionFoundAgain:
+		return true
+	case StorageFindingResolutionLessThannil:
+		return true
+	case StorageFindingResolutionReconciled:
+		return true
+	case StorageFindingResolutionRewritten:
+		return true
+	case StorageFindingResolutionSuperseded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageFindingSource.
+const (
+	StorageFindingSourceDownload  StorageFindingSource = "download"
+	StorageFindingSourceDrain     StorageFindingSource = "drain"
+	StorageFindingSourceOther     StorageFindingSource = "other"
+	StorageFindingSourceRead      StorageFindingSource = "read"
+	StorageFindingSourceRecheck   StorageFindingSource = "recheck"
+	StorageFindingSourceReconcile StorageFindingSource = "reconcile"
+	StorageFindingSourceScrub     StorageFindingSource = "scrub"
+	StorageFindingSourceSweep     StorageFindingSource = "sweep"
+)
+
+// Valid indicates whether the value is a known member of the StorageFindingSource enum.
+func (e StorageFindingSource) Valid() bool {
+	switch e {
+	case StorageFindingSourceDownload:
+		return true
+	case StorageFindingSourceDrain:
+		return true
+	case StorageFindingSourceOther:
+		return true
+	case StorageFindingSourceRead:
+		return true
+	case StorageFindingSourceRecheck:
+		return true
+	case StorageFindingSourceReconcile:
+		return true
+	case StorageFindingSourceScrub:
+		return true
+	case StorageFindingSourceSweep:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageFindingStatus.
+const (
+	StorageFindingStatusCorrupt StorageFindingStatus = "corrupt"
+	StorageFindingStatusMissing StorageFindingStatus = "missing"
+)
+
+// Valid indicates whether the value is a known member of the StorageFindingStatus enum.
+func (e StorageFindingStatus) Valid() bool {
+	switch e {
+	case StorageFindingStatusCorrupt:
+		return true
+	case StorageFindingStatusMissing:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageHistoryPeriod.
+const (
+	StorageHistoryPeriodN1y  StorageHistoryPeriod = "1y"
+	StorageHistoryPeriodN24h StorageHistoryPeriod = "24h"
+	StorageHistoryPeriodN30d StorageHistoryPeriod = "30d"
+	StorageHistoryPeriodN7d  StorageHistoryPeriod = "7d"
+	StorageHistoryPeriodN90d StorageHistoryPeriod = "90d"
+)
+
+// Valid indicates whether the value is a known member of the StorageHistoryPeriod enum.
+func (e StorageHistoryPeriod) Valid() bool {
+	switch e {
+	case StorageHistoryPeriodN1y:
+		return true
+	case StorageHistoryPeriodN24h:
+		return true
+	case StorageHistoryPeriodN30d:
+		return true
+	case StorageHistoryPeriodN7d:
+		return true
+	case StorageHistoryPeriodN90d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageHistoryBucketTone.
+const (
+	StorageHistoryBucketToneError   StorageHistoryBucketTone = "error"
+	StorageHistoryBucketToneNone    StorageHistoryBucketTone = "none"
+	StorageHistoryBucketToneWarning StorageHistoryBucketTone = "warning"
+)
+
+// Valid indicates whether the value is a known member of the StorageHistoryBucketTone enum.
+func (e StorageHistoryBucketTone) Valid() bool {
+	switch e {
+	case StorageHistoryBucketToneError:
+		return true
+	case StorageHistoryBucketToneNone:
+		return true
+	case StorageHistoryBucketToneWarning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StorageOverviewAvailabilityState.
 const (
 	AtRisk     StorageOverviewAvailabilityState = "at_risk"
@@ -5998,6 +6130,120 @@ func (e StorageOverviewIntegrityState) Valid() bool {
 	case Repairing:
 		return true
 	case Verified:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageOverviewProblemsPeriod.
+const (
+	StorageOverviewProblemsPeriodN1y  StorageOverviewProblemsPeriod = "1y"
+	StorageOverviewProblemsPeriodN24h StorageOverviewProblemsPeriod = "24h"
+	StorageOverviewProblemsPeriodN30d StorageOverviewProblemsPeriod = "30d"
+	StorageOverviewProblemsPeriodN7d  StorageOverviewProblemsPeriod = "7d"
+	StorageOverviewProblemsPeriodN90d StorageOverviewProblemsPeriod = "90d"
+)
+
+// Valid indicates whether the value is a known member of the StorageOverviewProblemsPeriod enum.
+func (e StorageOverviewProblemsPeriod) Valid() bool {
+	switch e {
+	case StorageOverviewProblemsPeriodN1y:
+		return true
+	case StorageOverviewProblemsPeriodN24h:
+		return true
+	case StorageOverviewProblemsPeriodN30d:
+		return true
+	case StorageOverviewProblemsPeriodN7d:
+		return true
+	case StorageOverviewProblemsPeriodN90d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageOverviewProblemsState.
+const (
+	StorageOverviewProblemsStateNone     StorageOverviewProblemsState = "none"
+	StorageOverviewProblemsStateOngoing  StorageOverviewProblemsState = "ongoing"
+	StorageOverviewProblemsStateOpen     StorageOverviewProblemsState = "open"
+	StorageOverviewProblemsStateResolved StorageOverviewProblemsState = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the StorageOverviewProblemsState enum.
+func (e StorageOverviewProblemsState) Valid() bool {
+	switch e {
+	case StorageOverviewProblemsStateNone:
+		return true
+	case StorageOverviewProblemsStateOngoing:
+		return true
+	case StorageOverviewProblemsStateOpen:
+		return true
+	case StorageOverviewProblemsStateResolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageOverviewWorstProblemTone.
+const (
+	StorageOverviewWorstProblemToneError   StorageOverviewWorstProblemTone = "error"
+	StorageOverviewWorstProblemToneWarning StorageOverviewWorstProblemTone = "warning"
+)
+
+// Valid indicates whether the value is a known member of the StorageOverviewWorstProblemTone enum.
+func (e StorageOverviewWorstProblemTone) Valid() bool {
+	switch e {
+	case StorageOverviewWorstProblemToneError:
+		return true
+	case StorageOverviewWorstProblemToneWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageProblemTone.
+const (
+	StorageProblemToneError   StorageProblemTone = "error"
+	StorageProblemToneWarning StorageProblemTone = "warning"
+)
+
+// Valid indicates whether the value is a known member of the StorageProblemTone enum.
+func (e StorageProblemTone) Valid() bool {
+	switch e {
+	case StorageProblemToneError:
+		return true
+	case StorageProblemToneWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageProblemKind.
+const (
+	StorageProblemKindCopiesDamaged    StorageProblemKind = "copies_damaged"
+	StorageProblemKindReadsUnavailable StorageProblemKind = "reads_unavailable"
+	StorageProblemKindStartCheckFailed StorageProblemKind = "start_check_failed"
+	StorageProblemKindUnreachable      StorageProblemKind = "unreachable"
+	StorageProblemKindUploadsRefused   StorageProblemKind = "uploads_refused"
+)
+
+// Valid indicates whether the value is a known member of the StorageProblemKind enum.
+func (e StorageProblemKind) Valid() bool {
+	switch e {
+	case StorageProblemKindCopiesDamaged:
+		return true
+	case StorageProblemKindReadsUnavailable:
+		return true
+	case StorageProblemKindStartCheckFailed:
+		return true
+	case StorageProblemKindUnreachable:
+		return true
+	case StorageProblemKindUploadsRefused:
 		return true
 	default:
 		return false
@@ -8011,6 +8257,33 @@ func (e WhoamiPrincipalKind) Valid() bool {
 	}
 }
 
+// Defines values for StoragePeriod.
+const (
+	StoragePeriodN1y  StoragePeriod = "1y"
+	StoragePeriodN24h StoragePeriod = "24h"
+	StoragePeriodN30d StoragePeriod = "30d"
+	StoragePeriodN7d  StoragePeriod = "7d"
+	StoragePeriodN90d StoragePeriod = "90d"
+)
+
+// Valid indicates whether the value is a known member of the StoragePeriod enum.
+func (e StoragePeriod) Valid() bool {
+	switch e {
+	case StoragePeriodN1y:
+		return true
+	case StoragePeriodN24h:
+		return true
+	case StoragePeriodN30d:
+		return true
+	case StoragePeriodN7d:
+		return true
+	case StoragePeriodN90d:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ExportAuditEventsParamsFormat.
 const (
 	Csv   ExportAuditEventsParamsFormat = "csv"
@@ -9205,6 +9478,186 @@ func (e ListDamagedBlobsParamsStatus) Valid() bool {
 	case ListDamagedBlobsParamsStatusCorrupt:
 		return true
 	case ListDamagedBlobsParamsStatusMissing:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListStorageFindingsParamsPeriod.
+const (
+	ListStorageFindingsParamsPeriodN1y  ListStorageFindingsParamsPeriod = "1y"
+	ListStorageFindingsParamsPeriodN24h ListStorageFindingsParamsPeriod = "24h"
+	ListStorageFindingsParamsPeriodN30d ListStorageFindingsParamsPeriod = "30d"
+	ListStorageFindingsParamsPeriodN7d  ListStorageFindingsParamsPeriod = "7d"
+	ListStorageFindingsParamsPeriodN90d ListStorageFindingsParamsPeriod = "90d"
+)
+
+// Valid indicates whether the value is a known member of the ListStorageFindingsParamsPeriod enum.
+func (e ListStorageFindingsParamsPeriod) Valid() bool {
+	switch e {
+	case ListStorageFindingsParamsPeriodN1y:
+		return true
+	case ListStorageFindingsParamsPeriodN24h:
+		return true
+	case ListStorageFindingsParamsPeriodN30d:
+		return true
+	case ListStorageFindingsParamsPeriodN7d:
+		return true
+	case ListStorageFindingsParamsPeriodN90d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListStorageFindingsParamsState.
+const (
+	ListStorageFindingsParamsStateAcknowledged ListStorageFindingsParamsState = "acknowledged"
+	ListStorageFindingsParamsStateAll          ListStorageFindingsParamsState = "all"
+	ListStorageFindingsParamsStateOpen         ListStorageFindingsParamsState = "open"
+	ListStorageFindingsParamsStateResolved     ListStorageFindingsParamsState = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the ListStorageFindingsParamsState enum.
+func (e ListStorageFindingsParamsState) Valid() bool {
+	switch e {
+	case ListStorageFindingsParamsStateAcknowledged:
+		return true
+	case ListStorageFindingsParamsStateAll:
+		return true
+	case ListStorageFindingsParamsStateOpen:
+		return true
+	case ListStorageFindingsParamsStateResolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetStorageHistoryParamsPeriod.
+const (
+	GetStorageHistoryParamsPeriodN1y  GetStorageHistoryParamsPeriod = "1y"
+	GetStorageHistoryParamsPeriodN24h GetStorageHistoryParamsPeriod = "24h"
+	GetStorageHistoryParamsPeriodN30d GetStorageHistoryParamsPeriod = "30d"
+	GetStorageHistoryParamsPeriodN7d  GetStorageHistoryParamsPeriod = "7d"
+	GetStorageHistoryParamsPeriodN90d GetStorageHistoryParamsPeriod = "90d"
+)
+
+// Valid indicates whether the value is a known member of the GetStorageHistoryParamsPeriod enum.
+func (e GetStorageHistoryParamsPeriod) Valid() bool {
+	switch e {
+	case GetStorageHistoryParamsPeriodN1y:
+		return true
+	case GetStorageHistoryParamsPeriodN24h:
+		return true
+	case GetStorageHistoryParamsPeriodN30d:
+		return true
+	case GetStorageHistoryParamsPeriodN7d:
+		return true
+	case GetStorageHistoryParamsPeriodN90d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetStorageOverviewParamsPeriod.
+const (
+	GetStorageOverviewParamsPeriodN1y  GetStorageOverviewParamsPeriod = "1y"
+	GetStorageOverviewParamsPeriodN24h GetStorageOverviewParamsPeriod = "24h"
+	GetStorageOverviewParamsPeriodN30d GetStorageOverviewParamsPeriod = "30d"
+	GetStorageOverviewParamsPeriodN7d  GetStorageOverviewParamsPeriod = "7d"
+	GetStorageOverviewParamsPeriodN90d GetStorageOverviewParamsPeriod = "90d"
+)
+
+// Valid indicates whether the value is a known member of the GetStorageOverviewParamsPeriod enum.
+func (e GetStorageOverviewParamsPeriod) Valid() bool {
+	switch e {
+	case GetStorageOverviewParamsPeriodN1y:
+		return true
+	case GetStorageOverviewParamsPeriodN24h:
+		return true
+	case GetStorageOverviewParamsPeriodN30d:
+		return true
+	case GetStorageOverviewParamsPeriodN7d:
+		return true
+	case GetStorageOverviewParamsPeriodN90d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListStorageProblemsParamsPeriod.
+const (
+	ListStorageProblemsParamsPeriodN1y  ListStorageProblemsParamsPeriod = "1y"
+	ListStorageProblemsParamsPeriodN24h ListStorageProblemsParamsPeriod = "24h"
+	ListStorageProblemsParamsPeriodN30d ListStorageProblemsParamsPeriod = "30d"
+	ListStorageProblemsParamsPeriodN7d  ListStorageProblemsParamsPeriod = "7d"
+	ListStorageProblemsParamsPeriodN90d ListStorageProblemsParamsPeriod = "90d"
+)
+
+// Valid indicates whether the value is a known member of the ListStorageProblemsParamsPeriod enum.
+func (e ListStorageProblemsParamsPeriod) Valid() bool {
+	switch e {
+	case ListStorageProblemsParamsPeriodN1y:
+		return true
+	case ListStorageProblemsParamsPeriodN24h:
+		return true
+	case ListStorageProblemsParamsPeriodN30d:
+		return true
+	case ListStorageProblemsParamsPeriodN7d:
+		return true
+	case ListStorageProblemsParamsPeriodN90d:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListStorageProblemsParamsKind.
+const (
+	ListStorageProblemsParamsKindCopiesDamaged    ListStorageProblemsParamsKind = "copies_damaged"
+	ListStorageProblemsParamsKindReadsUnavailable ListStorageProblemsParamsKind = "reads_unavailable"
+	ListStorageProblemsParamsKindStartCheckFailed ListStorageProblemsParamsKind = "start_check_failed"
+	ListStorageProblemsParamsKindUnreachable      ListStorageProblemsParamsKind = "unreachable"
+	ListStorageProblemsParamsKindUploadsRefused   ListStorageProblemsParamsKind = "uploads_refused"
+)
+
+// Valid indicates whether the value is a known member of the ListStorageProblemsParamsKind enum.
+func (e ListStorageProblemsParamsKind) Valid() bool {
+	switch e {
+	case ListStorageProblemsParamsKindCopiesDamaged:
+		return true
+	case ListStorageProblemsParamsKindReadsUnavailable:
+		return true
+	case ListStorageProblemsParamsKindStartCheckFailed:
+		return true
+	case ListStorageProblemsParamsKindUnreachable:
+		return true
+	case ListStorageProblemsParamsKindUploadsRefused:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListStorageProblemsParamsState.
+const (
+	ListStorageProblemsParamsStateAll     ListStorageProblemsParamsState = "all"
+	ListStorageProblemsParamsStateEnded   ListStorageProblemsParamsState = "ended"
+	ListStorageProblemsParamsStateOngoing ListStorageProblemsParamsState = "ongoing"
+)
+
+// Valid indicates whether the value is a known member of the ListStorageProblemsParamsState enum.
+func (e ListStorageProblemsParamsState) Valid() bool {
+	switch e {
+	case ListStorageProblemsParamsStateAll:
+		return true
+	case ListStorageProblemsParamsStateEnded:
+		return true
+	case ListStorageProblemsParamsStateOngoing:
 		return true
 	default:
 		return false
@@ -19057,6 +19510,9 @@ type StorageConnectionCapabilities struct {
 
 	// ServerSideCopyFrom Per other connection on the same endpoint, whether a server-side copy from it worked.
 	ServerSideCopyFrom map[string]bool `json:"serverSideCopyFrom"`
+
+	// SseApplied The server-side encryption the store reported for the start check's probe (storage.md R-STOR-032, Q-STOR-519), the actual state of today's writes beside the configured `sseMode`; `null` when the check wrote no probe it could ask about.
+	SseApplied *StorageConnectionSSEApplied `json:"sseApplied"`
 }
 
 // StorageConnectionFigures defines model for StorageConnectionFigures.
@@ -19117,6 +19573,15 @@ type StorageConnectionList struct {
 	Connections []StorageConnection `json:"connections"`
 }
 
+// StorageConnectionSSEApplied defines model for StorageConnectionSSEApplied.
+type StorageConnectionSSEApplied struct {
+	// Algorithm `AES256`, `aws:kms` or `aws:kms:dsse`; empty when the store reported none.
+	Algorithm string `json:"algorithm"`
+
+	// KmsKeyId The KMS key the store named, an identifier; empty otherwise.
+	KmsKeyId string `json:"kmsKeyId"`
+}
+
 // StorageConnectionSettings defines model for StorageConnectionSettings.
 type StorageConnectionSettings struct {
 	BatchDelete                bool   `json:"batchDelete"`
@@ -19162,6 +19627,135 @@ type StorageCopyCount struct {
 	Blobs  int64 `json:"blobs"`
 	Bytes  int64 `json:"bytes"`
 	Copies int   `json:"copies"`
+}
+
+// StorageFinding A copy found damaged (storage.md R-STOR-108).
+type StorageFinding struct {
+	Acknowledged *StorageFindingAcknowledgement `json:"acknowledged"`
+	Connection   string                         `json:"connection"`
+	DetectedAt   time.Time                      `json:"detectedAt"`
+	Id           int64                          `json:"id"`
+	ItemCount    int64                          `json:"itemCount"`
+
+	// Items The first three items that reference the blob now.
+	Items []DamagedBlobItem `json:"items"`
+
+	// Reason `not_found`, `size`, `digest`, a step of the stored format (`record`, `commitment`, `segment`, `final`, `format`, `destroyed_key`), or the status when the writer named none.
+	Reason     string                    `json:"reason"`
+	Resolution *StorageFindingResolution `json:"resolution"`
+	ResolvedAt *time.Time                `json:"resolvedAt"`
+	Sha256     string                    `json:"sha256"`
+	Source     StorageFindingSource      `json:"source"`
+	Status     StorageFindingStatus      `json:"status"`
+	StoredSize int64                     `json:"storedSize"`
+
+	// Unavailable No other present copy existed when it was found.
+	Unavailable bool `json:"unavailable"`
+}
+
+// StorageFindingResolution defines model for StorageFinding.Resolution.
+type StorageFindingResolution string
+
+// StorageFindingSource defines model for StorageFinding.Source.
+type StorageFindingSource string
+
+// StorageFindingStatus defines model for StorageFinding.Status.
+type StorageFindingStatus string
+
+// StorageFindingAcknowledgeInput defines model for StorageFindingAcknowledgeInput.
+type StorageFindingAcknowledgeInput struct {
+	// Note Why the finding needs no act, shown to every reader of the page.
+	Note *string `json:"note,omitempty"`
+}
+
+// StorageFindingAcknowledgement defines model for StorageFindingAcknowledgement.
+type StorageFindingAcknowledgement struct {
+	At time.Time `json:"at"`
+
+	// By The person who acknowledged it; `null` when that person no longer exists.
+	By *struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"by"`
+	Note string `json:"note"`
+}
+
+// StorageFindingList defines model for StorageFindingList.
+type StorageFindingList struct {
+	Items      []StorageFinding `json:"items"`
+	NextCursor *string          `json:"nextCursor"`
+}
+
+// StorageFindingsTotal A connection's findings of the period.
+type StorageFindingsTotal struct {
+	// ByOutcome Per outcome (`open`, `acknowledged`, `rewritten`, `found_again`, `superseded`, `deleted`, `reconciled`), how many.
+	ByOutcome map[string]int64 `json:"byOutcome"`
+
+	// BySource Per source (`download`, `read`, `scrub`, `recheck`, `reconcile`, `drain`, `sweep`, `other`), how many.
+	BySource map[string]int64 `json:"bySource"`
+	Bytes    int64            `json:"bytes"`
+	Count    int64            `json:"count"`
+
+	// Unlisted Findings beyond the cap of a day, counted and not listed (H-2428).
+	Unlisted int64 `json:"unlisted"`
+}
+
+// StorageHistory The cells of a period per connection (storage.md R-STOR-111).
+type StorageHistory struct {
+	BucketSeconds int64                      `json:"bucketSeconds"`
+	Connections   []StorageHistoryConnection `json:"connections"`
+	From          time.Time                  `json:"from"`
+	Period        StorageHistoryPeriod       `json:"period"`
+
+	// To The time of the answer; the cells are counted back from it.
+	To time.Time `json:"to"`
+}
+
+// StorageHistoryPeriod defines model for StorageHistory.Period.
+type StorageHistoryPeriod string
+
+// StorageHistoryBucket defines model for StorageHistoryBucket.
+type StorageHistoryBucket struct {
+	CopiesFailed  int64 `json:"copiesFailed"`
+	DamagedBytes  int64 `json:"damagedBytes"`
+	DamagedCopies int64 `json:"damagedCopies"`
+	ReadFallovers int64 `json:"readFallovers"`
+
+	// ReadsRefused Reads the stored format refused (R-STOR-082), `unknownKeyReads` included.
+	ReadsRefused     int64 `json:"readsRefused"`
+	ReadsUnavailable int64 `json:"readsUnavailable"`
+
+	// Replicas The replicas on which it was unreachable within the cell.
+	Replicas int       `json:"replicas"`
+	Start    time.Time `json:"start"`
+
+	// StartChecksFailed Intervals of a failing start check that overlap the cell.
+	StartChecksFailed int                      `json:"startChecksFailed"`
+	Tone              StorageHistoryBucketTone `json:"tone"`
+
+	// UnavailableBlobs Blobs of the cell's findings that no other copy held when they were found.
+	UnavailableBlobs int64 `json:"unavailableBlobs"`
+
+	// UnknownKeyReads Reads refused because the copy names a storage key the replica does not know; they mark no copy.
+	UnknownKeyReads int64 `json:"unknownKeyReads"`
+
+	// UnreachableSeconds How long the connection was unreachable on at least one replica within the cell.
+	UnreachableSeconds int64 `json:"unreachableSeconds"`
+	UploadsRefused     int64 `json:"uploadsRefused"`
+	WriteFallovers     int64 `json:"writeFallovers"`
+}
+
+// StorageHistoryBucketTone defines model for StorageHistoryBucket.Tone.
+type StorageHistoryBucketTone string
+
+// StorageHistoryConnection defines model for StorageHistoryConnection.
+type StorageHistoryConnection struct {
+	// Buckets The period's cells, oldest first.
+	Buckets []StorageHistoryBucket `json:"buckets"`
+
+	// Findings A connection's findings of the period.
+	Findings StorageFindingsTotal `json:"findings"`
+	Id       string               `json:"id"`
 }
 
 // StorageOverview The state of the stored content now (storage.md R-STOR-107). Sizes are bytes, ratios numbers from 0 to 1.
@@ -19214,10 +19808,13 @@ type StorageOverview struct {
 		EncryptedShare float64  `json:"encryptedShare"`
 		Plain          []string `json:"plain"`
 
-		// ProviderConfigured Connections whose element in the answering replica's configuration asks the store for server-side encryption (`sse_mode` other than `none`); what the store applied is not known to this answer.
+		// ProviderApplied Connections whose store reported server-side encryption for the start check's probe (`capabilities.sseApplied`, R-STOR-032), a bucket default under `none` included; it may differ from `providerConfigured`.
+		ProviderApplied []string `json:"providerApplied"`
+
+		// ProviderConfigured Connections whose element in the answering replica's configuration asks the store for server-side encryption (`sse_mode` other than `none`).
 		ProviderConfigured []string `json:"providerConfigured"`
 
-		// State `encrypted` when Quader encrypts every such connection, `partly` when some, `provider_only` when none but each asks its store for server-side encryption, `off` otherwise.
+		// State `encrypted` when Quader encrypts every such connection, `partly` when some, `provider_only` when none but the store of each reported server-side encryption for the start check's probe (`providerApplied`), `off` otherwise.
 		State StorageOverviewEncryptionState `json:"state"`
 	} `json:"encryption"`
 
@@ -19255,6 +19852,9 @@ type StorageOverview struct {
 		State StorageOverviewIntegrityState `json:"state"`
 	} `json:"integrity"`
 
+	// Problems The problems of the period (storage.md R-STOR-111).
+	Problems StorageOverviewProblems `json:"problems"`
+
 	// Stored The live blobs and their bytes now, the folded totals (Q-STOR-504).
 	Stored struct {
 		Blobs int64 `json:"blobs"`
@@ -19268,7 +19868,7 @@ type StorageOverviewAvailabilityState string
 // StorageOverviewConnectionsState `unreachable` when no connection is reachable on any live replica; `degraded` when one is unreachable on some replica, one is detached, or no live replica configures any; `healthy` otherwise.
 type StorageOverviewConnectionsState string
 
-// StorageOverviewEncryptionState `encrypted` when Quader encrypts every such connection, `partly` when some, `provider_only` when none but each asks its store for server-side encryption, `off` otherwise.
+// StorageOverviewEncryptionState `encrypted` when Quader encrypts every such connection, `partly` when some, `provider_only` when none but the store of each reported server-side encryption for the start check's probe (`providerApplied`), `off` otherwise.
 type StorageOverviewEncryptionState string
 
 // StorageOverviewIntegrityState `damaged` while a live blob has no whole copy, `repairing` while a copy is missing or corrupt, `behind` while copies are overdue for the scrub, `checking` while its coverage is below 1 or before the first summary, `verified` otherwise.
@@ -19281,6 +19881,31 @@ type StorageOverviewLoss struct {
 	Connection string `json:"connection"`
 }
 
+// StorageOverviewProblems The problems of the period (storage.md R-STOR-111).
+type StorageOverviewProblems struct {
+	// Acknowledged Findings of the period acknowledged and not resolved.
+	Acknowledged int64 `json:"acknowledged"`
+
+	// Count The problems of the period.
+	Count int `json:"count"`
+
+	// Open Findings of the period neither resolved nor acknowledged.
+	Open   int64                         `json:"open"`
+	Period StorageOverviewProblemsPeriod `json:"period"`
+
+	// State `ongoing` while a connection is unreachable now, a blob has no whole copy, a finding no other copy held is unresolved, or an outage, a failing start check, a refused upload or a read no copy served lasts or ended within the last hour (Q-STOR-529); `open` while a finding is neither resolved nor acknowledged; `resolved` when the period holds only ended problems; `none` otherwise.
+	State StorageOverviewProblemsState `json:"state"`
+
+	// Worst The worst problem (H-2433) by tone, then duration, then bytes, then the newer; `null` without one.
+	Worst *StorageOverviewWorstProblem `json:"worst"`
+}
+
+// StorageOverviewProblemsPeriod defines model for StorageOverviewProblems.Period.
+type StorageOverviewProblemsPeriod string
+
+// StorageOverviewProblemsState `ongoing` while a connection is unreachable now, a blob has no whole copy, a finding no other copy held is unresolved, or an outage, a failing start check, a refused upload or a read no copy served lasts or ended within the last hour (Q-STOR-529); `open` while a finding is neither resolved nor acknowledged; `resolved` when the period holds only ended problems; `none` otherwise.
+type StorageOverviewProblemsState string
+
 // StorageOverviewUnreachable A connection whose circuit is open on a live replica.
 type StorageOverviewUnreachable struct {
 	// CircuitOpen Live replicas with the connection's circuit open.
@@ -19289,6 +19914,69 @@ type StorageOverviewUnreachable struct {
 	// Configured Live replicas that configure the connection.
 	Configured int    `json:"configured"`
 	Id         string `json:"id"`
+}
+
+// StorageOverviewWorstProblem defines model for StorageOverviewWorstProblem.
+type StorageOverviewWorstProblem struct {
+	Connection string                          `json:"connection"`
+	Kind       StorageProblemKind              `json:"kind"`
+	Seconds    int64                           `json:"seconds"`
+	StartedAt  time.Time                       `json:"startedAt"`
+	Tone       StorageOverviewWorstProblemTone `json:"tone"`
+}
+
+// StorageOverviewWorstProblemTone defines model for StorageOverviewWorstProblem.Tone.
+type StorageOverviewWorstProblemTone string
+
+// StorageProblem One problem of a period (storage.md R-STOR-111). The figures that do not apply to its kind are 0.
+type StorageProblem struct {
+	Acknowledged int64 `json:"acknowledged"`
+	Bytes        int64 `json:"bytes"`
+
+	// Codes The failure codes of an interval (never the store's text, Q-STOR-517), or the reasons of the counts and the findings.
+	Codes      []string `json:"codes"`
+	Connection string   `json:"connection"`
+
+	// Count The copies damaged, the uploads refused or the reads no copy served.
+	Count int64 `json:"count"`
+
+	// EndedAt `null` while it lasts.
+	EndedAt *time.Time         `json:"endedAt"`
+	Kind    StorageProblemKind `json:"kind"`
+
+	// Occurrences How often the connection fell away within it.
+	Occurrences int64 `json:"occurrences"`
+	Open        int64 `json:"open"`
+
+	// Replicas The replicas that recorded an interval of it.
+	Replicas int   `json:"replicas"`
+	Resolved int64 `json:"resolved"`
+
+	// Seconds From its start to its end, to now while it lasts.
+	Seconds int64 `json:"seconds"`
+
+	// Sources The sources of the findings.
+	Sources   []string  `json:"sources"`
+	StartedAt time.Time `json:"startedAt"`
+
+	// Steps The steps of a failing start check.
+	Steps []string           `json:"steps"`
+	Tone  StorageProblemTone `json:"tone"`
+
+	// Unavailable Findings whose blob no other present copy held when they were found.
+	Unavailable int64 `json:"unavailable"`
+}
+
+// StorageProblemTone defines model for StorageProblem.Tone.
+type StorageProblemTone string
+
+// StorageProblemKind defines model for StorageProblemKind.
+type StorageProblemKind string
+
+// StorageProblemList defines model for StorageProblemList.
+type StorageProblemList struct {
+	Items      []StorageProblem `json:"items"`
+	NextCursor *string          `json:"nextCursor"`
 }
 
 // StorageSummary The storage summary (storage.md R-STOR-028, operations-and-observability.md R-OPS-023). Sizes are bytes, ratios numbers from 0 to 1 rounded to four decimals.
@@ -21980,6 +22668,9 @@ type RepoKey = string
 // SignatureAnchorId defines model for SignatureAnchorId.
 type SignatureAnchorId = string
 
+// StoragePeriod defines model for StoragePeriod.
+type StoragePeriod string
+
 // UpstreamRepositoryKey defines model for UpstreamRepositoryKey.
 type UpstreamRepositoryKey = string
 
@@ -24129,6 +24820,72 @@ type ListDamagedBlobsParamsScope string
 // ListDamagedBlobsParamsStatus defines parameters for ListDamagedBlobs.
 type ListDamagedBlobsParamsStatus string
 
+// ListStorageFindingsParams defines parameters for ListStorageFindings.
+type ListStorageFindingsParams struct {
+	// Period The period back from now (storage.md R-STOR-111) whose history is read.
+	Period *ListStorageFindingsParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+
+	// Connection The id of a connection (storage.md R-STOR-050).
+	Connection *string                         `form:"connection,omitempty" json:"connection,omitempty"`
+	State      *ListStorageFindingsParamsState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListStorageFindingsParamsPeriod defines parameters for ListStorageFindings.
+type ListStorageFindingsParamsPeriod string
+
+// ListStorageFindingsParamsState defines parameters for ListStorageFindings.
+type ListStorageFindingsParamsState string
+
+// GetStorageHistoryParams defines parameters for GetStorageHistory.
+type GetStorageHistoryParams struct {
+	// Period The period back from now (storage.md R-STOR-111) whose history is read.
+	Period *GetStorageHistoryParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+}
+
+// GetStorageHistoryParamsPeriod defines parameters for GetStorageHistory.
+type GetStorageHistoryParamsPeriod string
+
+// GetStorageOverviewParams defines parameters for GetStorageOverview.
+type GetStorageOverviewParams struct {
+	// Period The period back from now (storage.md R-STOR-111) whose history is read.
+	Period *GetStorageOverviewParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+}
+
+// GetStorageOverviewParamsPeriod defines parameters for GetStorageOverview.
+type GetStorageOverviewParamsPeriod string
+
+// ListStorageProblemsParams defines parameters for ListStorageProblems.
+type ListStorageProblemsParams struct {
+	// Period The period back from now (storage.md R-STOR-111) whose history is read.
+	Period *ListStorageProblemsParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
+
+	// Connection The id of a connection (storage.md R-STOR-050).
+	Connection *string                         `form:"connection,omitempty" json:"connection,omitempty"`
+	Kind       *ListStorageProblemsParamsKind  `form:"kind,omitempty" json:"kind,omitempty"`
+	State      *ListStorageProblemsParamsState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListStorageProblemsParamsPeriod defines parameters for ListStorageProblems.
+type ListStorageProblemsParamsPeriod string
+
+// ListStorageProblemsParamsKind defines parameters for ListStorageProblems.
+type ListStorageProblemsParamsKind string
+
+// ListStorageProblemsParamsState defines parameters for ListStorageProblems.
+type ListStorageProblemsParamsState string
+
 // ListBackupRunsParams defines parameters for ListBackupRuns.
 type ListBackupRunsParams struct {
 	// Operation `create`, `delete` or `verify`.
@@ -24960,6 +25717,9 @@ type ImportSigningIdentityJSONRequestBody = SigningIdentityImport
 
 // CreateSigningKeyJSONRequestBody defines body for CreateSigningKey for application/json ContentType.
 type CreateSigningKeyJSONRequestBody = SigningKeyRequest
+
+// AcknowledgeStorageFindingJSONRequestBody defines body for AcknowledgeStorageFinding for application/json ContentType.
+type AcknowledgeStorageFindingJSONRequestBody = StorageFindingAcknowledgeInput
 
 // PutSystemBannerJSONRequestBody defines body for PutSystemBanner for application/json ContentType.
 type PutSystemBannerJSONRequestBody = BannerInput
@@ -26843,9 +27603,21 @@ type ServerInterface interface {
 	// RecheckDamagedBlob Read every copy of a blob whole now
 	// (POST /api/v1/storage/damaged-blobs/{sha256}/recheck)
 	RecheckDamagedBlob(w http.ResponseWriter, r *http.Request, sha256 string)
+	// ListStorageFindings List the damaged copies of a period
+	// (GET /api/v1/storage/findings)
+	ListStorageFindings(w http.ResponseWriter, r *http.Request, params ListStorageFindingsParams)
+	// AcknowledgeStorageFinding Acknowledge a damaged copy
+	// (POST /api/v1/storage/findings/{id}/acknowledge)
+	AcknowledgeStorageFinding(w http.ResponseWriter, r *http.Request, id int64)
+	// GetStorageHistory The cells of a period per connection
+	// (GET /api/v1/storage/history)
+	GetStorageHistory(w http.ResponseWriter, r *http.Request, params GetStorageHistoryParams)
 	// GetStorageOverview The storage overview
 	// (GET /api/v1/storage/overview)
-	GetStorageOverview(w http.ResponseWriter, r *http.Request)
+	GetStorageOverview(w http.ResponseWriter, r *http.Request, params GetStorageOverviewParams)
+	// ListStorageProblems List the problems of a period
+	// (GET /api/v1/storage/problems)
+	ListStorageProblems(w http.ResponseWriter, r *http.Request, params ListStorageProblemsParams)
 	// GetStorageSummary The storage summary
 	// (GET /api/v1/storage/summary)
 	GetStorageSummary(w http.ResponseWriter, r *http.Request)
@@ -44556,11 +45328,272 @@ func (siw *ServerInterfaceWrapper) RecheckDamagedBlob(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListStorageFindings operation middleware
+func (siw *ServerInterfaceWrapper) ListStorageFindings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStorageFindingsParams
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "connection" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "connection", r.URL.Query(), &params.Connection, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "connection"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "connection", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStorageFindings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcknowledgeStorageFinding operation middleware
+func (siw *ServerInterfaceWrapper) AcknowledgeStorageFinding(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcknowledgeStorageFinding(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStorageHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetStorageHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetStorageHistoryParams
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStorageHistory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetStorageOverview operation middleware
 func (siw *ServerInterfaceWrapper) GetStorageOverview(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetStorageOverviewParams
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetStorageOverview(w, r)
+		siw.Handler.GetStorageOverview(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStorageProblems operation middleware
+func (siw *ServerInterfaceWrapper) ListStorageProblems(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStorageProblemsParams
+
+	// ------------- Optional query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "connection" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "connection", r.URL.Query(), &params.Connection, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "connection"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "connection", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStorageProblems(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -48202,6 +49235,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/damaged-blobs", wrapper.ListDamagedBlobs)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/storage/damaged-blobs/{sha256}/recheck", wrapper.RecheckDamagedBlob)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/overview", wrapper.GetStorageOverview)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/history", wrapper.GetStorageHistory)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/problems", wrapper.ListStorageProblems)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/findings", wrapper.ListStorageFindings)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/storage/findings/{id}/acknowledge", wrapper.AcknowledgeStorageFinding)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/summary", wrapper.GetStorageSummary)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/storage-connections", wrapper.ListStorageConnections)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/storage-connections/{id}", wrapper.GetStorageConnection)

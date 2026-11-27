@@ -7,14 +7,15 @@ import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { NoValue } from '../../../shared/ui/no-value';
 import { Tooltip } from '../../../shared/ui/tooltip';
 import { StorageMeter } from './storage-meter';
-import { EncryptsRow, holdingConnections, inFormat, keyRing, percentOf, whatQuaderEncrypts } from './storage-model';
+import { EncryptsRow, appliedSse, holdingConnections, inFormat, keyRing, percentOf, whatQuaderEncrypts } from './storage-model';
 
 /**
  * The section **Encryption** of Settings › Storage (api-and-ui.md R-UI-264; storage.md R-STOR-075, R-STOR-032): per connection whether
- * Quader encrypts it, since when and how much of it is in Quader's format; what the object store is asked for, beside what it applied
- * (B.7: configured and actual in two columns, "Differs" where they disagree; the applied mode is read by the history's package, until
- * then "not checked yet"); its storage keys by identifier. Then what Quader encrypts, family by family (Q-UI-1588), and the root key's
- * ring. Identifiers and times only: never key material, a sealed value or a credential.
+ * Quader encrypts it, since when and how much of it is in Quader's format; what the object store is asked for, beside what it applied to
+ * the start check's probe (B.7: configured and actual in two columns, "Differs" where the store did not apply what it is asked for, a
+ * bucket default under `none` named, Q-UI-1610; "not checked yet" before a probe); its storage keys by identifier. Then what Quader
+ * encrypts, family by family (Q-UI-1588), and the root key's ring. Identifiers and times only: never key material, a sealed value or a
+ * credential.
  */
 @Component({
   selector: 'quader-storage-encryption',
@@ -28,6 +29,7 @@ export class EncryptionSection {
   readonly ring = input<EncryptionStatus | null>(null);
 
   protected readonly inFormat = inFormat;
+  protected readonly applied = appliedSse;
   protected readonly keyRing = keyRing;
   protected readonly percent = percentOf;
 

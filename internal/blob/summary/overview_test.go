@@ -3,6 +3,9 @@ package summary
 import (
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/history"
 )
 
 // Unit tests of the storage overview's states (storage.md R-STOR-107, Q-STOR-506): every state of every tile from views and snapshots
@@ -87,13 +90,60 @@ func TestR_STOR_107_TheStatesOfTheOverview(t *testing.T) {
 		{"Encryption partly: one plain beside one encrypted", OverviewInput{Views: []View{
 			overviewView("default", figures(1, nil)), overviewView("archive", both(figures(3, nil), func(v *View) { v.Encrypted = true })),
 		}}, enc, EncryptionPartly},
-		{"Encryption provider only: none by Quader, each asks its store", OverviewInput{Views: []View{
-			overviewView("default", func(v *View) { v.Local = &Local{Settings: Settings{SSEMode: "s3"}} }),
-			overviewView("archive", func(v *View) { v.Local = &Local{Settings: Settings{SSEMode: "kms", SSEKMSKeyID: "alias/quader"}} }),
+		{"Encryption provider only: none by Quader, each store applied server-side encryption, a bucket default under none included", OverviewInput{Views: []View{
+			overviewView("default", applied("AES256", "none")),
+			overviewView("archive", applied("aws:kms", "kms")),
 		}}, enc, EncryptionProviderOnly},
+		{"Encryption off: each store asked, one reported nothing applied", OverviewInput{Views: []View{
+			overviewView("default", applied("AES256", "s3")),
+			overviewView("archive", applied("", "kms")),
+		}}, enc, EncryptionOff},
 		{"Encryption off: neither", OverviewInput{Views: []View{
 			overviewView("default", func(v *View) { v.Local = &Local{Settings: Settings{SSEMode: "none"}} }),
 		}}, enc, EncryptionOff},
+		{"Problems none: nothing in the period", OverviewInput{Views: twoHealthy(), Latest: snap(2, 0)}, probs, ProblemsNone},
+		{"Problems resolved: an outage that ended two hours ago and repaired copies", OverviewInput{
+			Views: twoHealthy(), Latest: snap(2, 0),
+			Problems: []history.Problem{
+				{Kind: history.ProblemUnreachable, Started: now.Add(-3 * time.Hour), Ended: now.Add(-2 * time.Hour), Tone: history.ToneWarning},
+				{Kind: history.ProblemCopiesDamaged, Started: now.Add(-5 * time.Hour), Ended: now.Add(-4 * time.Hour), Count: 3, Resolved: 3},
+			},
+		}, probs, ProblemsResolved},
+		{
+			"Problems resolved: an acknowledged finding waits for no act",
+			OverviewInput{
+				Views: twoHealthy(), Latest: snap(2, 0),
+				Problems: []history.Problem{{Kind: history.ProblemCopiesDamaged, Started: now.Add(-5 * time.Hour), Count: 1, Acknowledged: 1}},
+			},
+			probs, ProblemsResolved,
+		},
+		{"Problems open: a finding neither resolved nor acknowledged", OverviewInput{
+			Views: twoHealthy(), Latest: snap(2, 0),
+			Problems: []history.Problem{{Kind: history.ProblemCopiesDamaged, Started: now.Add(-5 * time.Hour), Count: 1, Open: 1}},
+		}, probs, ProblemsOpen},
+		{
+			"Problems ongoing: an outage that ended within the hour",
+			OverviewInput{
+				Views: twoHealthy(), Latest: snap(2, 0),
+				Problems: []history.Problem{{Kind: history.ProblemUnreachable, Started: now.Add(-2 * time.Hour), Ended: now.Add(-30 * time.Minute)}},
+			},
+			probs, ProblemsOngoing,
+		},
+		{"Problems ongoing: refused uploads in the current hour", OverviewInput{
+			Views: twoHealthy(), Latest: snap(2, 0),
+			Problems: []history.Problem{{Kind: history.ProblemUploadsRefused, Started: now.Add(-20 * time.Minute)}},
+		}, probs, ProblemsOngoing},
+		{
+			"Problems ongoing: an unresolved finding no other copy held",
+			OverviewInput{
+				Views: twoHealthy(), Latest: snap(2, 0),
+				Problems: []history.Problem{{Kind: history.ProblemCopiesDamaged, Started: now.Add(-50 * time.Hour), Open: 1, Unavailable: 1, UnavailableOpen: 1}},
+			},
+			probs, ProblemsOngoing,
+		},
+		{"Problems ongoing: a connection unreachable now", OverviewInput{Views: []View{
+			overviewView("default", figures(4, nil)), overviewView("archive", func(v *View) { v.CircuitOpen = 1 }),
+		}}, probs, ProblemsOngoing},
 		{"Integrity verified: nothing damaged, every copy read within the period", OverviewInput{Views: twoHealthy(), Latest: snap(2, 0)}, integ, IntegrityVerified},
 		{"Integrity checking: coverage below 1, nothing overdue", OverviewInput{Views: []View{
 			overviewView("default", figures(4, func(c *Connection) { c.VerifiedWithinPeriod = 3 })),
@@ -152,7 +202,46 @@ func TestR_STOR_107_TheStatesOfTheOverview(t *testing.T) {
 	})
 }
 
+// applied gives a view the server-side encryption its store reported for the start check's probe and the mode its element asks for.
+func applied(algorithm, mode string) func(*View) {
+	return func(v *View) {
+		v.Local = &Local{Settings: Settings{SSEMode: mode}}
+		v.Capabilities = &blob.Capabilities{SSEApplied: &blob.SSEApplied{Algorithm: algorithm}}
+	}
+}
+
+func TestR_STOR_111_TheWorstProblemOfThePeriod(t *testing.T) {
+	now := time.Date(2026, 11, 26, 21, 0, 0, 0, time.UTC)
+	outage := history.Problem{
+		Kind: history.ProblemUnreachable, Connection: "archive", Started: now.Add(-48 * time.Hour), Ended: now.Add(-47 * time.Hour),
+		Seconds: 3600, Tone: history.ToneWarning,
+	}
+	longer := outage
+	longer.Started, longer.Seconds = now.Add(-30*time.Hour), 7200
+	refused := history.Problem{
+		Kind: history.ProblemUploadsRefused, Connection: "default", Started: now.Add(-72 * time.Hour), Ended: now.Add(-71 * time.Hour),
+		Seconds: 3600, Count: 2, Tone: history.ToneError,
+	}
+	o := DeriveOverview(OverviewInput{Period: "30d", Problems: []history.Problem{outage, longer}}, now)
+	if o.Problems.Worst == nil || !o.Problems.Worst.Started.Equal(longer.Started) || o.Problems.Count != 2 || o.Problems.Period != "30d" {
+		t.Errorf("the longer of two warnings: %+v", o.Problems)
+	}
+	o = DeriveOverview(OverviewInput{Problems: []history.Problem{outage, longer, refused}}, now)
+	if o.Problems.Worst == nil || o.Problems.Worst.Kind != history.ProblemUploadsRefused {
+		t.Errorf("an error before a longer warning: %+v", o.Problems.Worst)
+	}
+	same := outage
+	same.Started = outage.Started.Add(time.Minute)
+	if o := DeriveOverview(OverviewInput{Problems: []history.Problem{outage, same}}, now); !o.Problems.Worst.Started.Equal(same.Started) {
+		t.Errorf("of two equal ones the newer: %+v", o.Problems.Worst)
+	}
+	if o := DeriveOverview(OverviewInput{}, now); o.Problems.Worst != nil || o.Problems.State != ProblemsNone {
+		t.Errorf("empty: %+v", o.Problems)
+	}
+}
+
 func conn(o Overview) string  { return o.Connections.State }
+func probs(o Overview) string { return o.Problems.State }
 func avail(o Overview) string { return o.Availability.State }
 func enc(o Overview) string   { return o.Encryption.State }
 func integ(o Overview) string { return o.Integrity.State }

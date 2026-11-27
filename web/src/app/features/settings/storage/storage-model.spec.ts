@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { sampleConnection, sampleOverview } from '../../../api/testing/fakes-storage';
-import { capacityUse, connectionState, percentOf, problemsNow, roleOf, tileTone, tileWord, whatQuaderEncrypts } from './storage-model';
+import { sampleConnection } from '../../../api/testing/fakes-storage';
+import { appliedSse, capacityUse, connectionState, percentOf, roleOf, tileTone, tileWord, whatQuaderEncrypts } from './storage-model';
 
 const TIB = 1024 ** 4;
 
@@ -45,20 +45,29 @@ describe('The words of Settings › Storage (R-UI-262 to R-UI-264)', () => {
       ['integrity', 'repairing', 'Repairing', 'warn'],
       ['integrity', 'damaged', 'Damaged', 'bad'],
       ['problems', 'none', 'None', 'ok'],
+      ['problems', 'resolved', 'Resolved', 'neutral'],
       ['problems', 'open', 'Open', 'warn'],
       ['problems', 'ongoing', 'Ongoing', 'bad'],
     ];
     expect(rows.map(([k, s]) => [k, s, tileWord(k, s), tileTone(k, s)])).toEqual(rows);
   });
 
-  it('R-UI-262 the problems of now are the server\'s states: an unreachable connection or an unavailable blob is ongoing, a copy to repair open', () => {
-    expect(problemsNow(sampleOverview())).toBe('none');
-    const o = sampleOverview();
-    expect(problemsNow({ ...o, integrity: { ...o.integrity, state: 'repairing', damagedNow: { copies: 3, blobs: 0 } } })).toBe('open');
-    expect(problemsNow({ ...o, integrity: { ...o.integrity, state: 'damaged', damagedNow: { copies: 3, blobs: 1 } } })).toBe('ongoing');
-    expect(
-      problemsNow({ ...o, connections: { ...o.connections, state: 'degraded', unreachable: [{ id: 'default', circuitOpen: 1, configured: 3 }] } }),
-    ).toBe('ongoing');
+  it('R-UI-264 what a store applied against what it is asked for: a mode not applied differs, a bucket default under none does not', () => {
+    const at = (mode: string, algorithm: string | null) =>
+      appliedSse(
+        sampleConnection({
+          settings: { ...sampleConnection().settings!, sseMode: mode },
+          capabilities: { ...sampleConnection().capabilities!, sseApplied: algorithm === null ? null : { algorithm, kmsKeyId: '' } },
+        }),
+      );
+    expect(at('none', null)).toBeNull();
+    expect(at('none', '')).toEqual({ algorithm: '', kmsKeyId: '', differs: false, bucketDefault: false });
+    expect(at('none', 'AES256')).toEqual({ algorithm: 'AES256', kmsKeyId: '', differs: false, bucketDefault: true });
+    expect(at('s3', 'AES256')?.differs).toBe(false);
+    expect(at('s3', '')?.differs).toBe(true);
+    expect(at('kms', 'aws:kms')?.differs).toBe(false);
+    expect(at('kms', 'aws:kms:dsse')?.differs).toBe(false);
+    expect(at('kms', 'AES256')?.differs).toBe(true);
   });
 
   it('R-UI-264 what Quader encrypts names every family of the stored content, the artifacts by connection (H-2432)', () => {

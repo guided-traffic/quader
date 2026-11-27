@@ -3292,7 +3292,10 @@ of R-OPS-019 (one path per function, Q-API-9 and R-API-020):
 | POST | `/api/v1/system/tasks/orphan-sweep/run`, `/api/v1/system/tasks/scrub/run` | Start an orphan sweep or an integrity scrub (P1, R-STOR-026, R-STOR-027) | `admin` |
 | GET | `/api/v1/storage/damaged-blobs` | Damaged blobs and copies (`scope=blobs`, `scope=copies`), each with its copies and referencing items (P1, R-STOR-027, Q-API-386; built) | `settings:read`, the `storage.read` of [operations-and-observability.md](operations-and-observability.md) ([storage.md](storage.md) Q-STOR-267) |
 | POST | `/api/v1/storage/damaged-blobs/{sha256}/recheck` | Read every copy of one blob whole now; a per-resource action, not a task, audited as `storage.blob.rechecked` (P1, R-STOR-027, Q-API-477; built) | `settings:write` (`admin`) |
-| GET | `/api/v1/storage/overview` | The state of the stored content now: connections, stored, copies against the target, encryption, integrity, each with a state derived by the server (P1, R-STOR-107, Q-API-475; built, `getStorageOverview`) | `settings:read` |
+| GET | `/api/v1/storage/overview?period=` | The state of the stored content now: connections, stored, copies against the target, encryption, integrity, and the problems of the period, each with a state derived by the server (P1, R-STOR-107, R-STOR-111, Q-API-475; built, `getStorageOverview`) | `settings:read` |
+| GET | `/api/v1/storage/history?period=` | The cells of the period per connection, with its findings' totals (P1, R-STOR-111, Q-API-478; built, `getStorageHistory`) | `settings:read` |
+| GET | `/api/v1/storage/problems`, `/api/v1/storage/findings` | The problems and the damaged copies of a period, paged (P1, R-STOR-111, Q-API-479, Q-API-480; built, `listStorageProblems`, `listStorageFindings`) | `settings:read` |
+| POST | `/api/v1/storage/findings/{id}/acknowledge` | Record that a person knows of an unresolved finding; resolves nothing; `409 finding_resolved` for a resolved one; audited as `storage.finding.acknowledged` (P1, R-STOR-111, Q-API-481, Q-API-482; built, `acknowledgeStorageFinding`) | `settings:write` (`admin`) |
 | GET | `/api/v1/system/storage-connections`, `/api/v1/system/storage-connections/{id}` | The object-store connections with state, fill, backlog and capabilities (P1, R-STOR-061, Q-API-385, Q-API-406; built, `listStorageConnections`, `getStorageConnection`) | `settings:read` |
 | POST | `/api/v1/system/tasks/storage-reconcile/run` | Start a reconciliation run (P1, R-STOR-056; built); 202 with the job, 409 with the active one | `admin` |
 
@@ -11042,7 +11045,10 @@ connections belong on the page. ([ADR-316](../decisions.md#adr-316--one-page-for
 - **Where.** `/admin/settings/storage`, the fifth page of the group **Settings**, title **Storage**, for holders of `settings:read`; the
   tab Storage of System status and its route are gone (R-UI-196 moved here). It takes the content panel's width
   ([Q-UI-1580](#q-ui-1580--the-storage-page-takes-the-content-panels-width)); the section Download links keeps its measure.
-- **The header.** The title, the note of R-UI-005 for a reader without `settings:write`, and one muted line: "Figures counted
+- **The header.** The title with the period beside it: five buttons "24 h · 7 d · 30 d · 90 d · 1 year", the pressed one in the selection's
+  fill, 30 d by default, kept in the address as `?period=` (none for 30 d) so that a link carries it and no reload is needed
+  ([Q-UI-1582](#q-ui-1582--the-period-is-a-segmented-group-kept-in-the-address), Q-UI-1602); another period asks every read of the period
+  anew, each section with its spinner. The note of R-UI-005 for a reader without `settings:write`, and one muted line: "Figures counted
   26.11.2026 21:17:00 (Thu.)" (the overview's `figuresAt`, through the one formatter of R-UI-250), "Figures not counted yet" before the first
   summary; a holder of `settings:write` has **Count now** beside it (the task `storage-summary`, audited as `system.task_triggered`),
   which says "Counting…" with the spinner while its job runs.
@@ -11050,17 +11056,19 @@ connections belong on the page. ([ADR-316](../decisions.md#adr-316--one-page-for
   `GET /api/v1/storage/overview` (R-STOR-107): **Connections** ("2 of 2 reachable", the unreachable and the detached ones by id),
   **Availability** ("Every blob on 2 connections", or the blobs and bytes below the target, or "No copy elsewhere"), **Encryption** ("1 of
   2 connections", "50 % of the bytes"), **Integrity** (the scrub's coverage, the damaged copies or blobs, the overdue copies; "Every read
-  checked: archive", the last scrub), **Problems now** and **Stored** (bytes, "in 412,093 blobs"). The states and their words are B.14's
+  checked: archive", the last scrub), **Problems · 30 d** and **Stored** (bytes, "in 412,093 blobs"). The states and their words are B.14's
   ([Q-UI-1587](#q-ui-1587--the-states-words-and-tones-of-the-summary)): every state is the server's (Q-STOR-505); green only for a
-  positive one. Until the history of the period is recorded (W-37 P4), the tile Problems names the problems of now: **Ongoing** while a
-  connection is unreachable on a replica, none is reachable or a blob has no whole copy, **Open** while copies wait for their repair, **None**
-  otherwise. A tile with a section on the page is a link to it ([Q-UI-1581](#q-ui-1581--a-tile-is-a-link-to-its-section)).
+  positive one. The tile Problems is the period's ([storage.md](storage.md) R-STOR-107, R-STOR-111): **None** (green), **Resolved** with "3
+  resolved", **Open** with the damaged copies open, **Ongoing** with what is unavailable or unreachable now; the acknowledged ones and the
+  worst problem ("Worst: archive unreachable 1 h 12 min") muted under it. Every tile but Stored is a link to its section
+  ([Q-UI-1581](#q-ui-1581--a-tile-is-a-link-to-its-section)).
 - **The sections, in the order of the owner's questions:** **Connections** and **Availability** (R-UI-263), **Encryption** (R-UI-264),
-  **Download links** (R-UI-200). Each section's heading has a help button whose tooltip says at most two sentences and whose link opens the
-  manual's section; no paragraph stands above a section.
+  **Integrity** and **Problems** (R-UI-265), **Download links** (R-UI-200). Each section's heading has a help button whose tooltip says at
+  most two sentences and whose link opens the manual's section; no paragraph stands above a section.
 - **Live** ([Q-UI-1583](#q-ui-1583--the-page-reads-every-30-s-while-seen-and-every-3-s-while-a-run-it-started-runs)): the page reads the
-  overview, the connections, the blobs no connection holds whole and the root key's ring again every 30 s while it is seen, every 3 s while a
-  run it started runs, never while it is hidden (R-UI-213); a read in place keeps what is shown. Every first load shows the spinner (R-UI-217);
+  overview, the connections, the history of the period, the problems and findings shown, the blobs no connection holds whole and the root
+  key's ring again every 30 s while it is seen, every 3 s while a run it started runs, never while it is hidden (R-UI-213); a read in place
+  keeps what is shown. Every first load shows the spinner (R-UI-217);
   a failed read keeps its notice with everything the answer carried in its place (R-UI-214, R-UI-216); nothing scrolls by itself (R-UI-215).
 - **Narrow screens** ([Q-UI-1591](#q-ui-1591--the-narrow-layout)): three tiles a row below 80 rem, two below 40 rem; the tables become cards
   below 48 rem; nothing scrolls sideways.
@@ -11069,8 +11077,8 @@ connections belong on the page. ([ADR-316](../decisions.md#adr-316--one-page-for
 
 *Built on 2026-11-26 (W-37 P3):* [storage-page.ts](../../web/src/app/features/settings/storage/storage-page.ts) and its template,
 [storage-summary.ts](../../web/src/app/features/settings/storage/storage-summary.ts),
-[storage-model.ts](../../web/src/app/features/settings/storage/storage-model.ts). The period group of B.3 is not built yet: no figure of
-this package reads a period, so the control waits for the history (W-37 P4) that gives it something to change.
+[storage-model.ts](../../web/src/app/features/settings/storage/storage-model.ts); the period and the tile Problems of the period on
+2026-11-27 (W-37 P4).
 
 Acceptance criteria (Vitest, [storage-page.spec.ts](../../web/src/app/features/settings/storage/storage-page.spec.ts) and
 [storage-model.spec.ts](../../web/src/app/features/settings/storage/storage-model.spec.ts), about 2 s; rendered under rule 11 of promt.md as
@@ -11078,7 +11086,10 @@ the screens `admin-settings-storage`, `admin-settings-storage-read` and `admin-s
 
 - One store: the header names when the figures were counted; the tiles say Healthy, One store, Off, Verified and None, the neutral ones
   without green; the sections follow in the order above; the tile Connections links `#connections`.
-- Every state of the overview has its word and its tone (19 rows of B.14); the problems of now are the server's states.
+- Every state of the overview has its word and its tone (20 rows of B.14); the tile Problems names its period, "3 resolved", the
+  acknowledged and the worst, and links `#problems`, the tile Integrity `#integrity`.
+- The period is the header's group, 30 d by default; another one goes into the address, and the overview, the history and both lists ask
+  for it anew ([problems-section.spec.ts](../../web/src/app/features/settings/storage/problems-section.spec.ts)).
 - The auditor reads the page and is offered no act; the administrator's **Count now** and **Run the reconciliation now** run their tasks.
 - The page reads again every 30 s while seen, every 3 s while its count runs, and not while hidden.
 
@@ -11114,7 +11125,9 @@ over several connections for availability). It takes R-UI-196's content.
     1,234 blobs (12 GiB) unavailable" (warning) for the connection whose loss costs most, the others on demand; "One store: no copy elsewhere"
     (neutral) with one target connection;
   - per connection that holds content: **Holds** (bar and share of every blob), **Only here** (blobs and bytes of its sole copies),
-    **Backlog** (blobs, the oldest's age, "Behind for over an hour"), **Reconciliation** (the current pass since, the last full pass);
+    **Backlog** (blobs, the oldest's age, "Behind for over an hour"), **Reconciliation** (the current pass since, the last full pass), and
+    a column of the period: "310 reads from another copy", "41 writes to the next connection", "12 copies failed" (warning), from the
+    history's cells ([storage.md](storage.md) R-STOR-111, Q-UI-1612);
   - **Run the reconciliation now** for a holder of `settings:write` (the task `storage-reconcile`);
   - the blobs no connection holds whole, while there is one, as a closed section (R-UI-196's list: digest, state, each copy's state, the first
     referencing item; **Check again** for a holder of `settings:write`, audited as `storage.blob.rechecked`).
@@ -11123,7 +11136,8 @@ over several connections for availability). It takes R-UI-196's content.
 [availability-section.ts](../../web/src/app/features/settings/storage/availability-section.ts),
 [damaged-blobs.ts](../../web/src/app/features/settings/storage/damaged-blobs.ts),
 [storage-meter.ts](../../web/src/app/features/settings/storage/storage-meter.ts) ([Q-UI-1592](#q-ui-1592--the-meter-is-a-component-of-the-page)).
-The counts of the period (reads from another copy, writes to the next connection, copies that failed) come with the history (W-37 P4).
+The counts of the period, and the Connections table's strip of the period (tone only, one image named by its summary, given up below a
+list of 64 rem, Q-UI-1601, Q-UI-1609), on 2026-11-27 (W-37 P4).
 
 Acceptance criteria (Vitest, storage-page.spec.ts): two connections show the role with the marks of the links, the use nearly full and
 full, an unreachable and a filling one, and the loss line; several connections without a sole copy survive the loss of any one, in green;
@@ -11140,8 +11154,10 @@ The owner, 2026-11-26: whether and where Quader encrypts, and what. Configured a
   - **Quader**: "On since 22.11.2026 (Sun.)" (the first storage key's creation, `encryptedSince`) in green, the share of its present copies in
     Quader's format as a bar ("100 % in the format"; below 100 % **Differs** in the warning tone, which would be a defect), **Keyed names**;
     or **Off**;
-  - **Object store**: **Configured** `sse_mode` with the KMS key's identifier, beside **Actual**, the mode the store applied, which the start
-    check's probe records with the history (W-37 P4): until then "not checked yet";
+  - **Object store**: **Configured** `sse_mode` with the KMS key's identifier, beside **Actual**, what the store reported for the start
+    check's probe (`capabilities.sseApplied`): the algorithm with its KMS key, "not reported" when it named none, "not checked yet" before a
+    probe; **Differs** (warning) when the store did not apply the mode it is asked for, "bucket default" when it encrypts under `none`
+    ([Q-UI-1610](#q-ui-1610--the-applied-server-side-encryption-differs-only-when-what-is-asked-for-is-not-applied));
   - **Storage keys**: the active key's identifier and generation, the count of retired and destroyed keys, and the list on demand (each with
     its generation, state, creation and copies).
 - **What Quader encrypts** ([Q-UI-1588](#q-ui-1588--what-quader-encrypts-is-product-knowledge-in-the-page)): two columns of the families of the
@@ -11158,9 +11174,77 @@ template; the list's words are the product's knowledge
 ([H-2432](../security/stored-content-visibility.md#h-2432--what-quader-encrypts-on-the-storage-page-is-written-in-the-page)).
 
 Acceptance criteria (Vitest, storage-page.spec.ts and storage-model.spec.ts): an encrypted connection shows when it was switched on, its
-share in the format, its keyed names, its store's configured mode beside "not checked yet" and its keys by identifier, the list on demand; a
-share below 100 % differs in the warning tone; the list names every family, the artifacts by connection; no key material, credential or
+share in the format, its keyed names, its store's configured mode beside what it applied and its keys by identifier, the list on demand; a
+share below 100 % differs in the warning tone; a store that did not apply what it is asked for differs, a bucket default under `none` is
+named and no difference, a connection without a probe is "not checked yet"; the list names every family, the artifacts by connection; no key material, credential or
 signed address stands on the page.
+
+### R-UI-265 · The sections Integrity and Problems
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26: whether the integrity of the data can be checked, whether there were integrity problems lately, where and how much
+storage was affected, and whether there are or were problems; at 21:57: "Das Format … erlaubt auch die Integritätsprüfung der Daten … Der
+Zustand dieser Funktion muss ebenfalls auf dieser Seite transportiert werden." From the history of [storage.md](storage.md) R-STOR-108 to
+R-STOR-111.
+
+- **Integrity.** A table per connection that holds content:
+  - **Checks**, each a mark with a word, never a paragraph ([Q-UI-1611](#q-ui-1611--the-checks-of-a-connection-are-marks)): ✓ **Digest at
+    upload**; ✓ **Download check** (`storage.download.verify`), or — **Download check off**; on an encrypted connection ✓ **Every read
+    checked** "since 22.11.2026" (its first storage key), with "97 % in the format" in the warning tone below 100 %; on a plain one —
+    **Digest checks only**; ✓ **Writes confirmed** or — **Writes not confirmed** where the start check found the store's payload checksum
+    enforced or not;
+  - **Scrub**: the coverage meter "98 % within 30 days" (copies read whole within the connection's period), the copies overdue (warning),
+    "last 21:07, next 22:07" or "Running now", and **Scrub now** for a holder of `settings:write` on a connection the answering replica
+    configures (the task `scrub` with `{"connection"}`, audited as `system.task_triggered`; its spinner on its own row);
+  - **Damaged · 30 d**: the copies found damaged in the period with their bytes, then "1 open" (warning), "1 acknowledged" or "all resolved",
+    and the reads the format refused for an unknown key ("12 reads refused: unknown key"), which mark no copy.
+
+  Then **Findings**: a group **Open | All** (Open by default while the overview names an open finding, All otherwise,
+  [Q-UI-1603](#q-ui-1603--the-findings-filter-opens-on-open-while-open-ones-exist)) over the paged list ([Q-UI-1604](#q-ui-1604--the-columns-of-the-findings)):
+  **When** (the formatter), **Connection**, **Blob** (the short digest, the first item that references it with a link, "+ 2 more"),
+  **Bytes**, **Found by** ("Scrub · Digest"), **State** (Open in the warning tone, in the error tone with "No other copy" when no other copy
+  held it; Acknowledged with "by priya, 21.11.2026 09:00:00 (Sat.)" and the note; Repaired, Found again, Superseded, Deleted, Resolved). An
+  unresolved finding has a row menu with **Check again** (reads every copy whole now, writes no object) and **Acknowledge**
+  ([Q-UI-1606](#q-ui-1606--the-acts-of-a-finding-are-its-rows-menu)); a resolved one has none. **Acknowledge** opens a dialog that names the
+  copy, says in one sentence that it repairs nothing, and takes an optional note of at most 500 characters
+  ([Q-UI-1607](#q-ui-1607--the-acknowledge-dialog)); a refusal stays in the dialog with everything it carried (R-UI-216).
+- **Problems.** Per connection one strip of the period's cells, oldest first, the name beside it and the period's first and last time
+  under the strips ([Q-UI-1600](#q-ui-1600--a-cell-of-the-strip-is-a-button-with-its-words)): a cell is red when clients were refused,
+  amber when Quader absorbed it, empty when nothing happened (the server's tones, Q-STOR-528); each cell is a button whose name and tooltip
+  are its summary ("19.11.2026 (Wed.): unreachable 1 h 12 min on 3 replicas, 310 reads from another copy"), and a click names it under the
+  strip; the strip has a summary for assistive technology ([Q-UI-1601](#q-ui-1601--a-strip-has-a-summary-and-the-connections-strip-is-one-image)).
+  The strips never scroll sideways: the cells share the width. Then the paged list of the period's problems
+  ([Q-UI-1605](#q-ui-1605--the-columns-of-the-problems)): **When**, **Connection**, **What** (the kind in its tone with its icon, the codes,
+  sources or steps under it, the replicas of an outage, the copies without another copy), **Duration / amount** ("1 h 12 min", "3 copies
+  (3.1 MiB)", "2 uploads"), **State** (Ongoing, Ended; open and acknowledged of a day of findings).
+- **Empty** ([Q-UI-1608](#q-ui-1608--the-empty-sentences)): "No problem in this period.", "No damaged copy in this period.", "No open
+  damaged copy in this period."
+- **Live, loads and errors:** both lists grow the page with **Load more** (R-UI-215) and read again in place with the page (R-UI-213); a new
+  period or filter shows its load, never the rows of the one before (R-UI-217); a list's failure stands in its place (R-UI-216).
+- **Narrow** ([Q-UI-1609](#q-ui-1609--the-narrow-sections)): the tables stack as cards where their columns do not fit; the strips stand under their names below
+  40 rem at full width (30 cells of a 358 px strip are 10 px each, 52 are 5 px).
+- **Nothing that deletes, drains or touches a key** stands in either section (B.11); nothing secret: digests, ids, codes and item paths
+  (H-2434).
+
+*Built on 2026-11-27 (W-37 P4):* [integrity-section.ts](../../web/src/app/features/settings/storage/integrity-section.ts) and its template,
+[findings-list.ts](../../web/src/app/features/settings/storage/findings-list.ts),
+[acknowledge-dialog.ts](../../web/src/app/features/settings/storage/acknowledge-dialog.ts),
+[problems-section.ts](../../web/src/app/features/settings/storage/problems-section.ts) and its template,
+[timeline.ts](../../web/src/app/features/settings/storage/timeline.ts), the words of
+[storage-history.ts](../../web/src/app/features/settings/storage/storage-history.ts).
+
+Acceptance criteria (Vitest, [integrity-section.spec.ts](../../web/src/app/features/settings/storage/integrity-section.spec.ts),
+[problems-section.spec.ts](../../web/src/app/features/settings/storage/problems-section.spec.ts),
+[timeline.spec.ts](../../web/src/app/features/settings/storage/timeline.spec.ts), about 2.5 s; rendered under rule 11 of promt.md as the
+states `one`, `two`, `several-detached`, `acknowledge` and `period-24h` of the screen `admin-settings-storage`, English and German):
+
+- A plain connection says "Digest checks only", an encrypted one "Every read checked since 22.11.2026"; the coverage, the copies overdue,
+  the damaged copies of the period and their outcome; the download check off named with its dash.
+- The auditor has no **Scrub now**, **Check again** or **Acknowledge**; the administrator scrubs one connection, its spinner on its row.
+- The findings open on Open while open ones exist and on All otherwise; every state in words; a resolved finding has no act; Acknowledge
+  opens the dialog, keeps a refusal in it, sends the note and shows the row acknowledged, not resolved; Check again reads the copies anew.
+- Each period has its cells (24, 28, 30, 30, 52) with the server's tones and their words; a click names a cell; the strip's summary; the
+  compact strip is one image; the empty sentence of a quiet period; the problems with their words, lengths, amounts and states.
 
 ### R-UI-266 · The dashboard's card Storage is the page's summary
 Priority: **P1** · Covers: quader-only
@@ -11168,7 +11252,8 @@ Priority: **P1** · Covers: quader-only
 Rewrites R-UI-197 (B.13, [Q-UI-1589](#q-ui-1589--the-dashboards-card-keeps-its-readiness-badge-and-loses-its-line-per-connection)).
 
 - **The card Storage** of the admin dashboard keeps the object store's readiness check over the live replicas in its head, then shows the
-  six tiles of R-UI-262 in their compact form (the state and one figure each) from the same `GET /api/v1/storage/overview`, then the link
+  six tiles of R-UI-262 in their compact form (the state and one figure each) from the same `GET /api/v1/storage/overview` with the period
+  `24h` (the dashboard is about now; B.13), then the link
   **Storage** to the page; a tile links its section of the page. The card reads no list of connections. A caller without `settings:read`
   sees the readiness check only.
 - **The instance bar** words the storage from the overview's state of the connections: "No storage connection is reachable" (error) while
@@ -29165,6 +29250,53 @@ event. The reads and the marks are not one transaction (they reach the object st
 **Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-027, [operations-and-observability.md](operations-and-observability.md)
 R-OPS-014; code: `auditRecheck` in [storage_damaged_api.go](../../internal/api/v1/storage_damaged_api.go).
 
+### Q-API-478 · The cells of a period are one operation, the findings' totals with them
+
+Status: **Decided by the development agent** while building W-37's package P4 ([storage.md](storage.md) R-STOR-111); the owner reviews it.
+
+| Option | For | Against |
+|---|---|---|
+| (a) `GET /api/v1/storage/history?period=`: every connection's cells of the period and the totals of its findings of the period in one answer (chosen) | The strips, the section Integrity's column of the period and the counts of Availability read one call; the totals are of the whole period, whatever the list of findings is narrowed to | One answer of up to 52 cells per connection |
+| (b) The totals in the paged list of findings, as the plan's D.5 drew them | Beside the rows they sum | A paged list narrowed by state and connection would carry totals of another question; R-API-010's envelope has no place for them |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-111; code: [storage_history_api.go](../../internal/api/v1/storage_history_api.go).
+
+### Q-API-479 · The problems are paged in memory
+
+Status: **Decided by the development agent** while building W-37's package P4 ([storage.md](storage.md) R-STOR-111); the owner reviews it.
+
+A problem is derived at read time ([storage.md](storage.md) Q-STOR-525), so no statement can page it: the operation derives the period's
+problems, narrows them by connection, kind and state, and answers the page after the cursor, whose values are the start, the kind and the
+connection (R-API-010's cursor and its fingerprint). Their number is bounded by the history's caps (Q-STOR-516). The page size is
+R-API-010's (50 by default, `api.page_size_max` at most), not the plan's 25: one rule for every list. **Applied in the spec:** R-STOR-111.
+
+### Q-API-480 · The findings are paged by their detection and their id
+
+Status: **Decided by the development agent** while building W-37's package P4 ([storage.md](storage.md) R-STOR-111); the owner reviews it.
+
+Newest first by `detected_at`, then `id`; the cursor holds the detection in microseconds and the id, and the statement compares them as an
+integer and an identity, so no float of a time loses a row between two pages. `state` is `open`, `acknowledged`, `resolved` or `all`
+(default); a finding belongs to the period while it was unresolved at its start or later. **Applied in the spec:** R-STOR-111; code:
+`HistoryListFindings` of [storage_history_read.sql](../../internal/meta/postgres/queries/storage_history_read.sql).
+
+### Q-API-481 · The acknowledgement is a per-resource action with an optional body
+
+Status: **Decided by the development agent** while building W-37's package P4 ([storage.md](storage.md) R-STOR-111); the owner reviews it.
+
+`POST /api/v1/storage/findings/{id}/acknowledge` (R-API-020: an act on one resource, not a task), `settings:write`, the body
+`{"note": "…"}` optional and strict (R-API-003), the note at most 500 characters (`422` beyond); the answer `200` is the finding as the
+list shows it. A second acknowledgement replaces the first. The acknowledgement and its event `storage.finding.acknowledged` are one
+transaction ([operations-and-observability.md](operations-and-observability.md) Q-OPS-472). **Applied in the spec:** R-STOR-111.
+
+### Q-API-482 · A resolved finding answers 409 finding_resolved
+
+Status: **Decided by the development agent** while building W-37's package P4 ([storage.md](storage.md) R-STOR-111); the owner reviews it.
+
+The code `finding_resolved` (409) exists for a resolved finding of a vulnerability that a person tries to change (R-VULN-013); a resolved
+finding of a damaged copy is the same case, a finding Quader resolved and a person cannot change, so it answers the same code, and the
+catalog's text names both. An unknown id answers `404`. **Applied in the spec:** R-STOR-111; code:
+[codes.go](../../internal/errs/codes.go).
+
 ### Q-UI-1350 · Used by stands under the dependencies, in their block
 
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
@@ -30969,6 +31101,118 @@ all of them and stopped on the profile.
 | (b) Only the caller's page shows it; the walk leaves the profile out | | The profile stays as it was | A user sees a Bastion's budget block but not what they took there beside the installation; the same answer reads differently by who looks |
 
 **Choice:** (a): a pattern decided at one screen holds wherever the same thing is shown. **Applied in the spec:** R-UI-185, R-UI-242.
+
+### Q-UI-1600 · A cell of the strip is a button with its words
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | For | Against |
+|---|---|---|
+| (a) Every cell a button: its summary is its name and its tooltip; a click names it under the strip in a line of its own (chosen) | The tone is never the only carrier; a keyboard and a screen reader reach every cell; a touch screen, which has no hover, gets the words by a tap | 52 buttons per strip in a year |
+| (b) Cells as a picture with a tooltip on hover | Lighter | Colour alone on touch and for a screen reader |
+
+**Choice:** (a). The strip has no other act: the list under it names each problem. **Applied in the spec:** R-UI-265.
+
+### Q-UI-1601 · A strip has a summary, and the Connections' strip is one image
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4).
+
+A strip of the section Problems carries a visually hidden sentence ("30 cells: 1 with clients refused, 2 absorbed by Quader." or "Nothing
+happened in this period."). The strip in the Connections table (the plan's E.1) is tone only: one image named by the connection and that
+sentence, no buttons, since the section Problems has the same cells with their words. **Applied in the spec:** R-UI-263, R-UI-265.
+
+### Q-UI-1602 · The period's words and its default in the address
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4), after Q-UI-1582.
+
+The buttons say "24 h · 7 d · 30 d · 90 d · 1 year" ("24 Std. · 7 Tage · 30 Tage · 90 Tage · 1 Jahr"), each named for assistive technology
+as "the last 30 days"; the default 30 d writes no parameter, so the page's plain address is its default. An address with a period the page
+does not know shows 30 d. **Applied in the spec:** R-UI-262.
+
+### Q-UI-1603 · The findings' filter opens on Open while open ones exist
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4), after the plan's E.1.
+
+Two buttons, **Open** and **All**, not the API's four states: an acknowledged finding is under All with its note, a resolved one with its
+resolution. The default follows the overview's `problems.open`: Open while one is open, All otherwise, so a quiet period does not open on an
+empty list; the person's choice holds until the page is left. **Applied in the spec:** R-UI-265.
+
+### Q-UI-1604 · The columns of the findings
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4).
+
+When, Connection, Blob (the short digest with its first item and "+ n more"; the item is a link to its file), Bytes (the stored size),
+Found by (source · reason), State. The time is the row's header for a screen reader, the short digest stands on a line of its own over
+its item, whose path breaks anywhere, so the columns fit from about 64 rem; the digest's full value is its title. **Applied in the spec:**
+R-UI-265.
+
+### Q-UI-1605 · The columns of the problems
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4).
+
+When (its start, the row's header), Connection, What (the kind in its tone with its icon, then the codes, sources and reasons or steps as
+the record keeps them, which wrap), Duration / amount (a length for an outage and a failing start check, the copies and bytes, the uploads or the
+reads otherwise), State (Ongoing in the problem's tone, Ended plain). **Applied in the spec:** R-UI-265.
+
+### Q-UI-1606 · The acts of a finding are its row's menu
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4).
+
+**Check again** and **Acknowledge** are two word acts of one row; R-UI-163 puts them into the row's menu (⋮). **Scrub now** stands in the
+row of its connection in the table Integrity, as a button: one act per row. **Applied in the spec:** R-UI-265.
+
+### Q-UI-1607 · The acknowledge dialog
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4).
+
+Title "Acknowledge the damaged copy?", the copy (connection, short digest, bytes) and when and how it was found, one sentence that it
+repairs nothing and the finding stays open until its copy is written again, found again or deleted, and an optional note with its hint
+("at most 500 characters. Every reader of this page sees it."); **Acknowledge** and **Cancel**. A second acknowledgement opens with the note
+before. **Applied in the spec:** R-UI-265.
+
+### Q-UI-1608 · The empty sentences
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4), after the plan's E.2.
+
+"No problem in this period.", "No damaged copy in this period." and, under Open, "No open damaged copy in this period."; a quiet strip's
+cells are empty, and its summary says "Nothing happened in this period." **Applied in the spec:** R-UI-265.
+
+### Q-UI-1609 · The narrow sections
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4), after Q-UI-1591.
+
+The tables of Integrity and the two lists stack as cards where their columns do not fit (R-UI-174): about 64 rem of the list with long
+connection ids, so a panel of 1,024 px shows them as cards and one of 1,440 px as tables; the strips stand under their connection's name below 40 rem, at
+full width. The Connections table's strip gives its room to the other columns below a list of 64 rem (a `narrow` column): the section
+Problems shows the same cells at every width. **Applied in the spec:** R-UI-263, R-UI-265.
+
+### Q-UI-1610 · The applied server-side encryption differs only when what is asked for is not applied
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | For | Against |
+|---|---|---|
+| (a) **Differs** (warning) when the configuration asks for `s3` and the store applied no `AES256`, or for `kms` and it applied no `aws:kms`; a store that encrypts under `none` is named "bucket default", no difference (chosen) | A warning where the operator's wish is not met; a bucket's default encryption is no defect | `s3` asked and `aws:kms` applied warns although it is more |
+| (b) **Differs** whenever the two words differ | Literal | Every AWS bucket under `none` would warn, since AWS applies SSE-S3 by default |
+
+**Choice:** (a). **Applied in the spec:** R-UI-264; code: `appliedSse` of [storage-model.ts](../../web/src/app/features/settings/storage/storage-model.ts).
+
+### Q-UI-1611 · The checks of a connection are marks
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4), after the plan's B.5.
+
+One line per check, a check mark (green: a positive state) before what holds and a dash before what does not, the word beside it: Digest at
+upload, Download check (off), Every read checked since … or Digest checks only, Writes (not) confirmed. "Every read checked" is the
+owner's format check (R-STOR-082) as its own mark. The scrub is a column of its own, since it has figures and an act. **Applied in the
+spec:** R-UI-265.
+
+### Q-UI-1612 · The counts of the period in Availability
+
+Status: **Decided by the development agent on 2026-11-27** (W-37 P4), after the plan's B.6.
+
+A column named by the period ("30 d") in the table of Availability: the reads served from another copy, the writes the next connection took,
+and the copies the reconciliation could not make (warning), each a line only when it is not zero, "–" for a quiet period; its spinner while
+the history is read. **Applied in the spec:** R-UI-263.
 
 ## What this does not cover
 

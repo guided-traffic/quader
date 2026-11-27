@@ -1,4 +1,4 @@
-<quader-data-table [caption]="caption" [columns]="columns" [empty]="shown().length === 0" [emptyText]="noConnection">
+<quader-data-table [caption]="caption" [columns]="columns()" [empty]="shown().length === 0" [emptyText]="noConnection">
   @for (c of shown(); track c.id) {
     <tr>
       <th scope="row" class="wrap-name">
@@ -161,9 +161,16 @@
           <quader-no-value />
         }
       </td>
+      <td class="narrow-drop strip-cell">
+        @if (cellsOf(c); as h) {
+          <quader-storage-timeline [buckets]="h.buckets" [bucketSeconds]="history()!.bucketSeconds" [label]="stripLabel(c)" [compact]="true" />
+        } @else {
+          <quader-no-value />
+        }
+      </td>
     </tr>
     <tr class="expansion">
-      <td [attr.colspan]="columns.length">
+      <td [attr.colspan]="columns().length">
         <div [id]="'connection-' + c.id" class="collapse-region" [class.open]="isOpen(c)">
           <div>
             @if (isOpen(c)) {

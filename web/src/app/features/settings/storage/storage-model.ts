@@ -1,4 +1,4 @@
-import { StorageConnection, StorageOverview } from '../../../api/storage-api';
+import { StorageConnection } from '../../../api/storage-api';
 
 /**
  * Pure helpers of the page Settings › Storage and the dashboard's card (api-and-ui.md R-UI-262 to R-UI-266; storage.md R-STOR-051,
@@ -173,6 +173,28 @@ export function keyRing(c: StorageConnection): {
   };
 }
 
+/**
+ * The server-side encryption a store applied against the one it is asked for (R-STOR-032, Q-STOR-519, Q-UI-1610): the algorithm the start
+ * check's probe came back with (empty: none reported). It **differs** when the configuration asks for a mode the store did not apply
+ * (`s3` without `AES256`, `kms` without `aws:kms`); a store that encrypts under `none` applies a **bucket default**, which is named and
+ * is no difference. `null` before a start check wrote a probe it could ask about.
+ */
+export interface AppliedSse {
+  readonly algorithm: string;
+  readonly kmsKeyId: string;
+  readonly differs: boolean;
+  readonly bucketDefault: boolean;
+}
+
+export function appliedSse(c: StorageConnection): AppliedSse | null {
+  const a = c.capabilities?.sseApplied;
+  if (!a) return null;
+  const mode = c.settings?.sseMode ?? null;
+  const kms = a.algorithm === 'aws:kms' || a.algorithm === 'aws:kms:dsse';
+  const differs = (mode === 's3' && a.algorithm !== 'AES256') || (mode === 'kms' && !kms);
+  return { algorithm: a.algorithm, kmsKeyId: a.kmsKeyId, differs, bucketDefault: mode === 'none' && a.algorithm !== '' };
+}
+
 /** The connections that hold content (B.6): every one that is not retired or drained, as the overview counts them. */
 export function holdingConnections(list: readonly StorageConnection[]): readonly StorageConnection[] {
   return list.filter((c) => c.state !== 'retired' && c.state !== 'drained');
@@ -225,19 +247,8 @@ export function whatQuaderEncrypts(list: readonly StorageConnection[]): readonly
   return rows;
 }
 
-/** The overview's states of the six tiles (B.14), with the problems of now until the period's history is built. */
+/** The overview's states of the six tiles (B.14); the tile Problems is the period's (R-STOR-111). */
 export type TileKind = 'connections' | 'availability' | 'encryption' | 'integrity' | 'problems' | 'stored';
-
-/**
- * The problems of now (B.14's tile Problems, before the history of the period is recorded): `ongoing` while a connection is
- * unreachable on a replica, no connection is reachable, or a blob has no whole copy; `open` while copies wait for their repair; `none`
- * otherwise. Each is a state the server derived; this only names which of them is the tile's.
- */
-export function problemsNow(o: StorageOverview): 'none' | 'open' | 'ongoing' {
-  if (o.connections.state === 'unreachable' || o.connections.unreachable.length > 0 || o.integrity.state === 'damaged') return 'ongoing';
-  if (o.integrity.state === 'repairing') return 'open';
-  return 'none';
-}
 
 /** The tone of a tile's state (B.14, Q-UI-1587): green only for a positive state. */
 export function tileTone(kind: TileKind, state: string): Tone {
@@ -300,6 +311,8 @@ export function tileWord(kind: TileKind, state: string): string {
       return $localize`:@@storage.tile.integrity.damaged:Damaged`;
     case 'problems:none':
       return $localize`:@@storage.tile.problems.none:None`;
+    case 'problems:resolved':
+      return $localize`:@@storage.tile.problems.resolved:Resolved`;
     case 'problems:open':
       return $localize`:@@storage.tile.problems.open:Open`;
     case 'problems:ongoing':

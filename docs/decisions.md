@@ -9863,10 +9863,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-178 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+183 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 178 questions</summary>
+<summary>Q-API: 183 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10048,6 +10048,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-475](spec/api-and-ui.md#q-api-475--the-storage-overview-is-an-operation-of-its-own) | The storage overview is an operation of its own | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-107) | (a) `GET /api/v1/storage/overview`, `settings:read`, the states and the figures of now in one answer | — |
 | [Q-API-476](spec/api-and-ui.md#q-api-476--the-connection-lists-additions-are-nullable-for-a-connection-the-replica-does-not-configure) | The connection list's additions are nullable for a connection the replica does not configure | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-106) | (a) `capacityBytes` and the settings' `sseKmsKeyId` and `sseBucketKey` follow `settings` (Q-API-406): the answering replica's element, `null` where it does not configure the connection or states no capacity; `firstSeenAt`, `passStartedAt`, `encryptedSince` and `retiredAt` are PostgreSQL's and the same from every replica | — |
 | [Q-API-477](spec/api-and-ui.md#q-api-477--the-recheck-of-a-blob-is-audited-before-its-answer) | The recheck of a blob is audited before its answer | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-027) | (a) `storage.blob.rechecked`, transactional, written in a transaction of its own after the reads and before the answer; when its insert fails the answer is `500` | — |
+| [Q-API-478](spec/api-and-ui.md#q-api-478--the-cells-of-a-period-are-one-operation-the-findings-totals-with-them) | The cells of a period are one operation, the findings' totals with them | Decided by the development agent while building W-37's package P4 ([storage.md](spec/storage.md) R-STOR-111) | (a) `GET /api/v1/storage/history?period=`: every connection's cells of the period and the totals of its findings of the period in one answer | — |
+| [Q-API-479](spec/api-and-ui.md#q-api-479--the-problems-are-paged-in-memory) | The problems are paged in memory | Decided by the development agent while building W-37's package P4 ([storage.md](spec/storage.md) R-STOR-111) | — | — |
+| [Q-API-480](spec/api-and-ui.md#q-api-480--the-findings-are-paged-by-their-detection-and-their-id) | The findings are paged by their detection and their id | Decided by the development agent while building W-37's package P4 ([storage.md](spec/storage.md) R-STOR-111) | — | — |
+| [Q-API-481](spec/api-and-ui.md#q-api-481--the-acknowledgement-is-a-per-resource-action-with-an-optional-body) | The acknowledgement is a per-resource action with an optional body | Decided by the development agent while building W-37's package P4 ([storage.md](spec/storage.md) R-STOR-111) | — | — |
+| [Q-API-482](spec/api-and-ui.md#q-api-482--a-resolved-finding-answers-409-finding_resolved) | A resolved finding answers 409 finding_resolved | Decided by the development agent while building W-37's package P4 ([storage.md](spec/storage.md) R-STOR-111) | — | — |
 
 </details>
 
@@ -12492,10 +12497,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-132 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+133 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 132 questions</summary>
+<summary>Q-OPS: 133 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12630,6 +12635,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-461](spec/operations-and-observability.md#q-ops-461--a-report-may-be-16-kib) | A report may be 16 KiB | Decided by the development agent on 2026-11-26 (W-36's plan, C.3) and built on 2026-11-27 | — | — |
 | [Q-OPS-470](spec/operations-and-observability.md#q-ops-470--the-task-storage-history-in-r-ops-019s-list) | The task `storage-history` in R-OPS-019's list | Decided by the development agent | — | — |
 | [Q-OPS-471](spec/operations-and-observability.md#q-ops-471--the-labels-of-the-historys-three-metrics-stay-within-r-ops-007s-set) | The labels of the history's three metrics stay within R-OPS-007's set | Decided by the development agent | — | — |
+| [Q-OPS-472](spec/operations-and-observability.md#q-ops-472--the-acknowledgement-of-a-finding-is-an-event-of-the-registry) | The acknowledgement of a finding is an event of the registry | Decided by the development agent while building W-37's package P4 ([storage.md](spec/storage.md) R-STOR-111) | — | — |
 | [Q-OPS-473](spec/operations-and-observability.md#q-ops-473--the-recheck-of-a-blob-is-an-event-of-the-registry) | The recheck of a blob is an event of the registry | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-027) | (a) `storage.blob.rechecked` in R-OPS-014's registry, category `system`, transactional, no hook, not journaled; its data the digest, the content state after the reads and each copy's connection and state | — |
 
 </details>
@@ -13144,10 +13150,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-STOR
 
-236 questions on [spec/storage.md](spec/storage.md).
+244 questions on [spec/storage.md](spec/storage.md).
 
 <details>
-<summary>Q-STOR: 236 questions</summary>
+<summary>Q-STOR: 244 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13387,15 +13393,23 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-STOR-519](spec/storage.md#q-stor-519--the-applied-server-side-encryption-is-the-start-checks-probe) | The applied server-side encryption is the start check's probe | Decided by the development agent | (b) The `HeadObject` the start check already sends for its metadata probe: its `x-amz-server-side-encryption` and KMS key into `capabilities.sseApplied` | — |
 | [Q-STOR-520](spec/storage.md#q-stor-520--copies-damaged-before-the-history-existed-open-their-findings-at-the-migration) | Copies damaged before the history existed open their findings at the migration | Decided by the development agent | — | — |
 | [Q-STOR-521](spec/storage.md#q-stor-521--the-task-is-hourly-and-exclusive-and-deletes-in-batches-of-10000) | The task is hourly and exclusive, and deletes in batches of 10,000 | Decided by the development agent | — | [ADR-315](#adr-315--the-history-of-the-stored-content-lives-in-postgresql-written-where-it-happens) |
+| [Q-STOR-525](spec/storage.md#q-stor-525--a-problem-is-derived-at-read-time-from-the-records) | A problem is derived at read time from the records | Decided by the development agent | (a) The problems are derived when they are read, from the intervals, the findings per day and the counts per day, by one pure function for the overview, the list and the cells | — |
+| [Q-STOR-526](spec/storage.md#q-stor-526--fall-overs-are-no-problems-of-their-own) | Fall-overs are no problems of their own | Decided by the development agent | — | — |
+| [Q-STOR-527](spec/storage.md#q-stor-527--cells-are-counted-back-from-now) | Cells are counted back from now | Decided by the development agent | — | — |
+| [Q-STOR-528](spec/storage.md#q-stor-528--the-tones-of-a-cell) | The tones of a cell | Decided by the development agent | — | — |
+| [Q-STOR-529](spec/storage.md#q-stor-529--ongoing-means-within-the-last-hour) | "Ongoing" means within the last hour | Decided by the development agent | — | — |
+| [Q-STOR-530](spec/storage.md#q-stor-530--an-acknowledgement-never-resolves) | An acknowledgement never resolves | Decided by the development agent | — | — |
+| [Q-STOR-531](spec/storage.md#q-stor-531--the-items-of-a-finding-are-read-per-page-by-digest) | The items of a finding are read per page by digest | Decided by the development agent | — | — |
+| [Q-STOR-532](spec/storage.md#q-stor-532--a-forgotten-connection-stays-in-the-history-by-id) | A forgotten connection stays in the history by id | Decided by the development agent | — | — |
 
 </details>
 
 ### Q-UI
 
-786 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+799 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 786 questions</summary>
+<summary>Q-UI: 799 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14185,6 +14199,19 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1591](spec/api-and-ui.md#q-ui-1591--the-narrow-layout) | The narrow layout | Decided by the development agent on 2026-11-26 | (a) Six tiles a row, three below 80 rem, two below 40 rem; the tables become the data table's cards below 48 rem; the fold's facts stand one under the other below 36 rem | — |
 | [Q-UI-1592](spec/api-and-ui.md#q-ui-1592--the-meter-is-a-component-of-the-page) | The meter is a component of the page | Decided by the development agent on 2026-11-26 | (a) `<quader-storage-meter>`: a bar of 6 px on the text's line, the data colour, the warning or the error token, never green and never alone; the figure and the word beside it | [ADR-316](#adr-316--one-page-for-the-stored-content-the-tab-storage-of-system-status-goes) |
 | [Q-UI-1593](spec/api-and-ui.md#q-ui-1593--a-users-own-usage-page-shows-by-place-as-a-callers-page-does) | A user's own usage page shows By place as a caller's page does | Decided by the development agent on 2026-11-27 | (a): a pattern decided at one screen holds wherever the same thing is shown. | — |
+| [Q-UI-1600](spec/api-and-ui.md#q-ui-1600--a-cell-of-the-strip-is-a-button-with-its-words) | A cell of the strip is a button with its words | Decided by the development agent on 2026-11-27 | (a) Every cell a button: its summary is its name and its tooltip; a click names it under the strip in a line of its own | — |
+| [Q-UI-1601](spec/api-and-ui.md#q-ui-1601--a-strip-has-a-summary-and-the-connections-strip-is-one-image) | A strip has a summary, and the Connections' strip is one image | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1602](spec/api-and-ui.md#q-ui-1602--the-periods-words-and-its-default-in-the-address) | The period's words and its default in the address | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1603](spec/api-and-ui.md#q-ui-1603--the-findings-filter-opens-on-open-while-open-ones-exist) | The findings' filter opens on Open while open ones exist | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1604](spec/api-and-ui.md#q-ui-1604--the-columns-of-the-findings) | The columns of the findings | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1605](spec/api-and-ui.md#q-ui-1605--the-columns-of-the-problems) | The columns of the problems | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1606](spec/api-and-ui.md#q-ui-1606--the-acts-of-a-finding-are-its-rows-menu) | The acts of a finding are its row's menu | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1607](spec/api-and-ui.md#q-ui-1607--the-acknowledge-dialog) | The acknowledge dialog | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1608](spec/api-and-ui.md#q-ui-1608--the-empty-sentences) | The empty sentences | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1609](spec/api-and-ui.md#q-ui-1609--the-narrow-sections) | The narrow sections | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1610](spec/api-and-ui.md#q-ui-1610--the-applied-server-side-encryption-differs-only-when-what-is-asked-for-is-not-applied) | The applied server-side encryption differs only when what is asked for is not applied | Decided by the development agent on 2026-11-27 | (a) **Differs** (warning) when the configuration asks for `s3` and the store applied no `AES256`, or for `kms` and it applied no `aws:kms`; a store that encrypts under `none` is named "bucket default", no difference | — |
+| [Q-UI-1611](spec/api-and-ui.md#q-ui-1611--the-checks-of-a-connection-are-marks) | The checks of a connection are marks | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1612](spec/api-and-ui.md#q-ui-1612--the-counts-of-the-period-in-availability) | The counts of the period in Availability | Decided by the development agent on 2026-11-27 | — | — |
 
 </details>
 

@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/blob/history"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
@@ -35,6 +36,11 @@ const (
 	IntegrityBehind    = "behind"
 	IntegrityRepairing = "repairing"
 	IntegrityDamaged   = "damaged"
+
+	ProblemsNone     = "none"
+	ProblemsResolved = "resolved"
+	ProblemsOpen     = "open"
+	ProblemsOngoing  = "ongoing"
 )
 
 // BacklogBehind is the age of a connection's oldest queued gap past which the reconciliation is behind: the hour of the alert
@@ -54,6 +60,10 @@ type OverviewInput struct {
 	DownloadVerify bool
 	// Scrub is the scrub task's runs.
 	Scrub ScrubRuns
+	// Period is the period of the problems (history.Periods) and Problems the problems derived for it (history.DeriveProblems,
+	// R-STOR-111).
+	Period   string
+	Problems []history.Problem
 }
 
 // ScrubRuns is the scrub task's last finished run, its next scheduled run and whether a run is going on (R-STOR-027).
@@ -73,6 +83,16 @@ type Overview struct {
 	Availability OverviewAvailability
 	Encryption   OverviewEncryption
 	Integrity    OverviewIntegrity
+	Problems     OverviewProblems
+}
+
+// OverviewProblems is the tile Problems of the period (R-STOR-111): its state, how many problems the period holds, the findings open
+// and acknowledged, and the worst problem (H-2433); Worst is nil without one.
+type OverviewProblems struct {
+	Period, State      string
+	Count              int
+	Open, Acknowledged int64
+	Worst              *history.Problem
 }
 
 // OverviewConnections is the tile Connections: the connections that hold or take content (not retired, not drained).
@@ -109,10 +129,11 @@ type Loss struct {
 }
 
 // OverviewEncryption is the tile Encryption: which of the connections that hold content Quader encrypts, which ask their store for
-// server-side encryption in the answering replica's configuration, and the encrypted share of the stored bytes.
+// server-side encryption in the answering replica's configuration, which stores reported that they encrypted the start check's probe
+// (capabilities.sseApplied, R-STOR-032), and the encrypted share of the stored bytes.
 type OverviewEncryption struct {
-	State                                string
-	Encrypted, Plain, ProviderConfigured []string
+	State                                                 string
+	Encrypted, Plain, ProviderConfigured, ProviderApplied []string
 	// EncryptedShare is the encrypted connections' stored bytes over all, from the snapshot; 0 to 1.
 	EncryptedShare float64
 }
@@ -164,7 +185,41 @@ func DeriveOverview(in OverviewInput, now time.Time) Overview {
 	o.Availability = overviewAvailability(held, in, now)
 	o.Encryption = overviewEncryption(held)
 	o.Integrity = overviewIntegrity(held, in)
+	o.Problems = overviewProblems(in, o, now)
 	return o
+}
+
+// overviewProblems is the tile Problems of the period (B.14, Q-STOR-529): ongoing while a connection is unreachable now, a blob has no
+// whole copy, a finding that no other copy held is unresolved, or an outage, a failing start check, a refused upload or a read no copy
+// served lasts or ended within the last hour (history.Recent); open while a finding is neither resolved nor acknowledged; resolved when
+// the period holds only ended problems; none otherwise.
+func overviewProblems(in OverviewInput, o Overview, now time.Time) OverviewProblems {
+	out := OverviewProblems{Period: in.Period, Count: len(in.Problems)}
+	ongoing := o.Connections.State == ConnectionsUnreachable || len(o.Connections.Unreachable) > 0 || o.Integrity.State == IntegrityDamaged
+	for i := range in.Problems {
+		p := &in.Problems[i]
+		out.Open += p.Open
+		out.Acknowledged += p.Acknowledged
+		if out.Worst == nil || history.Worse(*p, *out.Worst) {
+			out.Worst = p
+		}
+		if p.Kind == history.ProblemCopiesDamaged {
+			ongoing = ongoing || p.UnavailableOpen > 0
+		} else {
+			ongoing = ongoing || p.Lasting() || now.Sub(p.Ended) <= history.Recent
+		}
+	}
+	switch {
+	case ongoing:
+		out.State = ProblemsOngoing
+	case out.Open > 0:
+		out.State = ProblemsOpen
+	case out.Count > 0:
+		out.State = ProblemsResolved
+	default:
+		out.State = ProblemsNone
+	}
+	return out
 }
 
 // overviewConnections: unreachable when no configured connection is reachable on any replica; degraded when one is unreachable on some
@@ -249,10 +304,10 @@ func overviewAvailability(held []View, in OverviewInput, now time.Time) Overview
 }
 
 // overviewEncryption: encrypted when Quader encrypts every connection that holds content, partly when some, provider only when none
-// but each asks its store for server-side encryption, off otherwise. The server-side mode is the answering replica's configuration; a
-// connection it does not configure counts as not asking.
+// but the store of each reported at its start check that it encrypted the probe (capabilities.sseApplied), off otherwise. What the
+// answering replica's configuration asks for is named beside it; a connection it does not configure counts as not asking.
 func overviewEncryption(held []View) OverviewEncryption {
-	out := OverviewEncryption{Encrypted: []string{}, Plain: []string{}, ProviderConfigured: []string{}}
+	out := OverviewEncryption{Encrypted: []string{}, Plain: []string{}, ProviderConfigured: []string{}, ProviderApplied: []string{}}
 	var encBytes, allBytes int64
 	for _, v := range held {
 		if v.Encrypted {
@@ -262,6 +317,9 @@ func overviewEncryption(held []View) OverviewEncryption {
 		}
 		if v.Local != nil && v.Local.Settings.SSEMode != "" && v.Local.Settings.SSEMode != "none" {
 			out.ProviderConfigured = append(out.ProviderConfigured, v.ID)
+		}
+		if c := v.Capabilities; c != nil && c.SSEApplied != nil && c.SSEApplied.Algorithm != "" {
+			out.ProviderApplied = append(out.ProviderApplied, v.ID)
 		}
 		if f := v.Figures; f != nil {
 			allBytes += f.PresentBytes
@@ -275,7 +333,7 @@ func overviewEncryption(held []View) OverviewEncryption {
 		out.State = EncryptionEncrypted
 	case len(out.Encrypted) > 0:
 		out.State = EncryptionPartly
-	case len(held) > 0 && len(out.ProviderConfigured) == len(held):
+	case len(held) > 0 && len(out.ProviderApplied) == len(held):
 		out.State = EncryptionProviderOnly
 	default:
 		out.State = EncryptionOff

@@ -41,9 +41,27 @@
               ><span class="pair-label" i18n="@@storage.configured">Configured</span>&ngsp;<code translate="no">{{ s.sseMode }}</code
               >@if (s.sseKmsKeyId) {&ngsp;<span class="secondary" translate="no">{{ s.sseKmsKeyId }}</span>}</span
             >
-            <span class="line state-words"
-              ><span class="pair-label" i18n="@@storage.actual">Actual</span>&ngsp;<ng-container i18n="@@storage.not-checked">not checked yet</ng-container></span
-            >
+            @let a = applied(c);
+            @if (a === null) {
+              <span class="line state-words"
+                ><span class="pair-label" i18n="@@storage.actual">Actual</span>&ngsp;<ng-container i18n="@@storage.not-checked">not checked yet</ng-container></span
+              >
+            } @else {
+              <span class="line"
+                ><span class="pair-label" i18n="@@storage.actual">Actual</span>&ngsp;@if (a.algorithm) {<code translate="no">{{ a.algorithm }}</code
+                  >@if (a.kmsKeyId) {&ngsp;<span class="secondary" translate="no">{{ a.kmsKeyId }}</span>}} @else {<ng-container
+                    i18n="@@storage.applied.none"
+                    >not reported</ng-container
+                  >}</span
+              >
+              @if (a.differs) {
+                <span class="line warn"
+                  ><span class="material-icons" aria-hidden="true">warning</span><ng-container i18n="@@storage.differs">Differs</ng-container></span
+                >
+              } @else if (a.bucketDefault) {
+                <span class="line state-words" i18n="@@storage.applied.bucket-default">bucket default</span>
+              }
+            }
           </div>
         } @else {
           <quader-no-value />

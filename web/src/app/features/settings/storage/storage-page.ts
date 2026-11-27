@@ -1,9 +1,9 @@
-import { Component, DestroyRef, ElementRef, afterRenderEffect, computed, inject, resource, signal, untracked } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Component, DestroyRef, ElementRef, afterRenderEffect, computed, inject, input, resource, signal, untracked, viewChild } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../../api/client';
 import { DownloadLinkSettings } from '../../../api/download-links-api';
 import { JobsApi, jobActive } from '../../../api/jobs-api';
-import { StorageApi } from '../../../api/storage-api';
+import { DEFAULT_STORAGE_PERIOD, STORAGE_PERIODS, StorageApi, StoragePeriod } from '../../../api/storage-api';
 import { EncryptionApi } from '../../../api/system-api';
 import { LIVE_FAST_MS, LIVE_SLOW_MS, live, refreshResource } from '../../../core/live-refresh';
 import { Notifier } from '../../../core/notifier';
@@ -22,26 +22,37 @@ import { DAMAGED_SHOWN, DamagedBlobs } from './damaged-blobs';
 import { ConnectionsSection } from './connections-section';
 import { DownloadLinksSection } from './download-links-section';
 import { EncryptionSection } from './encryption-section';
+import { IntegritySection } from './integrity-section';
+import { ProblemsSection } from './problems-section';
+import { periodLong, periodWord } from './storage-history';
 import { shownConnections } from './storage-model';
 import { StorageSummary } from './storage-summary';
 
-/** The tasks a holder of `settings:write` runs from the page (B.11): the count of the figures and the reconciliation. */
-export type StorageTask = 'storage-summary' | 'storage-reconcile';
+/** The tasks a holder of `settings:write` runs from the page (B.11): the count of the figures, the reconciliation and the scrub. */
+export type StorageTask = 'storage-summary' | 'storage-reconcile' | 'scrub';
 
 /** A run started from the page, while it runs: the page reads every `LIVE_FAST_MS` until it ends (Q-UI-1583). */
 interface Run {
   readonly task: StorageTask;
+  /** The connection a scrub was started for; null for the other tasks. */
+  readonly connection: string | null;
   readonly job: string | null;
+}
+
+/** The period of the address's `period`; the default for none or one the page does not know (Q-UI-1602). */
+export function periodOf(value: string | undefined): StoragePeriod {
+  return STORAGE_PERIODS.find((p) => p === value) ?? DEFAULT_STORAGE_PERIOD;
 }
 
 /**
  * **Admin area › Settings › Storage** (api-and-ui.md R-UI-262, ADR-316): one page for the stored content, in the order of the owner's
- * questions. The header with the time the figures were counted and **Count now**; the summary's six tiles (R-UI-266 shows the same on
- * the dashboard); **Connections** and **Availability** (R-UI-263); **Encryption** (R-UI-264); and **Download links** (R-UI-200), the
- * one setting the page changes. Every state is the server's (Q-STOR-505); the page reads the overview, the connections' list, the
- * blobs no connection holds whole and the root key's ring again every 30 s while it is seen and every 3 s while a run it started runs (R-UI-213, Q-UI-1583). It takes the
- * content panel's width (Q-UI-1580), and no list scrolls by itself (R-UI-215). An explanation is on demand: a column's or a section's
- * help, never a paragraph above a section.
+ * questions. The header with the period (24 h, 7 d, 30 d, 90 d, 1 year, kept in the address, Q-UI-1602), the time the figures were
+ * counted and **Count now**; the summary's six tiles (R-UI-266 shows the same on the dashboard); **Connections** and **Availability**
+ * (R-UI-263); **Encryption** (R-UI-264); **Integrity** and **Problems** (R-UI-265); and **Download links** (R-UI-200), the one setting the
+ * page changes. Every state is the server's (Q-STOR-505); the page reads the overview, the connections' list, the history of the period,
+ * the blobs no connection holds whole, the root key's ring and the lists of the period again every 30 s while it is seen and every 3 s
+ * while a run it started runs (R-UI-213, Q-UI-1583). It takes the content panel's width (Q-UI-1580), and no list scrolls by itself
+ * (R-UI-215). An explanation is on demand: a column's or a section's help, never a paragraph above a section.
  */
 @Component({
   selector: 'quader-storage-page',
@@ -53,9 +64,11 @@ interface Run {
     DownloadLinksSection,
     EncryptionSection,
     ErrorNotice,
+    IntegritySection,
     Loading,
     Needs,
     PageHeader,
+    ProblemsSection,
     RouterLink,
     StorageSummary,
     TimePipe,
@@ -71,15 +84,24 @@ export class StoragePage {
   private readonly session = inject(SessionStore);
   private readonly notifier = inject(Notifier);
   private readonly failureToasts = inject(FailureToasts);
+  private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly overviewResource = resource({ loader: () => this.api.overview() });
+  /** The address's `period` (withComponentInputBinding). */
+  readonly period = input<string | undefined>(undefined);
+  protected readonly activePeriod = computed(() => periodOf(this.period()));
+  protected readonly periods = STORAGE_PERIODS;
+  protected readonly periodWord = periodWord;
+
+  protected readonly overviewResource = resource({ params: () => this.activePeriod(), loader: ({ params }) => this.api.overview(params) });
   protected readonly connectionsResource = resource({ loader: () => this.api.connections() });
+  protected readonly historyResource = resource({ params: () => this.activePeriod(), loader: ({ params }) => this.api.history(params) });
   protected readonly ringResource = resource({ loader: () => this.encryptionApi.status() });
   protected readonly damagedResource = resource({ loader: () => this.api.damagedBlobs(DAMAGED_SHOWN) });
 
   protected readonly overview = computed(() => valueOf(this.overviewResource) ?? null);
   protected readonly connections = computed(() => valueOf(this.connectionsResource) ?? null);
+  protected readonly history = computed(() => valueOf(this.historyResource) ?? null);
   protected readonly ring = computed(() => valueOf(this.ringResource) ?? null);
   protected readonly damaged = computed(() => valueOf(this.damagedResource) ?? null);
   /** The download links' settings as their section read them, for the marks Links and Bastion of the connections. */
@@ -89,18 +111,33 @@ export class StoragePage {
   /** The overview's failure is the page's (R-UI-216); its notice's Retry reads it again. */
   protected readonly failure = failureOf(this.overviewResource);
   protected readonly connectionsFailure = failureOf(this.connectionsResource);
+  protected readonly historyFailure = failureOf(this.historyResource);
   protected readonly damagedFailure = failureOf(this.damagedResource);
+
+  private readonly integrity = viewChild(IntegritySection);
+  private readonly problems = viewChild(ProblemsSection);
 
   protected readonly canWrite = computed(() => this.session.has('settings:write'));
   protected readonly now = signal(Date.now());
   /** The runs started here that have not ended. */
   protected readonly runs = signal<readonly Run[]>([]);
-  protected readonly starting = signal<StorageTask | null>(null);
-  private readonly keys = new Map<StorageTask, string>();
+  protected readonly starting = signal<string | null>(null);
+  /** The connections whose scrub, started here, runs. */
+  protected readonly scrubbing = computed<ReadonlySet<string>>(() => {
+    const out = new Set<string>();
+    for (const r of this.runs()) if (r.task === 'scrub' && r.connection) out.add(r.connection);
+    const s = this.starting();
+    if (s?.startsWith('scrub:')) out.add(s.slice('scrub:'.length));
+    return out;
+  });
+  private readonly keys = new Map<string, string>();
 
+  protected readonly periodLabel = $localize`:@@storage.period:Period`;
   protected readonly connectionsHelp = $localize`:@@storage.connections.help:Set in config.storage.connections and only shown here. The manual says how to add or remove one.`;
   protected readonly availabilityHelp = $localize`:@@storage.availability.help:Every connection without drain holds every blob. A blob whose only copy is lost is unavailable until a copy returns.`;
   protected readonly encryptionHelp = $localize`:@@storage.encryption.help:Quader's own encryption is set per connection (encrypted). The object store's server-side encryption is the store's.`;
+  protected readonly integrityHelp = $localize`:@@storage.integrity.help:Repaired by itself from another copy. A blob without a whole copy is not served.`;
+  protected readonly problemsHelp = $localize`:@@storage.problems.help:A cell is red when clients were refused, amber when Quader absorbed it. Reads and writes that went to another copy are counted in Availability.`;
 
   constructor() {
     // Read again while the page is seen, fast while a run started here runs (R-UI-213, Q-UI-1583).
@@ -118,15 +155,39 @@ export class StoragePage {
     inject(DestroyRef).onDestroy(() => this.keys.clear());
   }
 
-  /** Reads the overview, the connections and the ring again in place, and the jobs of the runs started here. */
+  /** The period's button's name for assistive technology and its tooltip: "the last 30 days". */
+  protected periodTitle(p: StoragePeriod): string {
+    return periodLong(p);
+  }
+
+  /** Another period: the address changes, and every read of the period asks anew with its spinner (Q-UI-1602, R-UI-217). */
+  protected setPeriod(p: StoragePeriod): void {
+    void this.router.navigate([], { queryParams: { period: p === DEFAULT_STORAGE_PERIOD ? null : p }, queryParamsHandling: 'merge', preserveFragment: false });
+  }
+
+  /** Reads the overview, the connections, the history, the ring and the lists again in place, and the jobs of the runs started here. */
   protected async refresh(): Promise<void> {
     this.now.set(Date.now());
+    const period = untracked(() => this.activePeriod());
     await Promise.all([
-      refreshResource(this.overviewResource, () => this.api.overview()),
+      refreshResource(this.overviewResource, () => this.api.overview(period)),
       refreshResource(this.connectionsResource, () => this.api.connections()),
+      refreshResource(this.historyResource, () => this.api.history(period)),
       refreshResource(this.ringResource, () => this.encryptionApi.status()),
       refreshResource(this.damagedResource, () => this.api.damagedBlobs(DAMAGED_SHOWN)),
+      untracked(() => this.integrity())?.refresh(),
+      untracked(() => this.problems())?.refresh(),
       this.followRuns(),
+    ]);
+  }
+
+  /** An act of a section changed the history (a recheck, an acknowledgement): the figures of the period are read again. */
+  protected async changed(): Promise<void> {
+    const period = untracked(() => this.activePeriod());
+    await Promise.all([
+      refreshResource(this.overviewResource, () => this.api.overview(period)),
+      refreshResource(this.historyResource, () => this.api.history(period)),
+      untracked(() => this.problems())?.refresh(),
     ]);
   }
 
@@ -134,6 +195,7 @@ export class StoragePage {
   protected retry(): void {
     this.overviewResource.reload();
     if (this.connectionsResource.error()) this.connectionsResource.reload();
+    if (this.historyResource.error()) this.historyResource.reload();
     if (this.ringResource.error()) this.ringResource.reload();
     if (this.damagedResource.error()) this.damagedResource.reload();
   }
@@ -150,19 +212,23 @@ export class StoragePage {
     target.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
   }
 
-  /** **Count now** and **Run the reconciliation now** (B.11): the existing task, audited as `system.task_triggered`. */
-  protected async run(task: StorageTask): Promise<void> {
-    if (this.running(task)) return;
-    this.starting.set(task);
-    const key = this.keys.get(task) ?? newIdempotencyKey();
-    this.keys.set(task, key);
+  /**
+   * **Count now**, **Run the reconciliation now** and **Scrub now** (B.11): the existing tasks, audited as `system.task_triggered`; a
+   * scrub reads the copies of the one connection it names.
+   */
+  protected async run(task: StorageTask, connection: string | null = null): Promise<void> {
+    const id = connection ? `${task}:${connection}` : task;
+    if (this.starting() === id || this.runs().some((r) => r.task === task && r.connection === connection)) return;
+    this.starting.set(id);
+    const key = this.keys.get(id) ?? newIdempotencyKey();
+    this.keys.set(id, key);
     try {
-      const job = await this.jobs.runTask(task, undefined, key);
-      this.keys.delete(task);
-      this.runs.update((r) => [...r, { task, job: job.id }]);
+      const job = await this.jobs.runTask(task, connection ? { connection } : undefined, key);
+      this.keys.delete(id);
+      this.runs.update((r) => [...r, { task, connection, job: job.id }]);
     } catch (e) {
       const error = asApiError(e);
-      if (error.status !== 0 && error.status !== 503) this.keys.delete(task);
+      if (error.status !== 0 && error.status !== 503) this.keys.delete(id);
       this.failureToasts.alert(error);
     } finally {
       this.starting.set(null);
@@ -189,8 +255,13 @@ export class StoragePage {
     this.runs.update((list) => list.filter((r) => !ended.includes(r)));
     if (ended.some((r) => r.task === 'storage-summary')) {
       this.notifier.status($localize`:@@storage.counted:The figures are counted again.`);
-      await refreshResource(this.overviewResource, () => this.api.overview());
+      await refreshResource(this.overviewResource, () => this.api.overview(untracked(() => this.activePeriod())));
       await refreshResource(this.connectionsResource, () => this.api.connections());
+    }
+    for (const r of ended) {
+      if (r.task === 'scrub' && r.connection) {
+        this.notifier.status($localize`:@@storage.scrubbed:The scrub of ${r.connection}:id: ended.`);
+      }
     }
   }
 }

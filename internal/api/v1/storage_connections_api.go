@@ -112,6 +112,9 @@ func storageConnectionView(v summary.View) gen.StorageConnection {
 		if !c.CheckedAt.IsZero() {
 			caps.CheckedAt = optionalTime(c.CheckedAt.UTC())
 		}
+		if a := c.SSEApplied; a != nil {
+			caps.SseApplied = &gen.StorageConnectionSSEApplied{Algorithm: a.Algorithm, KmsKeyId: a.KMSKeyID}
+		}
 		out.Capabilities = &caps
 	}
 	if f := v.Figures; f != nil {

@@ -383,6 +383,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.signing.identity.switched:Signing identity switched`;
     case 'storage.blob.rechecked':
       return $localize`:@@audit.action.storage.blob.rechecked:Stored content checked again`;
+    case 'storage.finding.acknowledged':
+      return $localize`:@@audit.action.storage.finding.acknowledged:Damaged copy acknowledged`;
     case 'storage.download_links.changed':
       return $localize`:@@audit.action.storage.download_links.changed:Download link setting changed`;
     case 'system.backup.completed':

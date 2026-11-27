@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/history"
 	"github.com/guided-traffic/quader/internal/blob/scrub"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/jobs"
@@ -111,5 +113,16 @@ func (a *App) storageAPI() v1.StorageServices {
 		Connections: a.storageConnections,
 		Summary:     a.storageSummary,
 		Overview:    a.storageOverview,
+		// The history of the stored content (R-STOR-111): read from PostgreSQL, the problems and cells derived by the handlers.
+		Problems: func(ctx context.Context, from, to time.Time) (history.ProblemRecords, error) {
+			return history.ReadProblems(ctx, db, from, to)
+		},
+		Cells: func(ctx context.Context, p history.Period, to time.Time) (history.CellRecords, error) {
+			return history.ReadCells(ctx, db, p, to)
+		},
+		Findings: func(ctx context.Context, fq history.FindingQuery) ([]history.Finding, error) {
+			return history.ListFindings(ctx, db, fq)
+		},
+		Acknowledge: history.Acknowledge,
 	}
 }

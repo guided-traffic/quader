@@ -1,0 +1,89 @@
+@if (history(); as h) {
+  <div class="strips">
+    @for (c of h.connections; track c.id) {
+      <span class="strip-name connection-name" translate="no">{{ c.id }}</span>
+      <quader-storage-timeline [buckets]="c.buckets" [bucketSeconds]="h.bucketSeconds" [label]="stripLabel(c.id)" />
+    }
+    @if (h.connections.length > 0) {
+      <span class="strip-axis" aria-hidden="true"
+        ><span>{{ h.from | time: (h.bucketSeconds < 86400 ? 'minutes' : 'date') }}</span
+        ><span>{{ h.to | time: (h.bucketSeconds < 86400 ? 'minutes' : 'date') }}</span></span
+      >
+    }
+  </div>
+} @else {
+  <quader-loading i18n="@@storage.problems.history-loading">Loading the cells.</quader-loading>
+}
+
+<quader-data-table
+  [caption]="caption"
+  [columns]="columns"
+  [loaded]="list.loaded()"
+  [loading]="list.loading()"
+  [loadingText]="loadingText"
+  [error]="list.error()"
+  [empty]="list.items().length === 0"
+  [emptyText]="emptyText"
+  [hasMore]="list.hasMore()"
+  (more)="list.more()"
+  (retry)="list.reload()"
+>
+  @for (p of list.items(); track p.kind + p.connection + p.startedAt) {
+    <tr>
+      <th scope="row" class="when">{{ p.startedAt | time }}</th>
+      <td translate="no">{{ p.connection }}</td>
+      <td class="lines-cell">
+        <div class="lines">
+          <span class="line" [class.bad]="p.tone === 'error'" [class.warn]="p.tone === 'warning'"
+            ><span class="material-icons" aria-hidden="true">{{ p.tone === 'error' ? 'error' : 'warning' }}</span>{{ kindWord(p.kind) }}</span
+          >
+          @if (details(p); as d) {
+            <span class="line state-words" translate="no">{{ d }}</span>
+          }
+          @if (p.kind === 'unreachable' && p.replicas > 0) {
+            <span class="line state-words" i18n="@@storage.problems.replicas"
+              >{p.replicas, plural, =1 {on 1 replica} other {on {{ p.replicas }} replicas}}</span
+            >
+          }
+          @if (p.kind === 'copies_damaged' && p.unavailable > 0) {
+            <span class="line state-words" i18n="@@storage.problems.unavailable"
+              >{p.unavailable, plural, =1 {1 without another copy} other {{{ p.unavailable | number }} without another copy}}</span
+            >
+          }
+        </div>
+      </td>
+      <td class="lines-cell">
+        <div class="lines">
+          @switch (p.kind) {
+            @case ('copies_damaged') {
+              <span class="line figure" i18n="@@storage.problems.copies"
+                >{p.count, plural, =1 {1 copy} other {{{ p.count | number }} copies}} ({{ size(p.bytes) }})</span
+              >
+            }
+            @case ('uploads_refused') {
+              <span class="line figure" i18n="@@storage.problems.uploads">{p.count, plural, =1 {1 upload} other {{{ p.count | number }} uploads}}</span>
+            }
+            @case ('reads_unavailable') {
+              <span class="line figure" i18n="@@storage.problems.reads">{p.count, plural, =1 {1 read} other {{{ p.count | number }} reads}}</span>
+            }
+            @default {
+              <span class="line figure">{{ duration(p.seconds) }}</span>
+            }
+          }
+        </div>
+      </td>
+      <td class="lines-cell">
+        <div class="lines">
+          @if (p.endedAt === null) {
+            <span class="line" [class.bad]="p.tone === 'error'" [class.warn]="p.tone === 'warning'" i18n="@@storage.problems.ongoing">Ongoing</span>
+          } @else {
+            <span class="line" i18n="@@storage.problems.ended">Ended</span>
+          }
+          @if (p.kind === 'copies_damaged' && (p.open > 0 || p.acknowledged > 0)) {
+            <span class="line state-words" i18n="@@storage.problems.open-acknowledged">{{ p.open | number }} open · {{ p.acknowledged | number }} acknowledged</span>
+          }
+        </div>
+      </td>
+    </tr>
+  }
+</quader-data-table>

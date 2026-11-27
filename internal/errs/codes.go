@@ -270,7 +270,8 @@ const (
 	CodeVulnerabilityWeakeningRefused = "vulnerability_weakening_refused"
 	// CodeFindingNotConfirmed: blocked is set on a finding that is not confirmed (409, R-VULN-012).
 	CodeFindingNotConfirmed = "finding_not_confirmed"
-	// CodeFindingResolved: a status change of a resolved finding (409, R-VULN-013).
+	// CodeFindingResolved: a status change of a resolved vulnerability finding (409, R-VULN-013), or the acknowledgement of a resolved
+	// finding of a damaged copy (409, storage.md R-STOR-111).
 	CodeFindingResolved = "finding_resolved"
 	// CodeStatusNotSettable: a person sets resolved (422, R-VULN-012).
 	CodeStatusNotSettable = "status_not_settable"
@@ -986,7 +987,7 @@ var registry = []CodeInfo{
 	{CodeVulnerabilityWeakeningRefused, Forbidden, "Vulnerability settings cannot be weakened", "The write would switch the scanning of the repository off, stop it matching public advisories, stop blocking malicious versions or stop blocking on missing data. That needs the capability repositories:write-config or vulnerabilities:triage; a project Owner's manageRepositories does not carry it."},
 	{CodeVulnerabilityDataUnavailable, Unavailable, "Advisory data not imported", "Quader's advisory data for the ecosystem is not imported yet, so the audit has nothing to answer from; retry after the Retry-After period."},
 	{CodeFindingNotConfirmed, Conflict, "Finding not confirmed", "blocked is set on a confirmed finding only; confirm the finding first."},
-	{CodeFindingResolved, Conflict, "Finding resolved", "The finding is resolved by Quader: no stored version is affected any longer. A person cannot change it; it returns to its earlier status when the match returns."},
+	{CodeFindingResolved, Conflict, "Finding resolved", "The finding is resolved by Quader: no stored version is affected any longer, or the damaged copy was written again, found again or deleted. A person cannot change it; a vulnerability finding returns to its earlier status when the match returns."},
 	{CodeStatusNotSettable, Unprocessable, "Status not settable", "The status resolved is set by Quader only."},
 	{CodeExportTooLarge, Unprocessable, "Export too large", "The export would exceed vulnerabilities.export.max_rows; narrow the filter."},
 	{CodeArchiveTooLarge, UpstreamFailed, "Advisory archive too large", "The advisory archive is larger than its source's max_archive_size (vulnerabilities.sources.osv, or vulnerabilities.images.database for the image scanning's database, whose layer's declared size is checked before it is fetched); the previous data stays in force."},

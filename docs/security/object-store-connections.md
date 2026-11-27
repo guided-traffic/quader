@@ -282,3 +282,41 @@ open at the backup. The history is restored with its open findings, while the co
 installation writes its own copies, and the copies it writes as `missing` open findings of their own. Until the task `storage-history` runs
 (within an hour), a restored open finding whose copy no longer exists reads as open on the page; the task resolves it as `reconciled`.
 Live for an hour after every restore of a backup that held open findings.
+
+### H-2433 · The worst problem is one of several equal ones
+
+Component: the overview's problems of a period (R-STOR-107, R-STOR-111). Subject: the one line the tile Problems shows. The worst problem is
+chosen by tone, then by its length, then by its bytes, then the newer; an error of a minute outranks a warning of a day, and of two equal
+ones the older is not named. The list of the section Problems names every one; the tile is a pointer to it, not a summary of all. Live
+whenever a period holds several problems.
+
+### H-2434 · The security administrator reads the item paths of findings
+
+Component: `GET /api/v1/storage/findings` (R-STOR-111) under `settings:read`. Subject: the projects, repositories and paths of items whose
+blob was damaged. Every holder of `settings:read` (administrator, security administrator, auditor) reads the first three items of each
+finding, as the damaged blobs' list already names its items to them (storage.md Q-STOR-267); the security administrator holds
+`settings:read` without `content:metadata-read`, so the page names to that role paths of repositories it could not browse. It is a recorded
+choice, not an accident: an operator who repairs storage needs to know what a damaged blob was. Live on every installation that binds the
+role `security-admin`.
+
+### H-2435 · A problem read during an outage shows it ongoing until a replica ends it
+
+Component: the derivation of the problems at read time (Q-STOR-525) from the intervals the replicas write (R-STOR-109). Subject: the end of
+an outage. An interval ends 60 s after the connection is reachable again on its replica (Q-STOR-514), and a replica that died leaves its
+interval open until the task `storage-history` ends it at the time it last saw it (within ten minutes plus an hour); meanwhile the list says
+**Ongoing** and the overview `ongoing`. It never shows an outage ended that lasts. Live for each outage until its replicas end it.
+
+### H-2436 · An acknowledgement's note is an administrator's free text shown to every reader
+
+Component: `POST /api/v1/storage/findings/{id}/acknowledge` (R-STOR-111) and the page's list of findings. Subject: the note, at most 500
+characters. An administrator writes it; every holder of `settings:read` reads it, and the audit event keeps it. Quader shows it as text (no
+markup, no link is followed), never runs it; what it says is the writer's. Whoever writes it should write nothing an auditor may not read.
+Live once a finding is acknowledged with a note.
+
+### H-2437 · A year of the history is read, in the worst case, from tens of thousands of rows
+
+Component: the reads of R-STOR-111 for the period `1y`. Subject: the cost of a read of the page's year. The counts and the findings are folded
+by PostgreSQL per cell and per day, but they are read from their rows: in the worst case 8 connections × 7 kinds × 8,760 hours of counts,
+and the intervals as rows (at most 100 per connection, replica and day, Q-STOR-516) [estimate, not measured]. The page reads the period only
+when it is chosen and every 30 s while it is seen; an installation with a year of outages every few minutes pays seconds per read. Dormant on
+an installation whose history is a handful of rows a day; live only after months of constant failures.
