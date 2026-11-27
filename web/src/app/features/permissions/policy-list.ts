@@ -85,9 +85,12 @@ export class PolicyList {
   protected readonly caption = $localize`:@@policies.caption:Permission policies`;
   protected readonly columns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@policies.col.name:Name`, sortable: true },
+    // A project's name keeps its words (R-UI-171): the cell's mark and name give the table no least width of their own, so the column
+    // declares one, as every list with a column of projects does.
     {
       id: 'project',
       label: $localize`:@@policies.col.project:Project`,
+      width: '10rem',
       help: $localize`:@@policies.help.project:The project a policy belongs to; a dash is a global policy. A project's policy grants on that project's repositories only.`,
     },
     { id: 'description', label: $localize`:@@policies.col.description:Description` },

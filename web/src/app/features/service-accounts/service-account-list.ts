@@ -212,7 +212,8 @@ export class ServiceAccountList {
     { id: 'name', label: $localize`:@@sas.col.name:Name`, sortable: true },
     { id: 'description', label: $localize`:@@sas.col.description:Description` },
     { id: 'level', label: $localize`:@@sas.col.level:Level` },
-    { id: 'project', label: $localize`:@@sas.col.project:Project` },
+    // A project's name keeps its words (R-UI-171), as in every list with a column of projects.
+    { id: 'project', label: $localize`:@@sas.col.project:Project`, width: '10rem' },
     { id: 'status', label: $localize`:@@sas.col.status:Status` },
   ];
 

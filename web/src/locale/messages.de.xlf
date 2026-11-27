@@ -20217,7 +20217,7 @@
     </unit>
     <unit id="policies.col.project">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:90</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:92</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -20226,7 +20226,7 @@
     </unit>
     <unit id="policies.help.project">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:91</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:94</note>
       </notes>
       <segment>
         <source>The project a policy belongs to; a dash is a global policy. A project&apos;s policy grants on that project&apos;s repositories only.</source>
@@ -20235,7 +20235,7 @@
     </unit>
     <unit id="policies.col.description">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:93</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:96</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -20244,7 +20244,7 @@
     </unit>
     <unit id="policies.col.principals">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:96</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:99</note>
       </notes>
       <segment>
         <source>Principals</source>
@@ -20253,7 +20253,7 @@
     </unit>
     <unit id="policies.help.principals">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:97</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:100</note>
       </notes>
       <segment>
         <source>Who the policy grants to, counted by kind: users, groups and service accounts.</source>
@@ -20262,7 +20262,7 @@
     </unit>
     <unit id="policies.col.resources">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:101</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:104</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -20271,7 +20271,7 @@
     </unit>
     <unit id="policies.help.resources">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:102</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:105</note>
       </notes>
       <segment>
         <source>The repository keys or patterns the policy covers. Open the policy to see which repositories they match now.</source>
@@ -20280,7 +20280,7 @@
     </unit>
     <unit id="policies.col.actions">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:104</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:107</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -20289,7 +20289,7 @@
     </unit>
     <unit id="policies.sum.more">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:167</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:170</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="list" disp="shown"/> and <ph id="1" equiv="count" disp="repos.length - 3"/> more</source>
@@ -37016,7 +37016,7 @@
     </unit>
     <unit id="sas.col.project">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:215</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:216</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -37025,7 +37025,7 @@
     </unit>
     <unit id="sas.col.status">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:216</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:217</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -37034,7 +37034,7 @@
     </unit>
     <unit id="sas.level.repository">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:235</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:236</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -37043,7 +37043,7 @@
     </unit>
     <unit id="sas.level.project">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:237</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:238</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -37052,7 +37052,7 @@
     </unit>
     <unit id="sas.level.instance">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:239</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:240</note>
       </notes>
       <segment>
         <source>Instance</source>
