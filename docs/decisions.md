@@ -10727,10 +10727,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-407 questions on [spec/bastion.md](spec/bastion.md).
+409 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 407 questions</summary>
+<summary>Q-BAS: 409 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11142,6 +11142,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-495](spec/bastion.md#q-bas-495--while-the-default-endpoint-refuses-anonymous-requests-every-catalogue-is-empty-with-its-reason) | While the default endpoint refuses anonymous requests, every catalogue is empty, with its reason | Decided by the development agent on 2026-11-27 (W35-P9f, H-2330) | (a) The builder builds nothing while the setting is `false`: it empties each registration's catalogue once and records `anonymous_requests_refused` for the card; the switch stays as the administrator set it | — |
 | [Q-BAS-496](spec/bastion.md#q-bas-496--a-replica-that-claims-jobs-starts-a-run-at-its-start-only-when-the-store-differs-from-what-a-run-would-leave) | A replica that claims jobs starts a run at its start only when the store differs from what a run would leave | Decided by the development agent on 2026-11-27 (W35-P9f) | (a) At its start the trigger compares each registration's stored state with what a run would leave (`Builder.Drift`) and starts a run only when they differ | — |
 | [Q-BAS-497](spec/bastion.md#q-bas-497--the-registration-carries-the-builders-last-outcome-and-the-card-says-a-stop-in-plain-view) | The registration carries the builder's last outcome, and the card says a stop in plain view | Decided by the development agent on 2026-11-27 (W35-P9f) | (a) A member `catalogue` of the registration (`outcome` built, stopped or pending, `reason`, `checkedAt`, `builtAt`) in the read of one and the list, read with the registration in one statement; on the card, a stop's reason with what to do among the plain view's warnings, and a line under the switch **Web interface** with the last build | — |
+| [Q-BAS-498](spec/bastion.md#q-bas-498--the-start-the-projects-lists-and-the-sitemap-lead-to-a-repositorys-files) | The start, the projects' lists and the sitemap lead to a repository's files | Decided by the development agent on 2026-11-27 | (a) The start's text links the projects the application offers (with a package or with files) and a section **Files** with every repository whose files the catalogue holds, by its qualified name; a project's list links its own by their keys above its packages and is `200` with files alone; the sitemap lists each repository's root and each such project's list, without `lastmod` | — |
 
 </details>
 

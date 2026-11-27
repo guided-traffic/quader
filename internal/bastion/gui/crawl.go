@@ -85,26 +85,35 @@ type sitemapState struct {
 	cur *sitemapSet
 }
 
-// sitemaps is the set of the catalogue's current revision, built from the index when the revision changed.
+// sitemaps is the set of the catalogue's current revision, built from the index when the revision changed. The revision of the packages
+// does not see a repository's files arrive or go, so the repositories with files are part of the set's own revision.
 func (h *Handler) sitemaps() (*sitemapSet, error) {
-	entries, rev, err := h.o.Catalogue.Packages()
+	entries, packages, err := h.o.Catalogue.Packages()
 	if err != nil {
 		return nil, err
 	}
+	files, err := h.o.Catalogue.Files()
+	if err != nil {
+		return nil, err
+	}
+	files = slices.Sorted(slices.Values(files))
+	sum := sha256.Sum256([]byte(packages + "\n" + strings.Join(files, "\n")))
+	rev := hex.EncodeToString(sum[:])
 	h.sm.mu.Lock()
 	defer h.sm.mu.Unlock()
 	if h.sm.cur != nil && h.sm.cur.revision == rev {
 		return h.sm.cur, nil
 	}
-	set := &sitemapSet{revision: rev, urls: h.sitemapURLs(entries), files: map[int][]byte{}}
+	set := &sitemapSet{revision: rev, urls: h.sitemapURLs(entries, files), files: map[int][]byte{}}
 	h.sm.cur = set
 	return set, nil
 }
 
-// sitemapURLs are the pages the sitemap lists (W-35's B.11), each in every language: the start, every project's list, every package's
-// page in every project that shows it, its documentation's pages (docRoutes), and the imprint and the privacy notice that have a text.
-// A version's own page is not listed: a package's page links its versions, and each is canonical to itself.
-func (h *Handler) sitemapURLs(entries []catalogue.Entry) []sitemapURL {
+// sitemapURLs are the pages the sitemap lists (W-35's B.11), each in every language: the start, every project's list, the root of every
+// repository's files (Q-BAS-498), every package's page in every project that shows it, its documentation's pages (docRoutes), and the
+// imprint and the privacy notice that have a text. A version's own page is not listed: a package's page links its versions, and each
+// is canonical to itself; nor is a folder or a file below a root, which the root's page links.
+func (h *Handler) sitemapURLs(entries []catalogue.Entry, files []string) []sitemapURL {
 	type page struct {
 		route   string
 		lastmod time.Time
@@ -134,6 +143,17 @@ func (h *Handler) sitemapURLs(entries []catalogue.Entry) []sitemapURL {
 			newest = e.UpdatedAt
 		}
 	}
+	var roots []page
+	for _, name := range files {
+		project, repo, ok := strings.Cut(name, "/")
+		if !ok {
+			continue
+		}
+		if _, held := projects[project]; !held {
+			projects[project] = time.Time{} // a project with files alone: its list has no time of a package
+		}
+		roots = append(roots, page{pg.Address{Kind: pg.Files, Project: project, Repository: repo}.Route(), time.Time{}})
+	}
 	if len(projects) > 0 {
 		pages = append(pages, page{"", newest})
 	}
@@ -145,6 +165,7 @@ func (h *Handler) sitemapURLs(entries []catalogue.Entry) []sitemapURL {
 	for _, p := range names {
 		pages = append(pages, page{pg.Address{Kind: pg.List, Project: p}.Route(), projects[p]})
 	}
+	pages = append(pages, roots...)
 	pages = append(pages, packages...)
 	set := h.o.Legal.Pages(defaultLocale)
 	if set.Imprint != nil {

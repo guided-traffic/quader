@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -192,24 +193,26 @@ func webPage(name, url string) map[string]any {
 	return map[string]any{"@context": "https://schema.org", "@type": "WebPage", "name": name, "url": url}
 }
 
-// shownProjects are the projects whose list the text links: those of the public set that hold a package the catalogue lists
-// (Q-BAS-399), each with its name (R-BAS-128).
-func (h *Handler) shownProjects() ([]iface.CatalogueProject, error) {
-	pub, err := h.o.Catalogue.PublicSet()
-	if err != nil {
-		return nil, err
-	}
-	out := []iface.CatalogueProject{}
-	for _, p := range pub.Projects {
-		res, err := h.o.Catalogue.Search(catalogue.Query{Project: p.Key, Limit: 1})
-		if err != nil {
-			return nil, err
+// fileRepositories is the section of the public repositories whose folders and files the catalogue holds (Q-BAS-400, Q-BAS-498), each
+// a link to the root of its files, in the order of their names: the start's every one by its qualified name, a project's list its own
+// by their keys. A generic repository's files are no package, so no other link of the text leads to them.
+func fileRepositories(locale, project string, names []string) pg.Section {
+	s := pg.Section{Heading: pg.TextsOf(locale).Files}
+	for _, name := range slices.Sorted(slices.Values(names)) {
+		key, repo, ok := strings.Cut(name, "/")
+		if !ok || (project != "" && key != project) {
+			continue
 		}
-		if len(res.Items) > 0 {
-			out = append(out, p)
+		text := name
+		if project != "" {
+			text = repo
+		}
+		s.Links = append(s.Links, pg.Link{Text: text, Href: local(locale, pg.Address{Kind: pg.Files, Project: key, Repository: repo}.Route())})
+		if len(s.Links) == maxListed {
+			break
 		}
 	}
-	return out, nil
+	return s
 }
 
 // projectName is a project's display name as the public set names it (R-BAS-128), its key where the set does not hold it.
@@ -226,7 +229,12 @@ func (h *Handler) projectName(key string) iface.CatalogueProject {
 
 func (h *Handler) startPage(a pg.Address) (pg.Page, int) {
 	t := pg.TextsOf(a.Locale)
-	projects, err := h.shownProjects()
+	// The projects the application's start offers: those with a package or with files (Q-BAS-399, Q-BAS-400).
+	projects, err := h.offeredProjects()
+	if err != nil {
+		return pg.Page{}, http.StatusNotFound
+	}
+	names, err := h.o.Catalogue.Files()
 	if err != nil {
 		return pg.Page{}, http.StatusNotFound
 	}
@@ -240,14 +248,26 @@ func (h *Handler) startPage(a pg.Address) (pg.Page, int) {
 		})
 	}
 	p.Sections = []pg.Section{s}
+	if files := fileRepositories(a.Locale, "", names); len(files.Links) > 0 {
+		p.Sections = append(p.Sections, files)
+	}
 	return p, http.StatusOK
 }
 
 func (h *Handler) listPage(a pg.Address) (pg.Page, int) {
 	t := pg.TextsOf(a.Locale)
 	res, err := h.o.Catalogue.Search(catalogue.Query{Project: a.Project, Limit: maxListed})
-	if err != nil || len(res.Items) == 0 {
-		// A project the start does not offer: not public, or public without a package the catalogue lists (Q-BAS-399).
+	if err != nil {
+		return pg.Page{}, http.StatusNotFound
+	}
+	names, err := h.o.Catalogue.Files()
+	if err != nil {
+		return pg.Page{}, http.StatusNotFound
+	}
+	files := fileRepositories(a.Locale, a.Project, names)
+	if len(res.Items) == 0 && len(files.Links) == 0 {
+		// A project the start does not offer: not public, or public without a package the catalogue lists and without files
+		// (Q-BAS-399, Q-BAS-400).
 		return pg.Page{}, http.StatusNotFound
 	}
 	route := pg.Address{Kind: pg.List, Project: a.Project}.Route()
@@ -260,13 +280,19 @@ func (h *Handler) listPage(a pg.Address) (pg.Page, int) {
 	p.Noindex = a.Filtered
 	p.LD = webPage(p.Title, p.Canonical)
 	p.Crumbs = []pg.Link{{Text: t.Projects, Href: local(a.Locale, "")}}
-	s := pg.Section{Heading: t.Packages}
-	for _, e := range res.Items {
-		s.Links = append(s.Links, pg.Link{
-			Text: e.Name, Note: pg.Cut(e.Description, 160), Href: local(a.Locale, pg.PackageRoute(a.Project, e.Format, e.Name)),
-		})
+	// The project's repositories with files stand above its packages, as in the application.
+	if len(files.Links) > 0 {
+		p.Sections = append(p.Sections, files)
 	}
-	p.Sections = []pg.Section{s}
+	if len(res.Items) > 0 {
+		s := pg.Section{Heading: t.Packages}
+		for _, e := range res.Items {
+			s.Links = append(s.Links, pg.Link{
+				Text: e.Name, Note: pg.Cut(e.Description, 160), Href: local(a.Locale, pg.PackageRoute(a.Project, e.Format, e.Name)),
+			})
+		}
+		p.Sections = append(p.Sections, s)
+	}
 	return p, http.StatusOK
 }
 

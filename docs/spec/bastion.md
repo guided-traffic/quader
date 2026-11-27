@@ -6973,7 +6973,10 @@ Priority: **P1** · Covers: quader-only
 - **The text.** Inside the root element, `<div class="quader-page">`: the way from the start, the heading, the description, the facts every
   format has (the newest version, when it was published, its licences and keywords), the README as the catalogue keeps it (only while the
   catalogue shows it: `docs` on and a public wiki, R-BAS-112), the links to the projects, a project's packages or a package's versions (the
-  first 100 each), and the footer's legal links. A browser that runs the application does not show it: a rule under the page's nonce hides
+  first 100 each), and the footer's legal links. The start links the projects its application offers, those with a package or with files
+  (Q-BAS-399, Q-BAS-400), and under **Files** every public repository whose files the catalogue holds, by its qualified name, to the root
+  of its files; a project's list links its own such repositories by their keys above its packages, and answers `200` for a project with
+  files and no package ([Q-BAS-498](#q-bas-498--the-start-the-projects-lists-and-the-sitemap-lead-to-a-repositorys-files)). A browser that runs the application does not show it: a rule under the page's nonce hides
   it and the application's spinner shows until the application starts (R-UI-217); `<noscript>` shows it and hides the spinner
   ([Q-BAS-406](#q-bas-406--the-text-is-hidden-from-a-browser-that-runs-the-application-and-shown-without-script)). Its few fixed words
   are a table in both languages in Go, the application's own words.
@@ -6985,7 +6988,7 @@ Priority: **P1** · Covers: quader-only
 - **Status and indexing** ([Q-BAS-407](#q-bas-407--an-address-the-catalogue-does-not-show-is-404),
   [Q-BAS-408](#q-bas-408--what-is-indexed-the-pages-themselves-never-the-findings-or-a-list-of-results)). An address the catalogue does not
   show is `404` with `noindex` and no canonical address: no route of the application, a package not public in the address's project, a
-  version it does not hold, a project's list without a package, a legal page without a text. An address that opens the findings
+  version it does not hold, a project's list without a package and without files, a legal page without a text. An address that opens the findings
   (`tab=vulnerabilities`, a `severity`) and a list with a search, a filter, a sort or a cursor are `noindex`, canonical without their
   query; every other query is dropped from the canonical address; a documentation entry's keeps `tab` and `doc`. A repository's page Set
   up client is found while the public set holds the repository, titled "Set up client", and never indexed (R-BAS-129,
@@ -7007,7 +7010,8 @@ Acceptance criteria:
 - Unit ([seo_test.go](../../internal/bastion/gui/seo_test.go), milliseconds): `TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue` (a
   package's page in German with every member of its head and text; a version's, the versions', a documentation entry's, a list's, the
   start's and the imprint's title, canonical address, JSON-LD type and robots rule; a generic repository's root, a folder and a file
-  found and indexed, a folder's entries and a file's way back in the text; `tab=vulnerabilities` and `severity` noindex, a list's
+  found and indexed, a folder's entries and a file's way back in the text; the start's projects with files and its section Files, a
+  project's list with files alone `200` with its repositories by their keys (Q-BAS-498); `tab=vulnerabilities` and `severity` noindex, a list's
   search noindex, other queries dropped; thirteen addresses `404` with `noindex` and no canonical; a README the catalogue does not show is not
   in the text; not ready `503`; the text hidden under the page's nonce; a description with `</script>` closes nothing; a sentinel in a
   version's `metadata` is on no page); [page_test.go](../../internal/bastion/gui/page/page_test.go):
@@ -7029,11 +7033,14 @@ Priority: **P1** · Covers: quader-only
   "try again later" rather than as a rule. `text/plain`, `no-cache` with an ETag; answered also while the switch `gui` is off.
 - **The sitemap** ([Q-BAS-412](#q-bas-412--the-sitemap-lists-the-start-the-projects-the-packages-and-the-legal-pages-split-at-50000-and-kept-per-revision)).
   `/sitemap.xml` is a sitemap index of the files `/sitemap/<n>.xml`, each of at most 50,000 addresses. It lists, each in both languages with
-  `xhtml:link` alternates for `en`, `de` and `x-default`: the start, every project's list that holds a package, every package's page in every
+  `xhtml:link` alternates for `en`, `de` and `x-default`: the start, every project's list that holds a package or files, the root of every
+  public repository's files the catalogue holds (its folders and files are linked from there,
+  [Q-BAS-498](#q-bas-498--the-start-the-projects-lists-and-the-sitemap-lead-to-a-repositorys-files)), every package's page in every
   project whose public repository holds it, its documentation pages (while `docs` is on, the entries of R-BAS-125's `DocEntries` in the
   project whose repository the tree was read from, each as its page's canonical address `…?doc=<type>/<name>&tab=documentation`; W-35's
-  P11), and the imprint and the privacy notice that have a text. `lastmod` is the package's `updatedAt` (a list's and the start's the newest of theirs; none for a legal page). A version's
-  own page is not listed: a package's page links its versions. The set is built from the reader's `Packages()` once per revision and every
+  P11), and the imprint and the privacy notice that have a text. `lastmod` is the package's `updatedAt` (a list's and the start's the newest of theirs; none for a legal page, a root of files or a project's list without a package). A version's
+  own page is not listed: a package's page links its versions. The set is built from the reader's `Packages()` and `Files()` once per
+  revision of both (a repository's files that arrive change no revision of the packages) and every
   file is kept compressed with it; a crawler that takes `gzip` gets those bytes, `no-cache` with an ETag of the revision and the file.
   Off: `404`; not ready: `503 not_ready`.
 - Every request of both counts in the class `gui` (R-BAS-117).
@@ -7045,7 +7052,8 @@ Acceptance criteria:
 
 - Unit ([seo_test.go](../../internal/bastion/gui/seo_test.go), 0.14 s): `TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot` (the rules on,
   off and undecided; the sitemap off and not ready; the data's `X-Robots-Tag`; the index and the one file with twelve addresses in their
-  order, the alternates and `lastmod`; a documentation entry's address while `docs` is on and none under the revision of `docs` off
+  order, the root of a repository's files and its project's list without `lastmod`, a repository whose files arrive under the same
+  revision of the packages listed at once (Q-BAS-498); a documentation entry's address while `docs` is on and none under the revision of `docs` off
   (W-35's P11); five file names that answer `404`; gzip and `304`; 25,001 tiny packages split into two files of 50,000
   and 8 addresses under a new revision); `TestR_BAS_122_PackagesListsThePublicPackagesUnderARevision`
   ([catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go)).
@@ -14171,7 +14179,7 @@ reads knew neither: a direct load or a shared link answered `404` with `noindex`
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A kind `Files` of the address grammar: `200` while the catalogue holds the folder's listing or the file's description, indexed like a package's page, the root's one spelling the repository's address, every query dropped; a folder's text links its entries (the first 100), a file's text names it and leads back through its folders (chosen) | The page exists for the crawler as for the person | A shared link answers `200`; a search engine reaches a file through its folders; only `path` and `kind` of the listing are read, no format's metadata (W-35's B.11) | Not in the sitemap and not linked from the start's text, so a crawler without script reaches it only through a link from elsewhere |
+| (a) A kind `Files` of the address grammar: `200` while the catalogue holds the folder's listing or the file's description, indexed like a package's page, the root's one spelling the repository's address, every query dropped; a folder's text links its entries (the first 100), a file's text names it and leads back through its folders (chosen) | The page exists for the crawler as for the person | A shared link answers `200`; a search engine reaches a file through its folders; only `path` and `kind` of the listing are read, no format's metadata (W-35's B.11) | Not in the sitemap and not linked from the start's text, so a crawler without script reaches it only through a link from elsewhere (closed by Q-BAS-498) |
 | (b) Found and never indexed, as Set up client (Q-BAS-401) | — | Nothing new in an index | A public file is the content a visitor looks for; its page holds no commands per client that would make it empty for an index |
 | (c) Left to the grammar's `404` | No change | — | A link answers `404`; a crawler drops a page that exists |
 
@@ -15275,6 +15283,25 @@ minute otherwise. **Applied in the spec:** R-BAS-104, [api-and-ui.md](api-and-ui
 [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go),
 [bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts),
 [bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts).
+
+### Q-BAS-498 · The start, the projects' lists and the sitemap lead to a repository's files
+
+Status: **Decided by the development agent on 2026-11-27** (batch H, the second finding of batch F's render) — selected from the
+options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-121, R-BAS-122, Q-BAS-483. A public generic repository's files had pages a crawler could index, but no page of the text
+and no address of the sitemap led to them: the application's project page links its repositories with files (Q-BAS-400), the text of
+that page did not, the start's text left out a project with files and no package, and that project's list answered `404` to a crawler
+while the application showed it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The start's text links the projects the application offers (with a package or with files) and a section **Files** with every repository whose files the catalogue holds, by its qualified name; a project's list links its own by their keys above its packages and is `200` with files alone; the sitemap lists each repository's root and each such project's list, without `lastmod` (chosen) | The text and the sitemap follow the application | A crawler reaches every public file from the start in two links and from the sitemap in one; a project with files alone is no longer a `404` the application contradicts; reads only the reader's `Files()`, which the application's `/ui/data/v1/files` answers already | The sitemap's revision now covers the repositories with files besides the packages' |
+| (b) The sitemap lists every folder and file | Every page in the sitemap | No link to follow | The size grows with the files, not the repositories; the folder pages already link their entries |
+| (c) The repositories in the sitemap only | One place | Smallest change | A reader without script finds no way from the start; the project's list stays a `404` |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121, R-BAS-122; code: `fileRepositories`, `startPage`, `listPage` of
+[seo.go](../../internal/bastion/gui/seo.go), `sitemaps` and `sitemapURLs` of [crawl.go](../../internal/bastion/gui/crawl.go).
 
 ## What this does not cover
 

@@ -148,6 +148,8 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 		{"/ui/de/projects/acme/packages", "Pakete in Acme platform – Quader", base + "/ui/de/projects/acme/packages", "WebPage", false},
 		{"/ui/de/projects/acme", "Pakete in Acme platform – Quader", base + "/ui/de/projects/acme/packages", "WebPage", false},
 		{"/ui/en/projects/acme/packages?q=ui", "Packages in Acme platform – Quader", base + "/ui/en/projects/acme/packages", "WebPage", true},
+		// A project with files and no package is a list the start offers (Q-BAS-400, Q-BAS-498).
+		{"/ui/en/projects/tools/packages", "Packages in tools – Quader", base + "/ui/en/projects/tools/packages", "WebPage", false},
 		{"/ui/en/", "Projects – Quader", base + "/ui/en/", "WebPage", false},
 		{"/ui/en/legal/imprint", "Imprint – Quader", base + "/ui/en/legal/imprint", "WebPage", false},
 		// A public repository's page Set up client is found and never indexed (R-BAS-129, Q-BAS-401), its canonical address without the client.
@@ -169,8 +171,18 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 		}
 	}
 	if body := do(h, http.MethodGet, "/ui/en/").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/acme/packages">Acme platform</a> – The packages Acme publishes.`) ||
-		!strings.Contains(body, `<a href="/ui/en/projects/web/packages">Web</a>`) || strings.Contains(body, ">upstream<") {
+		!strings.Contains(body, `<a href="/ui/en/projects/web/packages">Web</a>`) || strings.Contains(body, ">upstream<") ||
+		!strings.Contains(body, `<a href="/ui/en/projects/tools/packages">tools</a>`) ||
+		!strings.Contains(body, `<h2>Files</h2><ul><li><a href="/ui/en/projects/tools/repositories/downloads">tools/downloads</a>`) {
 		t.Errorf("the start's text:\n%s", body)
+	}
+	// A project's list leads to its repositories with files, by their keys, above its packages (Q-BAS-498).
+	if body := do(h, http.MethodGet, "/ui/de/projects/tools/packages").Body.String(); !strings.Contains(body, `<h2>Dateien</h2><ul><li><a href="/ui/de/projects/tools/repositories/downloads">downloads</a>`) ||
+		strings.Contains(body, "<h2>Pakete</h2>") {
+		t.Errorf("the list of a project with files alone:\n%s", body)
+	}
+	if body := do(h, http.MethodGet, "/ui/en/projects/acme/packages").Body.String(); strings.Contains(body, "<h2>Files</h2>") {
+		t.Errorf("the list of a project without files:\n%s", body)
 	}
 	if body := do(h, http.MethodGet, "/ui/de/legal/imprint").Body.String(); !strings.Contains(body, "Beispiel GmbH") {
 		t.Errorf("the imprint's text:\n%s", body)
@@ -295,7 +307,10 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 	want := []string{
 		base + "/ui/en/", base + "/ui/de/",
 		base + "/ui/en/projects/acme/packages", base + "/ui/de/projects/acme/packages",
+		base + "/ui/en/projects/tools/packages", base + "/ui/de/projects/tools/packages",
 		base + "/ui/en/projects/web/packages", base + "/ui/de/projects/web/packages",
+		// The root of a repository's files (Q-BAS-498): its folders and files are linked from there.
+		base + "/ui/en/projects/tools/repositories/downloads", base + "/ui/de/projects/tools/repositories/downloads",
 		base + "/ui/en/projects/acme/packages/npm/@acme/ui", base + "/ui/de/projects/acme/packages/npm/@acme/ui",
 		base + "/ui/en/projects/web/packages/ansible/acme.web", base + "/ui/de/projects/web/packages/ansible/acme.web",
 		// The newest version's documentation entries while docs is on (R-BAS-125): each page's canonical address.
@@ -305,15 +320,16 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 	if strings.Join(locs, "\n") != strings.Join(want, "\n") {
 		t.Errorf("the sitemap lists\n%s\nwant\n%s", strings.Join(locs, "\n"), strings.Join(want, "\n"))
 	}
-	if u := set.URLs[6]; u.Lastmod != "2026-11-20T08:00:00Z" || len(u.Links) != 3 || u.Links[0].Hreflang != "en" ||
+	if u := set.URLs[10]; u.Lastmod != "2026-11-20T08:00:00Z" || len(u.Links) != 3 || u.Links[0].Hreflang != "en" ||
 		u.Links[1].Href != base+"/ui/de/projects/acme/packages/npm/@acme/ui" || u.Links[2].Hreflang != "x-default" ||
 		u.Links[2].Href != base+"/ui/projects/acme/packages/npm/@acme/ui" {
 		t.Errorf("a package's address = %+v", u)
 	}
-	if set.URLs[0].Lastmod != "2026-11-21T08:00:00Z" || set.URLs[12].Lastmod != "" {
-		t.Errorf("the start's and the imprint's lastmod = %q %q", set.URLs[0].Lastmod, set.URLs[12].Lastmod)
+	if set.URLs[0].Lastmod != "2026-11-21T08:00:00Z" || set.URLs[16].Lastmod != "" || set.URLs[4].Lastmod != "" || set.URLs[8].Lastmod != "" {
+		t.Errorf("the start's, the imprint's, the list's of files alone and a root's lastmod = %q %q %q %q",
+			set.URLs[0].Lastmod, set.URLs[16].Lastmod, set.URLs[4].Lastmod, set.URLs[8].Lastmod)
 	}
-	if u := set.URLs[10]; u.Lastmod != "2026-11-21T08:00:00Z" || len(u.Links) != 3 ||
+	if u := set.URLs[14]; u.Lastmod != "2026-11-21T08:00:00Z" || len(u.Links) != 3 ||
 		u.Links[1].Href != base+"/ui/de/projects/web/packages/ansible/acme.web?"+docQuery {
 		t.Errorf("a documentation entry's address = %+v", u)
 	}
@@ -349,6 +365,17 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 		t.Errorf("If-None-Match = %d", again.Code)
 	}
 
+	// A repository whose files arrive under the same revision of the packages is in the set at once.
+	r.mu.Lock()
+	r.docs["files/tools/more/folder"] = []byte(`{"items":[]}`)
+	r.mu.Unlock()
+	if body := do(h, http.MethodGet, "/sitemap/0.xml").Body.String(); !strings.Contains(body, "<loc>"+base+"/ui/en/projects/tools/repositories/more</loc>") {
+		t.Errorf("the sitemap after a repository's files arrived lists %s", body)
+	}
+	r.mu.Lock()
+	delete(r.docs, "files/tools/more/folder")
+	r.mu.Unlock()
+
 	// 25,001 tiny packages are 50,002 addresses, two files; the new revision replaces the set.
 	r.mu.Lock()
 	r.pkgs = make([]catalogue.Entry, 25001)
@@ -362,7 +389,7 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 	if err := xml.Unmarshal(rec.Body.Bytes(), &index); err != nil || len(index.Sitemaps) != 2 || index.Sitemaps[1].Loc != base+"/sitemap/1.xml" {
 		t.Fatalf("the split index = %v %s", err, rec.Body.String())
 	}
-	for n, count := range []int{50000, 2 + 2 + 50002 + 2 - 50000} {
+	for n, count := range []int{50000, 2 + 4 + 2 + 50002 + 2 - 50000} {
 		if got := bytes.Count(do(h, http.MethodGet, fmt.Sprintf("/sitemap/%d.xml", n)).Body.Bytes(), []byte("<url><loc>")); got != count {
 			t.Errorf("file %d holds %d addresses, want %d", n, got, count)
 		}
