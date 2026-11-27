@@ -29,6 +29,12 @@
 #   - A claim whose checkout no longer exists (a removed worktree) is stale: the claim is taken over, and the instance's containers
 #     and volumes, which belonged to that checkout, are removed first (its database was written with another key ring).
 #   - The claim stays through `make ui-dev-down` (the data is kept for the checkout) and ends with `make ui-dev-down PURGE=1`.
+#   - A claim whose checkout still exists but has been idle for UI_CLAIM_IDLE_MINUTES (default 60) is abandoned and taken over the
+#     same way, data removed first (Q-UI-1614): a builder's agent that ended left its claim, and on 2026-11-27 every gate found the
+#     instances 2 to 8 claimed by finished builders. Idle means all of: no process has its working directory in the checkout or
+#     names the checkout on its command line (lsof, else /proc; where neither answers the claim is never idle), no file of the
+#     checkout outside node_modules, .angular, .out and .bin changed, and the claim was not used (each ui_instance of the owner
+#     touches it) in those minutes. Instance 1 has no claim and is never taken.
 #
 # It sets (and exports, for docker compose and the dev server) UI_INSTANCE, UI_PROJECT, UI_STATE, UI_WEB_PORT, UI_BACKEND_PORT,
 # UI_OPS_PORT, UI_IDP_PORT, UI_PG_PORT, UI_VALKEY_PORT, UI_S3_PORT, the scanners' UI_SCAN_PORT, UI_TRIVY_PORT, UI_TRIVY_OPS_PORT and
@@ -61,6 +67,43 @@ ui_unclaimed_running() {
   [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=quader-ui-dev$1" 2>/dev/null)" ]
 }
 
+# ui_checkout_busy <checkout> succeeds when a process works in the checkout: its working directory lies in it, or its command line
+# names a path in it. It also succeeds when the machine cannot list the processes' working directories, so that a claim is only taken
+# from a checkout that is known to be idle.
+ui_checkout_busy() {
+  local checkout="$1" cwds l
+  if command -v lsof >/dev/null 2>&1; then
+    cwds="$(lsof -w -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' || true)"
+  elif [ -d /proc/self ]; then
+    cwds="$(for l in /proc/[0-9]*/cwd; do readlink "$l" 2>/dev/null || true; done)"
+  else
+    return 0
+  fi
+  cwds="$cwds"$'\n'"$(ps -A -o args= 2>/dev/null || true)"
+  awk -v c="$checkout" '$0 == c || index($0, c "/") || index($0, c " ") || (length($0) > length(c) && substr($0, length($0) - length(c)) == " " c) { found = 1 }
+    END { exit !found }' <<<"$cwds"
+}
+
+# ui_claim_idle <claim file> <checkout> succeeds when the claim is abandoned: the checkout has no process (ui_checkout_busy), and
+# neither the claim nor a file of the checkout (node_modules, .angular, .out and .bin left out: builds and renders write there while
+# a process runs) changed for UI_CLAIM_IDLE_MINUTES. It prints nothing.
+ui_claim_idle() {
+  local claim="$1" checkout="$2" minutes="${UI_CLAIM_IDLE_MINUTES:-60}" recent
+  case "$minutes" in '' | *[!0-9]* | 0) return 1 ;; esac
+  recent="$(find "$claim" -mmin "-$minutes" -print 2>/dev/null || true)"
+  [ -z "$recent" ] || return 1
+  recent="$(find "$checkout" \( -name node_modules -o -name .angular -o -name .out -o -name .bin \) -prune -o -mmin "-$minutes" -print -quit 2>/dev/null || true)"
+  [ -z "$recent" ] || return 1
+  ! ui_checkout_busy "$checkout"
+}
+
+# ui_purge_instance <n> removes the containers and volumes of instance n's compose project: they belonged to a checkout whose claim
+# ends, and its database was written with another key ring.
+ui_purge_instance() {
+  docker ps -aq --filter "label=com.docker.compose.project=quader-ui-dev$1" | xargs docker rm -f >/dev/null 2>&1 || true
+  docker volume ls -q --filter "label=com.docker.compose.project=quader-ui-dev$1" | xargs docker volume rm >/dev/null 2>&1 || true
+}
+
 # ui_claims_locked <checkout> <want> <mode> runs under the claims' lock (descriptor 8) and prints the instance: want is the number the
 # caller named or empty; mode is claim or release.
 ui_claims_locked() {
@@ -75,6 +118,7 @@ ui_claims_locked() {
   if [ -z "$want" ]; then
     for n in 2 3 4 5 6 7 8; do
       if [ -f "$dir/$n" ] && [ "$(cat "$dir/$n")" = "$checkout" ]; then
+        touch "$dir/$n"
         echo "$n"
         return 0
       fi
@@ -85,8 +129,18 @@ ui_claims_locked() {
         break
       fi
     done
+    # No free instance: the first whose claim is abandoned (ui_claim_idle), taken over below.
     if [ -z "$want" ]; then
-      echo "every instance of the UI development profile (2 to 8) is claimed by a checkout that still exists:" >&2
+      for n in 2 3 4 5 6 7 8; do
+        if [ -f "$dir/$n" ] && ui_claim_idle "$dir/$n" "$(cat "$dir/$n")"; then
+          want="$n"
+          break
+        fi
+      done
+    fi
+    if [ -z "$want" ]; then
+      echo "every instance of the UI development profile (2 to 8) is claimed by a checkout that still exists and was used in the last" \
+        "${UI_CLAIM_IDLE_MINUTES:-60} minutes:" >&2
       for n in 2 3 4 5 6 7 8; do
         if [ -f "$dir/$n" ]; then echo "  $n: $(cat "$dir/$n")" >&2; else echo "  $n: running without a claim" >&2; fi
       done
@@ -103,18 +157,22 @@ ui_claims_locked() {
   if [ -f "$dir/$want" ]; then
     owner="$(cat "$dir/$want")"
     if [ "$owner" = "$checkout" ]; then
+      touch "$dir/$want"
       echo "$want"
       return 0
     fi
-    if [ -d "$owner" ]; then
+    if [ ! -d "$owner" ]; then
+      echo "instance $want of the UI development profile was claimed by $owner, which no longer exists: its containers and volumes" \
+        "are removed and the instance is this checkout's" >&2
+    elif ui_claim_idle "$dir/$want" "$owner"; then
+      echo "instance $want of the UI development profile was claimed by $owner, which has had no process and no change for" \
+        "${UI_CLAIM_IDLE_MINUTES:-60} minutes: its containers and volumes are removed and the instance is this checkout's" >&2
+    else
       echo "instance $want of the UI development profile is claimed by $owner; leave UI_INSTANCE unset for a free one, or end" \
         "that claim there with 'make ui-dev-down UI_INSTANCE=$want PURGE=1'" >&2
       return 2
     fi
-    echo "instance $want of the UI development profile was claimed by $owner, which no longer exists: its containers and volumes" \
-      "are removed and the instance is this checkout's" >&2
-    docker ps -aq --filter "label=com.docker.compose.project=quader-ui-dev$want" | xargs docker rm -f >/dev/null 2>&1 || true
-    docker volume ls -q --filter "label=com.docker.compose.project=quader-ui-dev$want" | xargs docker volume rm >/dev/null 2>&1 || true
+    ui_purge_instance "$want"
   fi
   printf '%s\n' "$checkout" > "$dir/$want.tmp"
   mv -f "$dir/$want.tmp" "$dir/$want"

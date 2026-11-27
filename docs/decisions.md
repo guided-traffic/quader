@@ -13418,10 +13418,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-809 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+810 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 809 questions</summary>
+<summary>Q-UI: 810 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14234,6 +14234,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1611](spec/api-and-ui.md#q-ui-1611--the-checks-of-a-connection-are-marks) | The checks of a connection are marks | Decided by the development agent on 2026-11-27 | — | — |
 | [Q-UI-1612](spec/api-and-ui.md#q-ui-1612--the-counts-of-the-period-in-availability) | The counts of the period in Availability | Decided by the development agent on 2026-11-27 | — | — |
 | [Q-UI-1613](spec/api-and-ui.md#q-ui-1613--the-findings-columns-are-as-wide-as-their-cells) | The findings' columns are as wide as their cells | Decided by the development agent on 2026-11-27 | (a) The least widths of what the cells hold: When 11 rem, Connection 5.5 (a longer id widens it), Blob 10 (it takes the rest), Bytes 4.5, Found by 11.5, State 9 rem: 1,080 px | — |
+| [Q-UI-1614](spec/api-and-ui.md#q-ui-1614--a-claim-of-an-idle-checkout-is-taken-over) | A claim of an idle checkout is taken over | Decided by the development agent on 2026-11-27 | (a) A claim whose checkout has no process (working directory or command line in it, read with `lsof`, else `/proc`), no changed file outside `node_modules`, `.angular`, `.out` and `.bin`, and no use of the claim (each `ui_instance` of its owner touches it) for `UI_CLAIM_IDLE_MINUTES` (default 60) is taken over by the next claimer when no instance is free, or when named, after its containers and volumes are removed | — |
 
 </details>
 

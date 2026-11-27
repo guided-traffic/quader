@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // A checkout's development profiles do not meet another checkout's (Q-HA-491, Q-UI-1044). The kind cluster, its edge port and its
@@ -77,6 +78,15 @@ func (r profileRepo) sh(t *testing.T, dir string, env []string, script string) s
 		"case \"$*\" in \"ps -aq --filter label=com.docker.compose.project=quader-ui-dev${STUB_RUNNING:-none}\") echo 0123abcd ;; esac\n")
 	if err := os.Chmod(filepath.Join(stubs, "docker"), 0o755); err != nil {
 		t.Fatal(err)
+	}
+	// STUB_CWD: the one working directory lsof lists (lsof -Fn form); STUB_ARGS: the one command line ps lists. Without them no process
+	// works anywhere, so the machine's own processes never decide a case.
+	write(t, filepath.Join(stubs, "lsof"), "#!/usr/bin/env bash\n[ -z \"${STUB_CWD:-}\" ] || printf 'p4711\\nfcwd\\nn%s\\n' \"$STUB_CWD\"\n")
+	write(t, filepath.Join(stubs, "ps"), "#!/usr/bin/env bash\n[ -z \"${STUB_ARGS:-}\" ] || printf '%s\\n' \"$STUB_ARGS\"\n")
+	for _, f := range []string{"lsof", "ps"} {
+		if err := os.Chmod(filepath.Join(stubs, f), 0o755); err != nil {
+			t.Fatal(err)
+		}
 	}
 	cmd := exec.Command("bash", "-c", script)
 	cmd.Dir = dir
@@ -220,4 +230,86 @@ func TestUIDevInstancesAreClaimedNotChosen(t *testing.T) {
 		t.Fatalf("the release of the second worktree's instance: exit %d, the claim holds %q\n%s", res.code, owner("3"), res.stderr)
 	}
 	expect("the freed instance is claimed again", instance(b), "3 quader-ui-dev3 4400")
+}
+
+// An instance whose claiming checkout still exists but is idle is taken over (Q-UI-1614): on 2026-11-27 every gate found the
+// instances 2 to 8 claimed by builders whose agents had ended. Idle is no process in the checkout (lsof and ps stubbed), no change of
+// its files outside node_modules, .angular, .out and .bin, and no use of the claim, for UI_CLAIM_IDLE_MINUTES.
+func TestUIDevInstanceOfAnIdleCheckoutIsTakenOver(t *testing.T) {
+	r := newProfileRepo(t, "wt-c", "wt-d")
+	c, d := r.worktrees["wt-c"], r.worktrees["wt-d"]
+	claims := filepath.Join(r.main, ".dev", "ui-dev-claims")
+	owners := map[string]string{}
+	for _, n := range []string{"2", "3", "4", "5", "6", "7", "8"} {
+		owners[n] = filepath.Join(filepath.Dir(r.main), "owner-"+n)
+		write(t, filepath.Join(owners[n], "web", "src", "main.ts"), "export {};\n")
+		write(t, filepath.Join(claims, n), owners[n]+"\n")
+	}
+	past := time.Now().Add(-2 * time.Hour)
+	age := func(paths ...string) {
+		t.Helper()
+		for _, p := range paths {
+			if err := filepath.Walk(p, func(path string, _ os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				return os.Chtimes(path, past, past)
+			}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	instance := func(dir string, env ...string) shellRun {
+		t.Helper()
+		return r.sh(t, dir, env, `. deploy/ui-dev/instance.sh; ui_instance "$PWD" || exit $?; printf '%s %s\n' "$UI_INSTANCE" "$UI_WEB_PORT"`)
+	}
+	owner := func(n string) string {
+		raw, _ := os.ReadFile(filepath.Join(claims, n))
+		return strings.TrimSpace(string(raw))
+	}
+	refused := func(what string, res shellRun, n string) {
+		t.Helper()
+		if res.code == 0 || owner(n) != owners[n] {
+			t.Fatalf("%s: exit %d, %q, the claim of %s holds %q; want a refusal and the claim kept\n%s", what, res.code, res.stdout, n, owner(n), res.stderr)
+		}
+	}
+
+	refused("every claim used a moment ago", instance(c), "5")
+
+	// Instance 5's checkout and claim have not changed for two hours; a process still works in it, by its directory or its command line.
+	age(owners["5"], filepath.Join(claims, "5"))
+	refused("a process's working directory in the idle checkout", instance(c, "STUB_CWD="+owners["5"]+"/web"), "5")
+	refused("a process's command line naming the idle checkout", instance(c, "STUB_ARGS=node "+owners["5"]+"/web/node_modules/.bin/ng serve"), "5")
+	refused("a limit of 0 minutes takes nothing", instance(c, "UI_CLAIM_IDLE_MINUTES=0"), "5")
+	refused("a limit of three hours", instance(c, "UI_CLAIM_IDLE_MINUTES=180"), "5")
+	res := instance(c, "STUB_CWD="+owners["5"]+"-other", "STUB_ARGS=node "+owners["5"]+"-other/x")
+	if res.code != 0 || res.stdout != "5 4600" || owner("5") != c || !strings.Contains(res.stderr, "no process and no change") {
+		t.Fatalf("an idle checkout beside a busy one of a longer name: exit %d, %q, the claim holds %q, want instance 5 taken over by %s\n%s",
+			res.code, res.stdout, owner("5"), c, res.stderr)
+	}
+	log, _ := os.ReadFile(filepath.Join(r.home, "docker.log"))
+	for _, want := range []string{"ps -aq --filter label=com.docker.compose.project=quader-ui-dev5", "volume ls -q --filter label=com.docker.compose.project=quader-ui-dev5"} {
+		if !strings.Contains(string(log), want) {
+			t.Errorf("the takeover did not remove the instance's data (docker %s); docker was called with:\n%s", want, log)
+		}
+	}
+
+	// The new owner's use of its claim renews it.
+	age(filepath.Join(claims, "5"))
+	if res := instance(c); res.stdout != "5 4600" {
+		t.Fatalf("the new owner again: exit %d, %q\n%s", res.code, res.stdout, res.stderr)
+	}
+	if fi, err := os.Stat(filepath.Join(claims, "5")); err != nil || time.Since(fi.ModTime()) > time.Minute {
+		t.Errorf("the owner's use did not renew the claim: %v", err)
+	}
+
+	// Named instances: a change under .out does not keep a checkout busy, a change of a source file does.
+	write(t, filepath.Join(owners["6"], ".out", "ui-renders", "projects.png"), "png")
+	age(owners["6"], owners["7"], filepath.Join(claims, "6"), filepath.Join(claims, "7"))
+	write(t, filepath.Join(owners["6"], ".out", "ui-renders", "login.png"), "png")
+	write(t, filepath.Join(owners["7"], "web", "src", "app.ts"), "export {};\n")
+	refused("a source file changed a moment ago", instance(d, "UI_INSTANCE=7"), "7")
+	if res := instance(d, "UI_INSTANCE=6"); res.code != 0 || res.stdout != "6 4700" || owner("6") != d {
+		t.Fatalf("naming the idle instance 6: exit %d, %q, the claim holds %q\n%s", res.code, res.stdout, owner("6"), res.stderr)
+	}
 }

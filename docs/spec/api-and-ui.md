@@ -25283,6 +25283,31 @@ against one Docker daemon.
 held by `TestUIDevInstancesAreClaimedNotChosen` ([checkoutprofiles_test.go](../../internal/tools/ciworkflows/checkoutprofiles_test.go)).
 Elsewhere: [web-ui.md](../developer/web-ui.md#instances-one-per-builder).
 
+### Q-UI-1614 · A claim of an idle checkout is taken over
+
+Status: **Decided by the development agent on 2026-11-27** (B-1127c) — selected from the options below; the owner reviews it at the
+walkthrough. Amends [Q-UI-1044](#q-ui-1044--an-instance-of-the-ui-development-profile-is-claimed-not-chosen).
+
+Context: under Q-UI-1044 a claim ends with `make ui-dev-down PURGE=1` or when its checkout is removed. A builder's agent that ends
+leaves its worktree and its claim; on the night of 2026-11-27 every gate found the instances 2 to 8 claimed by finished builders and
+released them by hand. At 03:37 that night all seven were claimed, by checkouts of which three had neither a process nor a change in
+the last hour.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A claim whose checkout has no process (working directory or command line in it, read with `lsof`, else `/proc`), no changed file outside `node_modules`, `.angular`, `.out` and `.bin`, and no use of the claim (each `ui_instance` of its owner touches it) for `UI_CLAIM_IDLE_MINUTES` (default 60) is taken over by the next claimer when no instance is free, or when named, after its containers and volumes are removed (chosen) | [instance.sh](../../deploy/ui-dev/instance.sh) | Nobody frees an instance by hand; a builder that runs a test, a server or an edit keeps its claim; where processes cannot be listed nothing is taken | A builder that pauses for an hour without a process loses its database and seeds a new instance on its next `make ui-renders` (a few minutes) |
+| (b) The claim records the claiming process's start, and the instance is free once that process is gone | — | Exact for one command | The stack outlives every process of the profile by design (`up.sh` ends while its containers run): every claim would be free a moment after it was made |
+| (c) The orchestrator ends a builder's claim when its agent ends | — | Exact | A step someone forgets, which is the finding itself; a builder that crashes never reaches it |
+
+**Choice:** (a). **Rationale:** an abandoned checkout is told by what it does, not by who started it: a working builder has a process or
+writes files within the hour, a finished one does neither. A free instance is always taken before an idle one, so a takeover happens
+only when the instances would otherwise run out. Measured on the development machine on 2026-11-27: the check of seven claims took
+2.9 s (`lsof` over every process, about 0.6 s, is asked only for a claim whose files are idle).
+
+**Applied in the spec:** none (development tooling). Code: [instance.sh](../../deploy/ui-dev/instance.sh); held by
+`TestUIDevInstanceOfAnIdleCheckoutIsTakenOver` ([checkoutprofiles_test.go](../../internal/tools/ciworkflows/checkoutprofiles_test.go)).
+Elsewhere: [web-ui.md](../developer/web-ui.md#instances-one-per-builder).
+
 ### Q-UI-1045 · The layout checks' fixtures run in three engines, and Chromium sets text without hinting
 
 Status: **Decided by the development agent on 2026-11-23** — selected from the options below; the owner reviews it at the walkthrough.

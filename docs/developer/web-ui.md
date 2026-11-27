@@ -384,7 +384,11 @@ on 2026-11-23 two builders chose instance 6 a minute apart, and the second recre
 certificates. A claim is the file `.dev/ui-dev-claims/<n>` of the main checkout, holding the claiming checkout's path; every script
 of the profile reads and writes the claims under a lock on `.dev/ui-dev-claims.lock`. A claim stays through `make ui-dev-down` (the
 data is the checkout's) and ends with `PURGE=1`; a claim whose checkout no longer exists is taken over by the next worktree, which
-first removes that instance's containers and volumes. An instance that runs without a claim (started before claims existed) is
+first removes that instance's containers and volumes. So is a claim whose checkout is idle, when no instance is free or when its number
+is named ([Q-UI-1614](../spec/api-and-ui.md#q-ui-1614--a-claim-of-an-idle-checkout-is-taken-over)): no process has its working
+directory in the checkout or names it on its command line, no file outside `node_modules`, `.angular`, `.out` and `.bin` changed, and
+the claim was not used, for `UI_CLAIM_IDLE_MINUTES` (default 60). A builder that pauses longer than that without a process finds its
+instance gone and gets a new one, seeded from scratch, on its next `make ui-renders`. An instance that runs without a claim (started before claims existed) is
 never picked and is refused when named, since its owner is not known; `make ui-dev-down` with its number ends it from the checkout
 that started it. Instance 1 has no claim: it is the main checkout's.
 
