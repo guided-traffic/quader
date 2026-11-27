@@ -250,7 +250,13 @@ $(GOCYCLO_BIN):
 LINT_TIMEOUT ?= 20m
 # golangci-lint holds a lock in the system's temporary directory. Without --allow-serial-runners a second run on the machine (another
 # worktree, make gosec beside make lint) ended at once with "parallel golangci-lint is running"; with it, the second waits for the
-# first. --allow-parallel-runners would drop the lock, and the two would share the cache unguarded. LINT_WAIT says that it waits.
+# first, so the machine runs one lint at a time (the lock stays: four builders' gates at once took it above a load of 100). LINT_WAIT
+# says that it waits.
+# LINT_CACHE is the checkout's own cache of golangci-lint, keyed by its path and gone with it: a run in one worktree reported a finding
+# in a file of another worktree (W36-P8, 2026-11-27) and a rerun with a cache of its own did not; golangci-lint's default cache is one
+# directory for every checkout of the machine (docs/developer/build-and-test.md, "The lint's cache").
+LINT_CACHE ?= $(CURDIR)/.out/golangci-lint-cache
+LINT_ENV = GOLANGCI_LINT_CACHE=$(LINT_CACHE)
 LINT_FLAGS = --timeout $(LINT_TIMEOUT) --allow-serial-runners $(LINT_CONCURRENCY)
 LINT_WAIT = if pgrep -f '[g]olangci-lint[^ ]* run( |$$)' >/dev/null 2>&1; then \
   echo "make: another golangci-lint runs on this machine; this one waits for the lock while that run holds it"; fi
@@ -258,7 +264,7 @@ LINT_WAIT = if pgrep -f '[g]olangci-lint[^ ]* run( |$$)' >/dev/null 2>&1; then \
 .PHONY: lint
 lint: $(LINT_BIN) ## golangci-lint (pinned, rebuilt when the pin or the Go toolchain changes; gosec among its linters; LINT_TIMEOUT, waits for another run) and go vet
 	@$(LINT_WAIT)
-	$(LINT_BIN) run $(LINT_FLAGS) ./...
+	$(LINT_ENV) $(LINT_BIN) run $(LINT_FLAGS) ./...
 	go vet $(PKGS)
 
 .PHONY: cores
@@ -267,7 +273,7 @@ cores: ## Print the cap of the cores a local gate runs with (LOCAL_CORES; LOCAL_
 
 .PHONY: fmt
 fmt: $(LINT_BIN) ## Format Go code with the formatters of .golangci.yml (gofumpt, goimports)
-	$(LINT_BIN) fmt ./...
+	$(LINT_ENV) $(LINT_BIN) fmt ./...
 
 # gosec runs through golangci-lint, at the pinned golangci-lint version, with the gosec settings of
 # .golangci.yml: the accepted findings carry their reason there or at the line (//nolint:gosec). One
@@ -275,7 +281,7 @@ fmt: $(LINT_BIN) ## Format Go code with the formatters of .golangci.yml (gofumpt
 .PHONY: gosec
 gosec: $(LINT_BIN) ## gosec over the module through the pinned golangci-lint (CI: GoSec Security Scan; LINT_TIMEOUT, waits for another run)
 	@$(LINT_WAIT)
-	$(LINT_BIN) run $(LINT_FLAGS) --enable-only=gosec ./...
+	$(LINT_ENV) $(LINT_BIN) run $(LINT_FLAGS) --enable-only=gosec ./...
 
 .PHONY: vuln
 vuln: $(GOVULNCHECK_BIN) ## govulncheck (pinned) over the module (CI: govulncheck)

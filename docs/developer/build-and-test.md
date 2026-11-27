@@ -32,7 +32,7 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `build` | `CGO_ENABLED=0 go build -trimpath` into `bin/quader`, with version, commit and date set through `-ldflags` in [internal/buildinfo](../../internal/buildinfo) |
 | `generate` | `go generate` over every package: the configuration schema today, sqlc and oapi-codegen as their packages arrive |
 | `generate-check` | `generate`, then `git diff --exit-code` and a check for untracked generated files (E0.1) |
-| `lint` | pinned golangci-lint over `./...` with the build tags `integration`, `e2e`, `compat` and `chart`, so every test tier is linted (configuration in [.golangci.yml](../../.golangci.yml)), then `go vet`. Its one time limit is `LINT_TIMEOUT` (default 20 minutes; `.golangci.yml` sets none, and golangci-lint v2 has none by default): the CI job took 2.2 to 2.6 minutes, a development machine at a load of 70 more than ten, and 20 stays below the lint job's 25, so a hung run there ends with the linter's own message. It runs with `--allow-serial-runners`: a second golangci-lint on the machine (another worktree, `make gosec`) waits for the lock of the first instead of ending at once with "parallel golangci-lint is running", and make says so before it starts (`LINT_WAIT`). A run started with `--allow-parallel-runners` takes no lock, so one beside it does not wait |
+| `lint` | pinned golangci-lint over `./...` with the build tags `integration`, `e2e`, `compat` and `chart`, so every test tier is linted (configuration in [.golangci.yml](../../.golangci.yml)), then `go vet`. Its one time limit is `LINT_TIMEOUT` (default 20 minutes; `.golangci.yml` sets none, and golangci-lint v2 has none by default): the CI job took 2.2 to 2.6 minutes, a development machine at a load of 70 more than ten, and 20 stays below the lint job's 25, so a hung run there ends with the linter's own message. It runs with `--allow-serial-runners`: a second golangci-lint on the machine (another worktree, `make gosec`) waits for the lock of the first instead of ending at once with "parallel golangci-lint is running", and make says so before it starts (`LINT_WAIT`). A run started with `--allow-parallel-runners` takes no lock, so one beside it does not wait. Its cache is the checkout's own, `LINT_CACHE` ([below](#the-lints-cache)) |
 | `gosec` | the same golangci-lint with only gosec enabled, with the same limit and the same wait (CI: GoSec Security Scan) |
 | `vuln` | pinned govulncheck over `./...` |
 | `cyclo`, `cyclo-report` | pinned gocyclo: fails above `CYCLO_THRESHOLD`; the report lists the most complex functions, tests included |
@@ -73,6 +73,24 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `chart-lint`, `chart-test` | call `test/chart/lint.sh` and `test/chart/test.sh`; provided by the chart work package |
 | `trivy`, `trivy-dir` | takes the analyser's binary out of `TRIVY_IMAGE` of [tools/versions.env](../../tools/versions.env) (the image the chart's init container copies into every scanner pod, [R-HA-070](../spec/ha-and-helm.md#r-ha-070--the-analyser-from-its-own-image-and-the-database-in-the-scanner-pod)): `docker create --platform linux/<arch>` by the index digest, `docker cp` of `/usr/local/bin/trivy` into `.bin/trivy-<tag>-<12 hex of the digest>/`, and a check that the copy says the pin's tag; Linux only (amd64, arm64), on macOS it refuses with a message that names the image, which then runs as `docker run --rm <TRIVY_IMAGE> …`. `trivy-dir` prints the directory, which the container scan job puts on `PATH`, so the scan of the release image runs the scanner's own analyser |
 | `dev-up`, `dev-down`, `dev-failover`, `dev-valkey-failover`, `dev-valkey-kill`, `dev-valkey-outage` (`DURATION=60s`), `dev-drain`, `dev-valkey-stop`, `dev-valkey-start`, `e2e` | call `deploy/dev/<name>.sh` (`up`, `down`, `failover`, `valkey-failover`, `valkey-kill`, `valkey-outage`, `valkey-stop`, `valkey-start`, `drain`, `e2e`); the Valkey scripts are in [deploy/dev/](../../deploy/dev/); the other scripts of the list were not checked in this pass |
+
+### The lint's cache
+
+`make lint`, `make gosec` and `make fmt` give golangci-lint the checkout's own cache, `LINT_CACHE` (default
+`<checkout>/.out/golangci-lint-cache`), through `GOLANGCI_LINT_CACHE`; golangci-lint's own default is one directory for every
+checkout of the machine. On 2026-11-27 a run in one worktree reported a finding in a file of another worktree, and a rerun with a
+cache of its own was clean (W36-P8). It was not reproduced: golangci-lint 2.15 keys its cache by the content of a package's files
+and their module-relative names and stores a finding's position relative to the module, so two checkouts of the same content
+share entries and each reads them at its own path (a module copied to a second directory and linted with one cache printed each
+copy's own path); a `make lint` of this checkout over the shared cache of the night's worktrees printed `0 issues`. A cache that
+belongs to the checkout removes the question whatever caused it, and goes with the worktree. The lock stays one for the machine
+(above).
+
+What it costs, measured on the development machine on 2026-11-27 at a load average of about 25 with a render run beside it: the
+first run of a checkout with an empty cache took 9 min 12 s of linting, the next 3.6 s; the cache held 62 MB. A new worktree pays
+the cold run once where it used to find the entries of a checkout of the same content. Not verified: whether a CI runner kept
+golangci-lint's default cache from one job to the next; the checkout's `.out/` is new in every job, so the lint job runs cold now
+(it took 2.2 to 2.6 minutes, above).
 
 Go commands exclude `web/` from `./...` through the `PKGS` variable: npm packages in
 `web/node_modules` can ship Go files, which `./...` would otherwise compile. Plain `go test ./...`

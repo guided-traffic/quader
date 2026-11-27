@@ -3,6 +3,7 @@ package ciworkflows
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -46,6 +47,10 @@ func goTestLine(out string) string {
 // --allow-serial-runners, say first when another run holds the lock, and .golangci.yml sets no timeout of its own.
 func TestTheLinterHasOneLimitAndWaitsForAnotherRun(t *testing.T) {
 	t.Parallel()
+	root, err := filepath.Abs(repoRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, target := range []string{"lint", "gosec"} {
 		out := makeDryRun(t, target, "LINT_TIMEOUT=17m")
 		run := ""
@@ -65,6 +70,10 @@ func TestTheLinterHasOneLimitAndWaitsForAnotherRun(t *testing.T) {
 		}
 		if strings.Contains(run, "--allow-parallel-runners") {
 			t.Errorf("make %s drops golangci-lint's lock: %q", target, run)
+		}
+		// The cache is the checkout's own (W36-P8: a run reported a finding in a file of another worktree through the shared default).
+		if want := "GOLANGCI_LINT_CACHE=" + root + "/.out/golangci-lint-cache "; !strings.Contains(run, want) {
+			t.Errorf("make %s runs %q; it lacks the checkout's own cache %s", target, run, want)
 		}
 		if !strings.Contains(out, "pgrep -f") {
 			t.Errorf("make %s does not say that it waits for another run", target)
