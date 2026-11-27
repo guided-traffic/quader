@@ -282,6 +282,17 @@ async function seedBastionConfiguration(admin: Api): Promise<void> {
     { 'Idempotency-Key': `render-bastion-rule-${Date.now()}` },
   );
   await expectStatus(rule, [201, 409], `a rule of the Bastion ${seededBastion.name}`);
+  psql(`UPDATE bastion_contact c SET edge_limit = 'rps=1000; connections=256', catalogue_kept = true
+  FROM principal p WHERE c.bastion_id = p.id AND p.kind = 'bastion' AND p.name = '${seededBastion.name}';`);
+  reportBastionState();
+}
+
+/**
+ * The state the seed's replica reported now, with its three blocks, written as the intake writes it (R-LIM-045). A replica's state goes an
+ * hour after its last report (Q-BAS-443) and a block once it ends: the seed writes it, and the walk of the limits page writes it again, since
+ * a whole run of the renders on one machine reaches that page more than an hour after the seed (2026-11-27).
+ */
+function reportBastionState(): void {
   const until = (hours: number): string => new Date(Date.now() + hours * 3_600_000).toISOString();
   const status = {
     replica: 'quader-bastion-6c9f7d5b8-k2m4x',
@@ -297,9 +308,7 @@ async function seedBastionConfiguration(admin: Api): Promise<void> {
       { address: '198.51.100.77/32', until: until(1), reason: 'refused_requests' },
     ],
   };
-  psql(`UPDATE bastion_contact c SET edge_limit = 'rps=1000; connections=256', catalogue_kept = true
-  FROM principal p WHERE c.bastion_id = p.id AND p.kind = 'bastion' AND p.name = '${seededBastion.name}';
-INSERT INTO bastion_status (bastion_id, replica, reported_at, status)
+  psql(`INSERT INTO bastion_status (bastion_id, replica, reported_at, status)
 SELECT p.id, 'quader-bastion-6c9f7d5b8-k2m4x', now(), '${JSON.stringify(status)}'::jsonb
   FROM principal p WHERE p.kind = 'bastion' AND p.name = '${seededBastion.name}'
 ON CONFLICT (bastion_id, replica) DO UPDATE SET reported_at = now(), status = EXCLUDED.status;`);
@@ -404,6 +413,8 @@ export async function* bastionLimits(page: Page): AsyncGenerator<string> {
  * then the tab **Blocks** with the two blocks its replica reported. Locators are the markup's: the screen renders in German too.
  */
 export async function* bastionLimitsPage(page: Page): AsyncGenerator<string> {
+  reportBastionState();
+  await page.reload();
   await expect(page.locator('main quader-limit-rules tbody tr').first()).toBeVisible();
   yield '';
   await page.locator('main .limits-nav a').nth(1).click();
