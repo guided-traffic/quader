@@ -30,7 +30,7 @@ describe('Time ago', () => {
     expect(relativeTimeWords('de')).toEqual(expect.arrayContaining(['jetzt', 'vor 59 Minuten', 'in 59 Minuten', 'vor 23 Stunden', 'vor 12 Monaten', 'vorgestern', 'übermorgen']));
   });
 
-  it('R-UI-093 shows the relative time and the absolute time in brackets, with the machine-readable time', async () => {
+  it('R-UI-093 R-UI-250 shows the relative time and the absolute time after a dot, never brackets inside brackets, with the machine-readable time', async () => {
     @Component({ imports: [TimeAgo], template: `<p><quader-time-ago [at]="at()" [now]="now" /></p>` })
     class Host {
       readonly at = signal(before(3 * 60_000));
@@ -40,7 +40,7 @@ describe('Time ago', () => {
     const fixture = TestBed.createComponent(Host);
     await settle(fixture);
     const root = fixture.nativeElement as HTMLElement;
-    expect(text(root)).toMatch(/^3 minutes ago \(12\.11\.2026 \d\d:57:00 \(Thu\.\)\)$/);
+    expect(text(root)).toMatch(/^3 minutes ago · 12\.11\.2026 \d\d:57:00 \(Thu\.\)$/);
     expect(root.querySelector('time')?.getAttribute('datetime')).toBe(before(3 * 60_000));
     await expectAccessible(root);
   });

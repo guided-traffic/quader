@@ -2308,9 +2308,17 @@ The settings page of the malware scanning in the admin area (R-MAL-023), the pag
 files, the decisions and the tests are on [malware.md](malware.md#the-screens-package-4). Two things the rest of the app does with
 them: the side bar's entry and the repository's section read `getMalwareSwitch` once per page load through `MalwareSwitchStore` and
 are hidden until it answers that the scanning is on (Q-UI-874), and the malware finds are a page of their own under the side bar's
-**Security audit**, beside the security dashboard and the signatures (Q-UI-1005). The settings page reads the scanner replicas through `SystemApi.scanners()` and
-shows the rows of `malware-scanner-clamav` with the shared `<quader-scanner-replicas kind="clamav">` under the worker's summary
-([shared/scanner](../../web/src/app/shared/scanner/scanner-replicas.ts), R-OPS-048, Q-UI-897).
+**Security audit**, beside the security dashboard and the signatures (Q-UI-1005). The settings page reads the scan controller through
+`MalwareApi.controller()` and shows it with `<quader-malware-controller>` ([malware-controller.ts](../../web/src/app/features/settings/malware-controller.ts):
+the line, the paused and resting replicas, `replicaAdvice`, the lanes and the folded queue, R-UI-257), reads the scanner replicas through
+`SystemApi.scanners()` and shows the rows of `malware-scanner-clamav` with the shared `<quader-scanner-replicas kind="clamav">` under it,
+whose **Working on** names a call by the queue's file through `callItems` ([shared/scanner](../../web/src/app/shared/scanner/scanner-replicas.ts),
+R-OPS-048, Q-UI-897, Q-UI-1527); both are read again every 15 s while the controller runs (`CONTROLLER_RUNNING_MS`), every 30 s otherwise.
+The rescan settings are `<quader-malware-rescans>` ([malware-rescans.ts](../../web/src/app/features/settings/malware-rescans.ts): fields of
+days, `daysToHours`, a merge patch of the changed members with `If-Match`, Q-UI-1530). The page **Malware** puts
+`<quader-malware-coverage>` ([malware-coverage.ts](../../web/src/app/features/vulnerabilities/malware-coverage.ts), `MalwareApi.coverage()`,
+Q-UI-1531, Q-UI-1532) above the finds. The renders answer the controller and the coverage in the browser from
+[malware-controller.ts](../../web/e2e/renders/malware-controller.ts) of the renders: the profile runs no scanner, so its controller never runs.
 
 ## The download links screens
 

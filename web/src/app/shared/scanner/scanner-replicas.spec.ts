@@ -8,6 +8,8 @@ import { ScannerReplicas } from './scanner-replicas';
 const word = (badge: HTMLElement): string => text(badge).replace(/^(check_circle|hourglass_empty)/, '');
 
 const longName = 'quader-malware-scanner-clamav-6d9c7b5f4-x2v4q-with-a-release-name-of-forty-characters';
+/** The blob a ClamAV replica's slot checks now. */
+const CALL = '9e11c0ffee'.padEnd(64, '0');
 
 /** Two ClamAV replicas, one of them waiting for its first database with a long pod name, and one image scanner that was lost. */
 function list(): ScannerList {
@@ -17,10 +19,11 @@ function list(): ScannerList {
       sampleScannerReplica({
         kind: 'clamav', instanceUid: 'c1', name: 'quader-malware-scanner-clamav-6d9c7b5f4-x2v4q', toolVersion: '1.5.5',
         slots: { inUse: 1, total: 2 }, database: { version: 'main-62.daily-27841.bytecode-339', builtAt: '2026-11-21T04:00:00Z' },
+        calls: [{ sha256: CALL, since: '2026-11-21T08:59:40Z' }],
       }),
       sampleScannerReplica({
         kind: 'clamav', instanceUid: 'c2', name: longName, state: 'starting', reason: 'database', toolVersion: null,
-        slots: { inUse: 0, total: 2 }, database: null,
+        slots: { inUse: 0, total: 2 }, database: null, calls: [],
       }),
     ],
   });
@@ -55,13 +58,32 @@ describe('The scanner replicas (R-OPS-048)', () => {
     expect(text(fold.querySelector('button')!)).toContain('Replicas of malware-scanner-clamav (2)');
     expect(fold.querySelector('button')!.getAttribute('aria-expanded')).toBe('false');
     const headers = [...root.querySelectorAll('thead th .th-inner > span:first-child')].map((s) => text(s));
-    expect(headers).toEqual(['Name', 'State', 'Tool', 'Signature database', 'Slots']);
+    expect(headers).toEqual(['Name', 'State', 'Tool', 'Signature database', 'Slots', 'Working on']);
     const rows = [...root.querySelectorAll('tbody tr')].map((tr) => text(tr));
     expect(rows[0]).toContain('main-62.daily-27841.bytecode-339');
     expect(rows[0]).toContain('21.11.2026 (Sat.)');
     expect(rows[0]).toContain('1 of 2');
     expect(rows[1]).toContain('0 of 2');
     await expectAccessible(root);
+  });
+
+  it('R-MAL-041 a malware scanner says what it works on by its own report: the file where the page knows it, else the digest', async () => {
+    const bare = await render({ list: list(), kind: 'clamav' });
+    const cells = [...bare.root.querySelectorAll('[data-testid="scanner-calls"]')];
+    expect(text(cells[0]!)).toContain('sha256:9e11c0ffee00');
+    expect(cells[0]!.querySelector('code')!.getAttribute('title')).toBe(`sha256:${CALL}`);
+    expect(cells[0]!.querySelector('time')!.getAttribute('title')).toMatch(/^21\.11\.2026 \d\d:59:40 \(Sat\.\)$/);
+    // A replica whose slots hold nothing has no call to name.
+    expect(text(cells[1]!)).not.toContain('sha256');
+    const named = await render({
+      list: list(),
+      kind: 'clamav',
+      callItems: new Map([[CALL, { repository: 'acme/assets', path: 'builds/agent-setup.msi' }]]),
+    });
+    expect(text(named.root.querySelector('[data-testid="scanner-calls"]')!)).toContain('builds/agent-setup.msi');
+    // The updater runs no calls, and an image scanner reports none: neither has the column.
+    const trivy = await render({ list: list(), kind: 'trivy' });
+    expect(trivy.root.querySelector('[data-testid="scanner-calls"]')).toBeNull();
   });
 
   it('R-OPS-048 the image scanner has the column of the database its pod holds, and a lost replica says so', async () => {

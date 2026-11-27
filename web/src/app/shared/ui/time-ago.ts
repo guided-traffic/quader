@@ -16,8 +16,9 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
 }
 
 /**
- * A time relative to now with its absolute date and time (Q-UI-378, Q-UI-431). `absolute="brackets"` (the default) writes both,
- * "3 minutes ago (Nov 12, 2026, 2:22:37 PM)": the form of a card's facts (R-UI-093) and of any place that is no list.
+ * A time relative to now with its absolute date and time (Q-UI-378, Q-UI-431). `absolute="beside"` (the default) writes both, joined by
+ * a dot, "3 hours ago · 26.11.2026 21:22:18 (Thu.)": the form of a card's facts (R-UI-093) and of any place that is no list. Brackets
+ * around the absolute time read as brackets inside brackets once the reader's form ends in its weekday (R-UI-250, Q-UI-1525).
  * `absolute="title"` writes the relative time alone and puts the absolute one into the `<time>` element's title: the form of every
  * list's cell, whose column is too narrow for both.
  */
@@ -27,7 +28,7 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
   template: `@if (absolute() === 'title') {
       <time [attr.datetime]="at()" [attr.title]="at() | time: 'datetime' : zone()">{{ relative() }}</time>
     } @else {
-      {{ relative() }} (<time [attr.datetime]="at()">{{ at() | time: 'datetime' : zone() }}</time>)
+      {{ relative() }} · <time [attr.datetime]="at()">{{ at() | time: 'datetime' : zone() }}</time>
     }`,
   // The date and the time are one value: a line breaks before or after it, never inside it.
   styles: `
@@ -40,8 +41,8 @@ export class TimeAgo {
   private readonly locale = inject(LOCALE_ID);
   /** The time, RFC 3339. */
   readonly at = input.required<string>();
-  /** Where the absolute time stands: in brackets after the relative one, or in the title of a list's cell. */
-  readonly absolute = input<'brackets' | 'title'>('brackets');
+  /** Where the absolute time stands: beside the relative one after a dot, or in the title of a list's cell. */
+  readonly absolute = input<'beside' | 'title'>('beside');
   /** The zone of the absolute time ("UTC" where the page shows times in UTC, as the audit log can); the browser's by default. */
   readonly zone = input<string | undefined>(undefined);
   /** The time it is now, in milliseconds; a test sets it, the page leaves it to the clock. */

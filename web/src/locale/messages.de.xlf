@@ -21437,7 +21437,7 @@
       <notes>
         <note category="location">src/app/features/projects/project-settings.ts:197,200</note>
         <note category="location">src/app/features/settings/auth-settings.html:182,184</note>
-        <note category="location">src/app/features/settings/malware-settings.html:204,206</note>
+        <note category="location">src/app/features/settings/malware-settings.html:217,219</note>
         <note category="location">src/app/features/settings/signature-settings.html:196,198</note>
       </notes>
       <segment>
@@ -38460,6 +38460,561 @@
         <target>Einschalten</target>
       </segment>
     </unit>
+    <unit id="malware.controller.running">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:22</note>
+      </notes>
+      <segment>
+        <source>Scan controller running</source>
+        <target>Scan-Controller läuft</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.idle">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:24</note>
+      </notes>
+      <segment>
+        <source>Scan controller idle: nothing presses</source>
+        <target>Scan-Controller ruht: nichts drängt</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.no-scanner">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:26</note>
+      </notes>
+      <segment>
+        <source>Scan controller waits: no scanner reachable</source>
+        <target>Scan-Controller wartet: kein Scanner erreichbar</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.no-database">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:28</note>
+      </notes>
+      <segment>
+        <source>Scan controller waits: no signatures yet</source>
+        <target>Scan-Controller wartet: noch keine Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.no-address">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:30</note>
+      </notes>
+      <segment>
+        <source>Scan controller waits: no scanner configured</source>
+        <target>Scan-Controller wartet: kein Scanner konfiguriert</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.unreported">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:32</note>
+      </notes>
+      <segment>
+        <source>The scan controller has not reported since the start</source>
+        <target>Der Scan-Controller hat sich seit dem Start nicht gemeldet</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.reason.loading">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:40</note>
+      </notes>
+      <segment>
+        <source>loading new signatures</source>
+        <target>lädt neue Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.reason.draining">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:42</note>
+      </notes>
+      <segment>
+        <source>shutting down</source>
+        <target>fährt herunter</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.reason.busy">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:44</note>
+      </notes>
+      <segment>
+        <source>every slot was taken</source>
+        <target>alle Slots waren belegt</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.reason.clamd">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:46</note>
+      </notes>
+      <segment>
+        <source>clamd did not answer</source>
+        <target>clamd hat nicht geantwortet</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.reason.unreachable">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:48</note>
+      </notes>
+      <segment>
+        <source>not reachable</source>
+        <target>nicht erreichbar</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.asked">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:61</note>
+      </notes>
+      <segment>
+        <source>A download waits</source>
+        <target>Ein Download wartet</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.new">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:63</note>
+      </notes>
+      <segment>
+        <source>New, not checked yet</source>
+        <target>Neu, noch nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.retry-attempts">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:67</note>
+      </notes>
+      <segment>
+        <source>Retry after <ph id="0" equiv="attempts" disp="e.attempts"/> failed attempts</source>
+        <target>Neuer Versuch nach <ph id="0" equiv="attempts" disp="e.attempts"/> Fehlschlägen</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.retry">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:68</note>
+      </notes>
+      <segment>
+        <source>Retry after a failed attempt</source>
+        <target>Neuer Versuch nach einem Fehlschlag</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.signatures-day">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:76</note>
+      </notes>
+      <segment>
+        <source>Signatures 1 day newer</source>
+        <target>Signaturen 1 Tag neuer</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.signatures-days">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:77</note>
+      </notes>
+      <segment>
+        <source>Signatures <ph id="0" equiv="days" disp="n"/> days newer</source>
+        <target>Signaturen <ph id="0" equiv="days" disp="n"/> Tage neuer</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.download">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:84</note>
+      </notes>
+      <segment>
+        <source>1 download since its check</source>
+        <target>1 Download seit der Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.downloads">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:85</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> downloads since its check</source>
+        <target><ph id="0" equiv="count" disp="n"/> Downloads seit der Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.requested-rescan">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:90</note>
+      </notes>
+      <segment>
+        <source>Rescan requested</source>
+        <target>Neuprüfung angefordert</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.requested-limits">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:93</note>
+      </notes>
+      <segment>
+        <source>Limits changed</source>
+        <target>Grenzen geändert</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.requested-recent">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:96</note>
+      </notes>
+      <segment>
+        <source>Downloaded lately</source>
+        <target>Kürzlich heruntergeladen</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.slots">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:166,167</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.inFlight | number }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ c.capacity | number }}"/> slots in use</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ c.inFlight | number }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ c.capacity | number }}"/> Slots belegt</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.checks">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:168,170</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 check in the last hour} other {<ph id="0" equiv="INTERPOLATION"/> checks in the last hour}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Prüfung in der letzten Stunde} other {<ph id="0" equiv="INTERPOLATION"/> Prüfungen in der letzten Stunde}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.busy">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:176,177</note>
+      </notes>
+      <segment>
+        <source>Busy <ph id="0" equiv="INTERPOLATION" disp="{{ busy() }}"/> of the last hour</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ busy() }}"/> der letzten Stunde ausgelastet</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.per-scan">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:179,180</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ perScan() }}"/> s a check</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ perScan() }}"/> s je Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.as-of">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:182</note>
+      </notes>
+      <segment>
+        <source>as of</source>
+        <target>Stand</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.paused">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:193,194</note>
+      </notes>
+      <segment>
+        <source>Paused</source>
+        <target>Pausiert</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.resting">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:195,197</note>
+      </notes>
+      <segment>
+        <source>Resting</source>
+        <target>Ruht</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.until">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:203,204</note>
+      </notes>
+      <segment>
+        <source>until <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;until&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ until | time: &apos;time&apos; }}"/></pc></source>
+        <target>bis <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;until&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ until | time: &apos;time&apos; }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.advice">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:213,216</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Add scanner replicas.</pc> <ph id="1" equiv="INTERPOLATION" disp="{{ a.waiting | number }}"/> checks wait, about <ph id="2" equiv="INTERPOLATION_1" disp="{{ hours(a) }}"/> hours of work for the <ph id="3" equiv="INTERPOLATION_2" disp="{{ c.capacity | number }}"/> slots, busy <ph id="4" equiv="INTERPOLATION_3" disp="{{ busy() }}"/> of the last hour. About <ph id="5" equiv="INTERPOLATION_4" disp="{{ a.more | number }}"/> more replicas of <ph id="6" equiv="INTERPOLATION_5" disp="{{ a.slotsEach }}"/> slots clear them within an hour.</source>
+        <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Scanner-Replikate hinzufügen.</pc> <ph id="1" equiv="INTERPOLATION" disp="{{ a.waiting | number }}"/> Prüfungen warten, etwa <ph id="2" equiv="INTERPOLATION_1" disp="{{ hours(a) }}"/> Stunden Arbeit für die <ph id="3" equiv="INTERPOLATION_2" disp="{{ c.capacity | number }}"/> Slots, die <ph id="4" equiv="INTERPOLATION_3" disp="{{ busy() }}"/> der letzten Stunde ausgelastet waren. Etwa <ph id="5" equiv="INTERPOLATION_4" disp="{{ a.more | number }}"/> weitere Replikate mit je <ph id="6" equiv="INTERPOLATION_5" disp="{{ a.slotsEach }}"/> Slots erledigen sie in einer Stunde.</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.waiting">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:220,222</note>
+      </notes>
+      <segment>
+        <source>Waiting</source>
+        <target>Wartet</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.nothing-waits">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:223,225</note>
+      </notes>
+      <segment>
+        <source>Nothing</source>
+        <target>Nichts</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.lane.asked">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:227,229</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 for a download} other {<ph id="0" equiv="INTERPOLATION"/> for a download}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 für einen Download} other {<ph id="0" equiv="INTERPOLATION"/> für einen Download}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.lane.new">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:230,231</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.lanes.new | number }}"/> new</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ c.lanes.new | number }}"/> neu</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.lane.retry">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:233,235</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 to retry} other {<ph id="0" equiv="INTERPOLATION"/> to retry}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 neuer Versuch} other {<ph id="0" equiv="INTERPOLATION"/> neue Versuche}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.controller.lane.pressure">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:236,237</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.lanes.pressure | number }}"/> by scan pressure</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ c.lanes.pressure | number }}"/> nach Scan-Druck</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.pressure">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:267,268</note>
+      </notes>
+      <segment>
+        <source>Scan pressure <ph id="0" equiv="INTERPOLATION" disp="{{ e.pressure | number }}"/> %</source>
+        <target>Scan-Druck <ph id="0" equiv="INTERPOLATION" disp="{{ e.pressure | number }}"/> %</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.checked">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:269</note>
+      </notes>
+      <segment>
+        <source>checked</source>
+        <target>geprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.due">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:271</note>
+      </notes>
+      <segment>
+        <source>due</source>
+        <target>fällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.first">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:280,282</note>
+      </notes>
+      <segment>
+        <source>The first <ph id="0" equiv="INTERPOLATION" disp="{{ c.queue.length }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ waiting() | number }}"/>.</source>
+        <target>Die ersten <ph id="0" equiv="INTERPOLATION" disp="{{ c.queue.length }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ waiting() | number }}"/>.</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.heading">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:351</note>
+      </notes>
+      <segment>
+        <source>Queue by scan pressure</source>
+        <target>Warteschlange nach Scan-Druck</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.col.file">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:353</note>
+      </notes>
+      <segment>
+        <source>File</source>
+        <target>Datei</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.col.why">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:356</note>
+      </notes>
+      <segment>
+        <source>Why it is due</source>
+        <target>Warum fällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.queue.col.why-help">
+      <notes>
+        <note category="location">src/app/features/settings/malware-controller.ts:358</note>
+      </notes>
+      <segment>
+        <source>Downloads that wait come first, then new files, then retries, then rechecks by scan pressure: how much newer today&apos;s signatures are and how often the file was downloaded since. A recheck is due at 100 %.</source>
+        <target>Zuerst wartende Downloads, dann neue Dateien, dann neue Versuche, dann Nachprüfungen nach Scan-Druck: wie viel neuer die heutigen Signaturen sind und wie oft die Datei seitdem heruntergeladen wurde. Bei 100 % ist eine Nachprüfung fällig.</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.heading">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:65</note>
+      </notes>
+      <segment>
+        <source>Rescans</source>
+        <target>Neuprüfungen</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.hint">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:66,68</note>
+      </notes>
+      <segment>
+        <source>When a checked artifact is checked again, in days.</source>
+        <target>Wann ein geprüftes Artefakt erneut geprüft wird, in Tagen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.cycle">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:78,80</note>
+        <note category="location">src/app/features/settings/malware-rescans.ts:286</note>
+      </notes>
+      <segment>
+        <source>Check again at the latest after</source>
+        <target>Spätestens erneut prüfen nach</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.cycle-hint">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:85,87</note>
+      </notes>
+      <segment>
+        <source>Days; 30 by default. Sooner the more an artifact is downloaded.</source>
+        <target>Tage; standardmäßig 30. Früher, je öfter ein Artefakt heruntergeladen wird.</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.shortest">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:90,92</note>
+        <note category="location">src/app/features/settings/malware-rescans.ts:288</note>
+      </notes>
+      <segment>
+        <source>Check the most downloaded again after</source>
+        <target>Meistgeladene erneut prüfen nach</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.shortest-hint">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:97,100</note>
+      </notes>
+      <segment>
+        <source>Days; 1 by default.</source>
+        <target>Tage; standardmäßig 1.</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.step">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:102,104</note>
+        <note category="location">src/app/features/settings/malware-rescans.ts:290</note>
+      </notes>
+      <segment>
+        <source>Each doubling of the downloads brings the check forward by</source>
+        <target>Jede Verdopplung der Downloads zieht die Prüfung vor um</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.step-hint">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:109,111</note>
+      </notes>
+      <segment>
+        <source>Days; 6 by default. 0 ignores downloads.</source>
+        <target>Tage; standardmäßig 6. 0 lässt Downloads außer Acht.</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.overdue">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:114,116</note>
+        <note category="location">src/app/features/settings/malware-rescans.ts:292</note>
+      </notes>
+      <segment>
+        <source>A due check is overdue after</source>
+        <target>Eine fällige Prüfung ist überfällig nach</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.overdue-hint">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:121,123</note>
+      </notes>
+      <segment>
+        <source>Days; 7 by default.</source>
+        <target>Tage; standardmäßig 7.</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.recent">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:126,128</note>
+        <note category="location">src/app/features/settings/malware-rescans.ts:294</note>
+      </notes>
+      <segment>
+        <source>At every new signature set, check again what was downloaded within</source>
+        <target>Bei jedem neuen Signaturstand erneut prüfen, was heruntergeladen wurde innerhalb von</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.recent-hint">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:133,136</note>
+      </notes>
+      <segment>
+        <source>Days; 7 by default. 0 switches it off. It costs the most checks.</source>
+        <target>Tage; standardmäßig 7. 0 schaltet es ab. Es kostet die meisten Prüfungen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.save">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:138,139</note>
+        <note category="location">src/app/features/settings/malware-settings.html:53,54</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+        <target>Änderungen speichern</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.save-for">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:139,142</note>
+      </notes>
+      <segment>
+        <source> (rescans)</source>
+        <target> (Neuprüfungen)</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.not-a-number">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:224</note>
+      </notes>
+      <segment>
+        <source>Enter a number of days, 0 or more.</source>
+        <target>Geben Sie eine Zahl von Tagen ein, 0 oder mehr.</target>
+      </segment>
+    </unit>
+    <unit id="malware.rescans.saved">
+      <notes>
+        <note category="location">src/app/features/settings/malware-rescans.ts:249</note>
+      </notes>
+      <segment>
+        <source>The rescan settings are saved.</source>
+        <target>Die Einstellungen der Neuprüfungen sind gespeichert.</target>
+      </segment>
+    </unit>
     <unit id="malware.settings.heading">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:1</note>
@@ -38490,7 +39045,7 @@
     <unit id="malware.settings.only-checked">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:28,29</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:282</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:324</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded</source>
@@ -38533,15 +39088,6 @@
         <target>Zuletzt geändert von</target>
       </segment>
     </unit>
-    <unit id="malware.settings.save">
-      <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:53,54</note>
-      </notes>
-      <segment>
-        <source>Save changes</source>
-        <target>Änderungen speichern</target>
-      </segment>
-    </unit>
     <unit id="malware.settings.save-for">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:54,56</note>
@@ -38560,63 +39106,55 @@
         <target>Prüfung</target>
       </segment>
     </unit>
+    <unit id="malware.controller.loading">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:70,72</note>
+      </notes>
+      <segment>
+        <source>Loading the scan controller.</source>
+        <target>Der Scan-Controller wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="malware.settings.unchecked">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:64,65</note>
+        <note category="location">src/app/features/settings/malware-settings.html:73,75</note>
       </notes>
       <segment>
         <source>Not checked yet</source>
         <target>Noch nicht geprüft</target>
       </segment>
     </unit>
+    <unit id="malware.settings.not-counted">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.html:78,81</note>
+        <note category="location">src/app/features/settings/malware-settings.html:89,92</note>
+      </notes>
+      <segment>
+        <source>Not counted yet</source>
+        <target>Noch nicht gezählt</target>
+      </segment>
+    </unit>
     <unit id="malware.settings.not-checkable">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:66,67</note>
+        <note category="location">src/app/features/settings/malware-settings.html:81,83</note>
       </notes>
       <segment>
         <source>Could not be checked</source>
         <target>Nicht prüfbar</target>
       </segment>
     </unit>
-    <unit id="malware.settings.scanners">
+    <unit id="malware.settings.counted">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:72,73</note>
+        <note category="location">src/app/features/settings/malware-settings.html:86</note>
       </notes>
       <segment>
-        <source>Scanners</source>
-        <target>Scanner</target>
-      </segment>
-    </unit>
-    <unit id="malware.settings.no-scanner">
-      <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:75,76</note>
-      </notes>
-      <segment>
-        <source>None ready</source>
-        <target>Keiner bereit</target>
-      </segment>
-    </unit>
-    <unit id="malware.settings.ready">
-      <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:77,78</note>
-      </notes>
-      <segment>
-        <source>{VAR_PLURAL, plural, =1 {1 ready} other {<ph id="0" equiv="INTERPOLATION"/> ready}}</source>
-        <target>{VAR_PLURAL, plural, =1 {1 bereit} other {<ph id="0" equiv="INTERPOLATION"/> bereit}}</target>
-      </segment>
-    </unit>
-    <unit id="malware.settings.busy">
-      <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:78,80</note>
-      </notes>
-      <segment>
-        <source>{VAR_PLURAL, plural, =1 {1 scan running} other {<ph id="0" equiv="INTERPOLATION"/> scans running}}</source>
-        <target>{VAR_PLURAL, plural, =1 {1 Prüfung läuft} other {<ph id="0" equiv="INTERPOLATION"/> Prüfungen laufen}}</target>
+        <source>counted</source>
+        <target>gezählt</target>
       </segment>
     </unit>
     <unit id="malware.settings.backlog-note">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:91,94</note>
+        <note category="location">src/app/features/settings/malware-settings.html:101,104</note>
       </notes>
       <segment>
         <source> Under the switch, an artifact without a verdict waits for its scan when it is downloaded; one that could not be checked is refused. </source>
@@ -38625,8 +39163,8 @@
     </unit>
     <unit id="malware.rescan.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:99,102</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:303</note>
+        <note category="location">src/app/features/settings/malware-settings.html:109,112</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:348</note>
       </notes>
       <segment>
         <source>Scan everything again</source>
@@ -38635,7 +39173,7 @@
     </unit>
     <unit id="malware.settings.finds-link">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:104,107</note>
+        <note category="location">src/app/features/settings/malware-settings.html:117,120</note>
       </notes>
       <segment>
         <source>Finds are under Security audit › Malware</source>
@@ -38644,7 +39182,7 @@
     </unit>
     <unit id="malware.settings.database">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:110,112</note>
+        <note category="location">src/app/features/settings/malware-settings.html:123,125</note>
       </notes>
       <segment>
         <source>Signature database</source>
@@ -38653,7 +39191,7 @@
     </unit>
     <unit id="malware.db.error.when">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:119,120</note>
+        <note category="location">src/app/features/settings/malware-settings.html:132,133</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {Failed once,} other {Failed <ph id="0" equiv="INTERPOLATION"/> times in a row,}}</source>
@@ -38662,7 +39200,7 @@
     </unit>
     <unit id="malware.db.error.last">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:120</note>
+        <note category="location">src/app/features/settings/malware-settings.html:133</note>
       </notes>
       <segment>
         <source>last</source>
@@ -38671,7 +39209,7 @@
     </unit>
     <unit id="malware.db.version">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:131,132</note>
+        <note category="location">src/app/features/settings/malware-settings.html:144,145</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -38680,7 +39218,7 @@
     </unit>
     <unit id="malware.db.date">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:133,135</note>
+        <note category="location">src/app/features/settings/malware-settings.html:146,148</note>
       </notes>
       <segment>
         <source>Date</source>
@@ -38689,7 +39227,7 @@
     </unit>
     <unit id="malware.db.stale">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:139,140</note>
+        <note category="location">src/app/features/settings/malware-settings.html:152,153</note>
       </notes>
       <segment>
         <source>Stale</source>
@@ -38698,7 +39236,7 @@
     </unit>
     <unit id="malware.db.current">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:141,142</note>
+        <note category="location">src/app/features/settings/malware-settings.html:154,155</note>
       </notes>
       <segment>
         <source>Current</source>
@@ -38707,7 +39245,7 @@
     </unit>
     <unit id="malware.db.stored">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:145,146</note>
+        <note category="location">src/app/features/settings/malware-settings.html:158,159</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -38716,8 +39254,8 @@
     </unit>
     <unit id="malware.db.repository">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:148,150</note>
-        <note category="location">src/app/features/settings/malware-settings.html:179,181</note>
+        <note category="location">src/app/features/settings/malware-settings.html:161,163</note>
+        <note category="location">src/app/features/settings/malware-settings.html:192,194</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -38726,7 +39264,7 @@
     </unit>
     <unit id="malware.db.stale-note">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:159,161</note>
+        <note category="location">src/app/features/settings/malware-settings.html:172,174</note>
       </notes>
       <segment>
         <source> The database is older than two days. Scanning goes on with it; new signatures arrive when the next update succeeds. </source>
@@ -38735,7 +39273,7 @@
     </unit>
     <unit id="malware.db.none-badge">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:164,165</note>
+        <note category="location">src/app/features/settings/malware-settings.html:177,178</note>
       </notes>
       <segment>
         <source>None yet</source>
@@ -38744,7 +39282,7 @@
     </unit>
     <unit id="malware.db.none">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:166,168</note>
+        <note category="location">src/app/features/settings/malware-settings.html:179,181</note>
       </notes>
       <segment>
         <source>No signature database is in use yet, so nothing is scanned. Under the switch, downloads wait and are refused as not checked yet.</source>
@@ -38753,7 +39291,7 @@
     </unit>
     <unit id="malware.db.no-updater">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:174,176</note>
+        <note category="location">src/app/features/settings/malware-settings.html:187,189</note>
       </notes>
       <segment>
         <source> No updater is configured (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.updater.url</pc> is empty), so no database arrives until one is. The database task waits for it and records no failure. </source>
@@ -38762,7 +39300,7 @@
     </unit>
     <unit id="malware.db.offline">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:191,192</note>
+        <note category="location">src/app/features/settings/malware-settings.html:204,205</note>
       </notes>
       <segment>
         <source>Fill the repository</source>
@@ -38771,7 +39309,7 @@
     </unit>
     <unit id="malware.db.offline-note">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:193,195</note>
+        <note category="location">src/app/features/settings/malware-settings.html:206,208</note>
       </notes>
       <segment>
         <source> This installation fetches no database itself. On a machine that reaches the internet, fetch the files with ClamAV&apos;s mirror tool and upload the whole files to the root of the repository; Quader reads them at its next run. </source>
@@ -38780,7 +39318,7 @@
     </unit>
     <unit id="malware.db.error.missing">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:36</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:40</note>
       </notes>
       <segment>
         <source>No signature database was found.</source>
@@ -38789,7 +39327,7 @@
     </unit>
     <unit id="malware.db.error.invalid">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:38</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:42</note>
       </notes>
       <segment>
         <source>A file of the signature database was refused.</source>
@@ -38798,7 +39336,7 @@
     </unit>
     <unit id="malware.db.error.repository">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:40</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:44</note>
       </notes>
       <segment>
         <source>The repository the configuration names cannot hold the database.</source>
@@ -38807,7 +39345,7 @@
     </unit>
     <unit id="malware.db.error.store">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:42</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:46</note>
       </notes>
       <segment>
         <source>A file of the signature database could not be stored.</source>
@@ -38816,16 +39354,25 @@
     </unit>
     <unit id="malware.db.error.other">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:44</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:48</note>
       </notes>
       <segment>
         <source>The last update of the signature database failed.</source>
         <target>Die letzte Aktualisierung der Signaturdatenbank ist fehlgeschlagen.</target>
       </segment>
     </unit>
+    <unit id="malware.settings.backlog-uncounted">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:270</note>
+      </notes>
+      <segment>
+        <source>Quader has not counted yet how many artifacts have no verdict or could not be checked. They will wait or be refused until they are scanned or released.</source>
+        <target>Quader hat noch nicht gezählt, wie viele Artefakte kein Prüfergebnis haben oder nicht geprüft werden konnten. Sie warten oder werden abgelehnt, bis sie geprüft oder zugelassen sind.</target>
+      </segment>
+    </unit>
     <unit id="malware.settings.backlog-question">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:232</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:274</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="unchecked" disp="n"/> artifacts have no verdict yet and <ph id="1" equiv="notCheckable" disp="m"/> could not be checked. They will wait or be refused until they are scanned or released.</source>
@@ -38834,7 +39381,7 @@
     </unit>
     <unit id="malware.settings.confirm-title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:242</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:284</note>
       </notes>
       <segment>
         <source>Let only checked artifacts be downloaded?</source>
@@ -38843,7 +39390,7 @@
     </unit>
     <unit id="malware.settings.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:244</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:286</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -38852,7 +39399,7 @@
     </unit>
     <unit id="malware.settings.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:254</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:296</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded now.</source>
@@ -38861,7 +39408,7 @@
     </unit>
     <unit id="malware.settings.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:255</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:297</note>
       </notes>
       <segment>
         <source>Artifacts that are not checked can be downloaded again.</source>
@@ -38870,7 +39417,7 @@
     </unit>
     <unit id="malware.rescan.title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:299</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:344</note>
       </notes>
       <segment>
         <source>Scan every artifact again?</source>
@@ -38879,7 +39426,7 @@
     </unit>
     <unit id="malware.rescan.text">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:301</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:346</note>
       </notes>
       <segment>
         <source>Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan.</source>
@@ -38888,7 +39435,7 @@
     </unit>
     <unit id="malware.rescan.done">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:311</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:356</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> verdicts are marked to be scanned again.</source>
@@ -53382,6 +53929,192 @@
         <target>, lizenziert unter</target>
       </segment>
     </unit>
+    <unit id="malware.coverage.current">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:38</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n(a.current)"/> under today&apos;s signatures</source>
+        <target><ph id="0" equiv="count" disp="n(a.current)"/> unter den heutigen Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.older">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:39</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n(a.older)"/> under older ones</source>
+        <target><ph id="0" equiv="count" disp="n(a.older)"/> unter älteren</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.due">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:40</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n(a.due)"/> due</source>
+        <target><ph id="0" equiv="count" disp="n(a.due)"/> fällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.overdue">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:41</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n(a.overdue)"/> overdue</source>
+        <target><ph id="0" equiv="count" disp="n(a.overdue)"/> überfällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.unchecked">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:42</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n(a.unchecked)"/> not checked yet</source>
+        <target><ph id="0" equiv="count" disp="n(a.unchecked)"/> noch nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.age.current">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:51</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:314,316</note>
+      </notes>
+      <segment>
+        <source>Under today&apos;s signatures</source>
+        <target>Unter den heutigen Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.age.older">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:53</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:320,322</note>
+      </notes>
+      <segment>
+        <source>Under older signatures</source>
+        <target>Unter älteren Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.age.due">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:55</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:324,326</note>
+      </notes>
+      <segment>
+        <source>Recheck due</source>
+        <target>Nachprüfung fällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.age.overdue">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:57</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:327,330</note>
+      </notes>
+      <segment>
+        <source>Recheck overdue</source>
+        <target>Nachprüfung überfällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.title">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:74,76</note>
+      </notes>
+      <segment>
+        <source>How current the checks are</source>
+        <target>Wie aktuell die Prüfungen sind</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.oldest">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:98</note>
+      </notes>
+      <segment>
+        <source>oldest check</source>
+        <target>älteste Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.counted">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:101</note>
+      </notes>
+      <segment>
+        <source>counted</source>
+        <target>gezählt</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.uncounted">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:106,108</note>
+      </notes>
+      <segment>
+        <source>Not counted yet: the scan controller counts every five minutes while it runs.</source>
+        <target>Noch nicht gezählt: Der Scan-Controller zählt alle fünf Minuten, solange er läuft.</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.released">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:126,128</note>
+      </notes>
+      <segment>
+        <source>(released)</source>
+        <target>(zugelassen)</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.daily">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:131,132</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:279,280</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:293,294</note>
+      </notes>
+      <segment>
+        <source>daily <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></source>
+        <target>daily <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.loading">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:146,148</note>
+      </notes>
+      <segment>
+        <source>Loading how current the checks are.</source>
+        <target>Wie aktuell die Prüfungen sind, wird geladen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.oldest-heading">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:243</note>
+      </notes>
+      <segment>
+        <source>Checked longest ago</source>
+        <target>Am längsten nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.col.file">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:245</note>
+      </notes>
+      <segment>
+        <source>File</source>
+        <target>Datei</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.col.checked">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:246</note>
+      </notes>
+      <segment>
+        <source>Checked</source>
+        <target>Geprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.coverage.col.current">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-coverage.ts:247</note>
+      </notes>
+      <segment>
+        <source>How current</source>
+        <target>Wie aktuell</target>
+      </segment>
+    </unit>
     <unit id="security.malware.heading">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:2,4</note>
@@ -53402,7 +54135,7 @@
     </unit>
     <unit id="malware.list.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:13,15</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:16,18</note>
       </notes>
       <segment>
         <source>Finds</source>
@@ -53411,8 +54144,8 @@
     </unit>
     <unit id="malware.filter.state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:32</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:199</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:35</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:214</note>
       </notes>
       <segment>
         <source>State</source>
@@ -53421,9 +54154,9 @@
     </unit>
     <unit id="malware.filter.release">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:39,40</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:40</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:206</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:42,43</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:43</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:221</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -53432,7 +54165,7 @@
     </unit>
     <unit id="malware.filter.any">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:41,42</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:44,45</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -53441,8 +54174,8 @@
     </unit>
     <unit id="malware.filter.released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:42,43</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:207</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:45,46</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:222</note>
       </notes>
       <segment>
         <source>Released</source>
@@ -53451,8 +54184,8 @@
     </unit>
     <unit id="malware.filter.not-released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:43,45</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:207</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:46,48</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:222</note>
       </notes>
       <segment>
         <source>Not released</source>
@@ -53461,9 +54194,9 @@
     </unit>
     <unit id="malware.filter.repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:46,47</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:47</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:211</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:49,50</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:50</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:226</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:72,73</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:73</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:219</note>
@@ -53478,7 +54211,7 @@
     </unit>
     <unit id="malware.filter.any-repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:48,49</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:51,52</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:74,75</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:61,62</note>
       </notes>
@@ -53489,7 +54222,7 @@
     </unit>
     <unit id="malware.finds.loading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:61,62</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:64,65</note>
       </notes>
       <segment>
         <source>Loading the finds.</source>
@@ -53498,7 +54231,7 @@
     </unit>
     <unit id="malware.more-repositories">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:92,93</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:95,96</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {and 1 more} other {and <ph id="0" equiv="INTERPOLATION"/> more}}</source>
@@ -53507,7 +54240,7 @@
     </unit>
     <unit id="malware.found-at">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:97</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:100</note>
       </notes>
       <segment>
         <source>found</source>
@@ -53516,7 +54249,7 @@
     </unit>
     <unit id="malware.database-of">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:113</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:116</note>
       </notes>
       <segment>
         <source>ClamAV database of</source>
@@ -53525,7 +54258,7 @@
     </unit>
     <unit id="malware.state.released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:123,125</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:126,128</note>
       </notes>
       <segment>
         <source>Released</source>
@@ -53534,7 +54267,7 @@
     </unit>
     <unit id="malware.released-by">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:126</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:129</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:114</note>
         <note category="location">src/app/shared/malware/malware-status.ts:29,30</note>
       </notes>
@@ -53545,7 +54278,7 @@
     </unit>
     <unit id="malware.tripped-in">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:149</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:152</note>
         <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:46</note>
         <note category="location">src/app/shared/malware/malware-mark.ts:365</note>
         <note category="location">src/app/shared/malware/malware-status.ts:79</note>
@@ -53557,7 +54290,7 @@
     </unit>
     <unit id="malware.release.reason-label">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:155,156</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:158,159</note>
       </notes>
       <segment>
         <source>Reason of the release:</source>
@@ -53566,7 +54299,7 @@
     </unit>
     <unit id="malware.items.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:159,160</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:162,163</note>
       </notes>
       <segment>
         <source>Files that hold these bytes</source>
@@ -53575,7 +54308,7 @@
     </unit>
     <unit id="malware.items.more">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:171,172</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:174,175</note>
       </notes>
       <segment>
         <source>More files hold these bytes than the list shows: <ph id="0" equiv="INTERPOLATION" disp="{{ f.itemCount }}"/> in <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.repositoryCount }}"/> repositories.</source>
@@ -53584,7 +54317,7 @@
     </unit>
     <unit id="malware.items.digest">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:174</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:177</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -53593,7 +54326,7 @@
     </unit>
     <unit id="malware.search">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:216</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:231</note>
       </notes>
       <segment>
         <source>Search by path or signature</source>
@@ -53602,7 +54335,7 @@
     </unit>
     <unit id="malware.list.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:217</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:232</note>
       </notes>
       <segment>
         <source>Malware finds</source>
@@ -53611,7 +54344,7 @@
     </unit>
     <unit id="malware.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:218</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:233</note>
       </notes>
       <segment>
         <source>No find matches the filters.</source>
@@ -53620,7 +54353,7 @@
     </unit>
     <unit id="malware.list.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:222</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:237</note>
       </notes>
       <segment>
         <source>No malware found.</source>
@@ -53629,7 +54362,7 @@
     </unit>
     <unit id="malware.list.empty-dated">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:224</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:239</note>
       </notes>
       <segment>
         <source>No malware found. The signature database in use is ClamAV&apos;s of <ph id="0" equiv="date" disp="date"/>.</source>
@@ -53638,7 +54371,7 @@
     </unit>
     <unit id="malware.col.file">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:230</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:245</note>
       </notes>
       <segment>
         <source>File</source>
@@ -53647,7 +54380,7 @@
     </unit>
     <unit id="malware.col.verdict">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:234</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:249</note>
       </notes>
       <segment>
         <source>Verdict</source>
@@ -53656,7 +54389,7 @@
     </unit>
     <unit id="malware.col.actions">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:235</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:250</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:284</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:307</note>
       </notes>
@@ -53667,7 +54400,7 @@
     </unit>
     <unit id="malware.row.open">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:282</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:297</note>
       </notes>
       <segment>
         <source>Every file of <ph id="0" equiv="file" disp="findName(f)"/></source>
@@ -53676,8 +54409,8 @@
     </unit>
     <unit id="malware.withdraw">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:307</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:372</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:322</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:387</note>
       </notes>
       <segment>
         <source>Withdraw release</source>
@@ -53686,7 +54419,7 @@
     </unit>
     <unit id="malware.release">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:307</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:322</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -53695,7 +54428,7 @@
     </unit>
     <unit id="malware.released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:363</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:378</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="file" disp="findName(f)"/> is released in every repository that holds it.</source>
@@ -53704,7 +54437,7 @@
     </unit>
     <unit id="malware.withdraw.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:369</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:384</note>
       </notes>
       <segment>
         <source>Withdraw the release of <ph id="0" equiv="file" disp="findName(f)"/>?</source>
@@ -53713,7 +54446,7 @@
     </unit>
     <unit id="malware.withdraw.text">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:370</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:385</note>
       </notes>
       <segment>
         <source>Every repository that holds these bytes refuses them again from the next download.</source>
@@ -53722,7 +54455,7 @@
     </unit>
     <unit id="malware.withdrawn">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:377</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:392</note>
       </notes>
       <segment>
         <source>The release of <ph id="0" equiv="file" disp="findName(f)"/> is withdrawn.</source>
@@ -58455,16 +59188,6 @@
         <target>Signaturen damals</target>
       </segment>
     </unit>
-    <unit id="malware.details.daily">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:279,280</note>
-        <note category="location">src/app/shared/malware/malware-mark.ts:293,294</note>
-      </notes>
-      <segment>
-        <source>daily <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></source>
-        <target>daily <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></target>
-      </segment>
-    </unit>
     <unit id="malware.details.of">
       <notes>
         <note category="location">src/app/shared/malware/malware-mark.ts:284,285</note>
@@ -58511,15 +59234,6 @@
         <target>Wie aktuell</target>
       </segment>
     </unit>
-    <unit id="malware.details.age.current">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:314,316</note>
-      </notes>
-      <segment>
-        <source>Under today&apos;s signatures</source>
-        <target>Unter den heutigen Signaturen</target>
-      </segment>
-    </unit>
     <unit id="malware.details.age.older-days">
       <notes>
         <note category="location">src/app/shared/malware/malware-mark.ts:318,320</note>
@@ -58527,33 +59241,6 @@
       <segment>
         <source>{VAR_PLURAL, plural, =1 {Under signatures 1 day older} other {Under signatures <ph id="0" equiv="INTERPOLATION"/> days older}}</source>
         <target>{VAR_PLURAL, plural, =1 {Unter 1 Tag älteren Signaturen} other {Unter <ph id="0" equiv="INTERPOLATION"/> Tage älteren Signaturen}}</target>
-      </segment>
-    </unit>
-    <unit id="malware.details.age.older">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:320,322</note>
-      </notes>
-      <segment>
-        <source>Under older signatures</source>
-        <target>Unter älteren Signaturen</target>
-      </segment>
-    </unit>
-    <unit id="malware.details.age.due">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:324,326</note>
-      </notes>
-      <segment>
-        <source>Recheck due</source>
-        <target>Nachprüfung fällig</target>
-      </segment>
-    </unit>
-    <unit id="malware.details.age.overdue">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:327,330</note>
-      </notes>
-      <segment>
-        <source>Recheck overdue</source>
-        <target>Nachprüfung überfällig</target>
       </segment>
     </unit>
     <unit id="malware.details.next">
@@ -59018,7 +59705,7 @@
     </unit>
     <unit id="scanners.reason.database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:15</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:16</note>
       </notes>
       <segment>
         <source>No database loaded yet</source>
@@ -59027,7 +59714,7 @@
     </unit>
     <unit id="scanners.reason.clamd">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:17</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:18</note>
       </notes>
       <segment>
         <source>clamd does not answer</source>
@@ -59036,7 +59723,7 @@
     </unit>
     <unit id="scanners.reason.analyser">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:19</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:20</note>
       </notes>
       <segment>
         <source>Analyser does not run</source>
@@ -59045,7 +59732,7 @@
     </unit>
     <unit id="scanners.reason.certificate">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:21</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:22</note>
       </notes>
       <segment>
         <source>Certificate not loaded</source>
@@ -59054,7 +59741,7 @@
     </unit>
     <unit id="scanners.reason.spool">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:23</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:24</note>
       </notes>
       <segment>
         <source>Spool not writable</source>
@@ -59063,7 +59750,7 @@
     </unit>
     <unit id="scanners.reason.starting">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:25</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:26</note>
       </notes>
       <segment>
         <source>Still starting</source>
@@ -59072,7 +59759,7 @@
     </unit>
     <unit id="scanners.reason.seed">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:27</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:28</note>
       </notes>
       <segment>
         <source>Seed not finished yet</source>
@@ -59081,7 +59768,7 @@
     </unit>
     <unit id="scanners.none.reporting">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:100,101</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:103,104</note>
       </notes>
       <segment>
         <source>No replica of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> has reported itself, so no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> scanner is known to run.</source>
@@ -59090,7 +59777,7 @@
     </unit>
     <unit id="scanners.none.unverified">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:104,105</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:107,108</note>
       </notes>
       <segment>
         <source>The replicas of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> are not listed: without TLS, or without the name of their certificate, the scan listener cannot tell their kind.</source>
@@ -59099,7 +59786,7 @@
     </unit>
     <unit id="scanners.none.updater">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:111,112</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:114,115</note>
       </notes>
       <segment>
         <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> updater is configured (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
@@ -59108,7 +59795,7 @@
     </unit>
     <unit id="scanners.none.none">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:113,114</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:116,117</note>
       </notes>
       <segment>
         <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> scanner is configured (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
@@ -59117,7 +59804,7 @@
     </unit>
     <unit id="scanners.none.off">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:118,119</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:121,122</note>
       </notes>
       <segment>
         <source>No replica of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> is listed.</source>
@@ -59126,7 +59813,7 @@
     </unit>
     <unit id="scanners.updater.daily">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:154</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:157</note>
       </notes>
       <segment>
         <source>daily built</source>
@@ -59135,7 +59822,7 @@
     </unit>
     <unit id="scanners.slots-value">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:167,168</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:170,171</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.slots.inUse }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.slots.total }}"/></source>
@@ -59144,7 +59831,7 @@
     </unit>
     <unit id="scanners.db.current">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:182,183</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:205,206</note>
       </notes>
       <segment>
         <source>Database in use</source>
@@ -59153,7 +59840,7 @@
     </unit>
     <unit id="scanners.db.built">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:184</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:207</note>
       </notes>
       <segment>
         <source>built</source>
@@ -59162,7 +59849,7 @@
     </unit>
     <unit id="scanners.db.older">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:188,189</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:211,212</note>
       </notes>
       <segment>
         <source>Older database</source>
@@ -59171,7 +59858,7 @@
     </unit>
     <unit id="scanners.db.none">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:191,192</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:214,215</note>
       </notes>
       <segment>
         <source>No database yet</source>
@@ -59180,7 +59867,7 @@
     </unit>
     <unit id="scanners.state.lost">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:200,201</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:223,224</note>
       </notes>
       <segment>
         <source>Lost</source>
@@ -59189,7 +59876,7 @@
     </unit>
     <unit id="scanners.state.ready">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:204,205</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:227,228</note>
       </notes>
       <segment>
         <source>Ready</source>
@@ -59198,7 +59885,7 @@
     </unit>
     <unit id="scanners.state.starting">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:207,209</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:230,232</note>
       </notes>
       <segment>
         <source>Starting</source>
@@ -59207,7 +59894,7 @@
     </unit>
     <unit id="scanners.state.draining">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:210,212</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:233,235</note>
       </notes>
       <segment>
         <source>Draining</source>
@@ -59216,7 +59903,7 @@
     </unit>
     <unit id="scanners.state.unready">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:213,215</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:236,238</note>
       </notes>
       <segment>
         <source>Unready</source>
@@ -59225,7 +59912,7 @@
     </unit>
     <unit id="scanners.col.pod-database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:321</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:372</note>
       </notes>
       <segment>
         <source>Database</source>
@@ -59234,7 +59921,7 @@
     </unit>
     <unit id="scanners.col.pod-database-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:322</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:373</note>
       </notes>
       <segment>
         <source>The advisory database the pod detects with. Database in use: the one Quader uses now, with how long ago it was built. Older database: the pod is still loading the one in use, which takes under a minute, or its container database cannot load it; that container&apos;s log says why. No database yet: the pod&apos;s first load has not finished.</source>
@@ -59243,7 +59930,7 @@
     </unit>
     <unit id="scanners.caption">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:326</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:377</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/></source>
@@ -59252,7 +59939,7 @@
     </unit>
     <unit id="scanners.fold">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:332</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:383</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/> (<ph id="1" equiv="count" disp="n"/>)</source>
@@ -59261,8 +59948,8 @@
     </unit>
     <unit id="scanners.col.name">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:344</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:361</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:395</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:412</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -59271,7 +59958,7 @@
     </unit>
     <unit id="scanners.col.node">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:345</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:396</note>
       </notes>
       <segment>
         <source>Node</source>
@@ -59280,7 +59967,7 @@
     </unit>
     <unit id="scanners.col.version">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:346</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:397</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -59289,8 +59976,8 @@
     </unit>
     <unit id="scanners.col.state">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:347</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:362</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:398</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:413</note>
       </notes>
       <segment>
         <source>State</source>
@@ -59299,7 +59986,7 @@
     </unit>
     <unit id="scanners.col.since">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:350</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:401</note>
       </notes>
       <segment>
         <source>State changed</source>
@@ -59308,7 +59995,7 @@
     </unit>
     <unit id="scanners.col.since-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:351</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:402</note>
       </notes>
       <segment>
         <source>When the replica entered the state it shows, or the reason beside it changed.</source>
@@ -59317,7 +60004,7 @@
     </unit>
     <unit id="scanners.col.heartbeat">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:353</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:404</note>
       </notes>
       <segment>
         <source>Heartbeat</source>
@@ -59326,9 +60013,9 @@
     </unit>
     <unit id="scanners.col.tool">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:355</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:356</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:363</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:406</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:407</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:414</note>
       </notes>
       <segment>
         <source>Tool</source>
@@ -59337,7 +60024,7 @@
     </unit>
     <unit id="scanners.col.updater-database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:369</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:420</note>
       </notes>
       <segment>
         <source>Definitions it holds</source>
@@ -59346,7 +60033,7 @@
     </unit>
     <unit id="scanners.col.database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:370</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:421</note>
       </notes>
       <segment>
         <source>Signature database</source>
@@ -59355,7 +60042,7 @@
     </unit>
     <unit id="scanners.col.slots">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:377</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:428</note>
       </notes>
       <segment>
         <source>Slots</source>
@@ -59364,11 +60051,29 @@
     </unit>
     <unit id="scanners.col.slots-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:379</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:430</note>
       </notes>
       <segment>
         <source>The scans the replica runs now, of the scans it runs at a time.</source>
         <target>Die Prüfungen, die das Replikat gerade ausführt, von denen, die es gleichzeitig ausführen kann.</target>
+      </segment>
+    </unit>
+    <unit id="scanners.col.calls">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:438</note>
+      </notes>
+      <segment>
+        <source>Working on</source>
+        <target>Prüft gerade</target>
+      </segment>
+    </unit>
+    <unit id="scanners.col.calls-help">
+      <notes>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:439</note>
+      </notes>
+      <segment>
+        <source>What the replica checks now, by its own report, and for how long.</source>
+        <target>Was das Replikat gerade prüft, nach seiner eigenen Meldung, und seit wann.</target>
       </segment>
     </unit>
     <unit id="session.ended.title">

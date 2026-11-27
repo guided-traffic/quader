@@ -339,6 +339,8 @@ export function sampleScanners(over: Partial<ScannerList> = {}): ScannerList {
         toolVersion: '1.5.5',
         slots: { inUse: 1, total: 2 },
         database: { version: 'main-62.daily-27841.bytecode-339', builtAt: '2026-11-21T04:00:00Z' },
+        // The call its slot in use holds, by its own report (R-MAL-041, Q-OPS-460).
+        calls: [{ sha256: '9e11'.padEnd(64, '0'), since: '2026-11-21T08:59:40Z' }],
       }),
     ],
     ...over,

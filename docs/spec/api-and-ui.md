@@ -7243,8 +7243,9 @@ repository with its details, as cogpit's card:
 - **The line of facts**, its parts separated by " · ": for an image **OS** and its name, **end of life** in the warning colour
   when it is, and **Scanned** with the time of its oldest scan ("Scanned 1 h ago (Nov 12, 2026, 12:31:51 PM)"); for every other
   format **Checked** with the time of the advisory data it was checked against ("Checked 3 min ago (…)", Q-VULN-156); the time is
-  `<quader-time-ago>`, one relative time ("just now", "3 min ago", "1 h ago", "4 d ago") with the absolute time in brackets
-  ([Q-UI-378](#q-ui-378--a-time-on-the-grade-card-is-one-relative-time-with-the-absolute-time-in-brackets-from-one-component));
+  `<quader-time-ago>`, one relative time ("just now", "3 min ago", "1 h ago", "4 d ago") with the absolute time after a dot
+  ([Q-UI-378](#q-ui-378--a-time-on-the-grade-card-is-one-relative-time-with-the-absolute-time-in-brackets-from-one-component),
+  [Q-UI-1525](#q-ui-1525--a-relative-time-and-its-absolute-time-are-joined-by-a-dot-not-brackets));
   last, the link **Findings in web-frontend/images**, which opens the project's vulnerability report filtered by the repository,
   the package and the version (R-VULN-022) ([Q-UI-374](#q-ui-374--a-list-shows-the-shield-and-the-text-the-bar-and-the-facts-are-the-cards)).
 - On the package page the card's bar filters the findings below it ([Q-UI-379](#q-ui-379--the-vulnerabilities-tab-pages-the-open-findings-of-a-version-from-the-findings-api-filtered-by-the-cards-bar)).
@@ -7600,7 +7601,8 @@ The walk of 2026-11-18 found three ways across lists: "4 minutes ago", "Nov 18, 
   the `<time>` element: `<quader-time-ago absolute="title">`. A column whose cells start with such a time is at least as wide as the
   widest relative time of the language (`relativeTimeWords`), so the list's form does not change with the ages of its rows
   ([Q-UI-1069](#q-ui-1069--a-column-of-relative-times-holds-the-widest-relative-time-of-its-language)).
-- **A card or a page's facts** write the relative time with the absolute time in brackets (Q-UI-378): `<quader-time-ago>`.
+- **A card or a page's facts** write the relative time with the absolute time after a dot (Q-UI-378, Q-UI-1525):
+  `<quader-time-ago>`, "3 hours ago · 26.11.2026 21:22:18 (Thu.)".
 - **A log** (the audit log, the issued CI tokens), where the moment is the content, writes the date and the time, `medium`.
 - One wording of a relative time: `relativeTime` ([format-time.ts](../../web/src/app/features/packages/format-time.ts)); `timeAgo`
   ([time-ago.ts](../../web/src/app/shared/ui/time-ago.ts)) is the same in the build's locale. A screen that calls either follows.
@@ -10871,7 +10873,8 @@ a slip for 2026: his example is that minute.)
   Before it, 72 files wrote times five ways (`DatePipe`, `| date`, `formatDate`, `Intl.DateTimeFormat`, `toLocaleString`); the lint
   rule of [time-format-rule.mjs](../../web/scripts/time-format-rule.mjs) refuses each of them outside the formatter
   ([Q-UI-1562](#q-ui-1562--one-formatter-and-one-pipe-held-by-a-lint-rule)). A time relative to now ("4 minutes ago", Q-UI-431) stays
-  where it stood; its absolute time (in brackets or as the title) comes from the formatter.
+  where it stood; its absolute time (after a dot, [Q-UI-1525](#q-ui-1525--a-relative-time-and-its-absolute-time-are-joined-by-a-dot-not-brackets),
+  or as the title) comes from the formatter.
 - **The forms** ([Q-UI-1561](#q-ui-1561--six-forms-each-offered-with-the-time-of-now-as-its-example)), in the order the choice offers them:
 
   | Value | Date and time | Date | Time of day |
@@ -11068,6 +11071,81 @@ Acceptance criteria:
   focus opens it at once and Escape closes it with the focus back; a pointer's focus does not open it, its tap does and keeps it after
   the pointer leaves, a press inside the card keeps it, a second tap and a tap outside close it; the focus moving elsewhere closes it.
 - Not verified locally: a tap on a real phone; the renders emulate it with a click.
+
+### R-UI-257 · The scan controller and the coverage on their pages
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26, 21:10: "Wir brauchen eine Art Scan-Controller, der die Reihenfolge und Abfolge der Artifaktscans überwacht und
+leitet. Er [weiß,] wieviele Scanner im Moment zur Verfügung stehen und verteilt darauf Artefaktscans." An administrator sees the controller
+at work and whether to add scanners; an auditor sees how current the checks are ([malware-scanning.md](malware-scanning.md) R-MAL-041,
+R-MAL-023, R-MAL-025). "Text Slop vermeiden, kurz und bündig" (his rule for the storage page) holds here too.
+
+- **Admin area › Settings › Malware scanning, the section Scanning** ([malware-controller.ts](../../web/src/app/features/settings/malware-controller.ts)):
+  - **The controller's line**: its state in words, "Scan controller running · 3 of 6 slots in use · 1,240 checks in the last hour", and
+    under it "Busy 62 % of the last hour · 10.8 s a check · as of 12 seconds ago". Its states: running, "idle: nothing presses", and
+    amber "waits: no scanner reachable", "waits: no signatures yet", "waits: no scanner configured"; "has not reported since the start"
+    before its first row. It is the section's one count of the scans that run
+    ([Q-UI-1526](#q-ui-1526--the-scan-controllers-line-is-the-sections-summary-of-the-scans-that-run)).
+  - **The replicas it does not call now**, one line each: the pod, **Paused** with "loading new signatures" (or "shutting down"), or
+    **Resting** with why ("clamd did not answer"), each "until 10:02:30".
+  - **Add scanner replicas**, a warning, while the slots were busy at least 90 % of the last hour and the rows that wait take them more
+    than an hour at the hour's time per check: how many wait, how many hours that is for the slots, how busy they were, and how many
+    replicas more clear them within an hour
+    ([Q-UI-1529](#q-ui-1529--add-scanner-replicas-is-said-with-its-numbers-while-the-busy-slots-fall-behind)).
+  - **Waiting**: the rows due by lane, "2 for a download · 5 new · 2 to retry · 11 by scan pressure", or "Nothing".
+  - **Queue by scan pressure**, folded: the first 20 rows with their file and repository (or the digest for a reader without
+    `content:metadata-read`, Q-MAL-137) and why each is due in words, "A download waits", "New, not checked yet", "Retry after 2 failed
+    attempts", or for the pressure "Signatures 31 days newer · 1,240 downloads since its check · Rescan requested", with "Scan pressure
+    104 %" and when it was checked or is due; "The first 20 of 41,352." under it
+    ([Q-UI-1528](#q-ui-1528--the-queue-is-folded-and-says-in-words-why-each-row-is-due)).
+  - **The backlog** of the switch (Not checked yet, Could not be checked) with "counted 4 minutes ago", "Not counted yet" before the
+    controller's first count (Q-MAL-136).
+  - **The replicas' fold** gains the column **Working on** (R-OPS-048,
+    [Q-UI-1527](#q-ui-1527--working-on-names-a-call-by-its-file-where-the-queue-lists-it-else-by-its-digest)).
+  - **Rescans**, closed (details on demand): the five rescan settings as fields of days with the value in force in each and the default
+    in its hint, the floor's "0 switches it off", saved with `If-Match` for the holder of `settings:write`, read only for an auditor
+    ([Q-UI-1530](#q-ui-1530--the-rescan-settings-are-fields-of-days-with-their-defaults-in-the-hints)).
+- **Security audit › Malware, above the finds** ([malware-coverage.ts](../../web/src/app/features/vulnerabilities/malware-coverage.ts)):
+  **How current the checks are**: one bar of the verdicts by class, for the eye only, and its legend in words with each count and the
+  glyph of the mark's class, "912,400 under today's signatures · 81,200 under older ones · 6,100 due · 300 overdue · 1,204 not checked
+  yet"; "oldest check 41 days ago · 17.10.2026 09:00:00 (Sat.) · counted 4 minutes ago"; "Not counted yet" before the controller's first
+  count ([Q-UI-1531](#q-ui-1531--the-coverage-is-a-bar-for-the-eye-and-a-legend-of-words-and-counts)). Folded, **Checked longest ago**:
+  the 20 checks made longest ago, each with its file linked to its page, when it was checked, how current it is (or its verdict, and
+  "(released)") and its daily ([Q-UI-1532](#q-ui-1532--checked-longest-ago-lists-the-file-when-how-current-and-the-daily)).
+- **A relative time beside its absolute time** is joined by a dot, "3 hours ago · 26.11.2026 21:22:18 (Thu.)", in every place that
+  pairs them, the mark's details among them
+  ([Q-UI-1525](#q-ui-1525--a-relative-time-and-its-absolute-time-are-joined-by-a-dot-not-brackets)).
+- **On both pages**: every absolute time is the reader's form (R-UI-250); the first load of each part shows the spinner (R-UI-217); a
+  failed read stands in the part's place with everything the answer carried (R-UI-214, R-UI-216) and the rest of the page stays; the
+  queue and the oldest checks stop at 20, so nothing scrolls by itself (R-UI-215); green is the mark's for checks under today's
+  signatures only (Q-UI-96). **Live** (R-UI-213): the settings page reads the controller and the replicas again every 15 s while the
+  controller runs, which writes its row at that pace, and every 30 s otherwise; the coverage every 30 s, while the page is seen.
+
+*Built on 2026-11-27 (W-36 P6):* [malware-controller.ts](../../web/src/app/features/settings/malware-controller.ts),
+[malware-rescans.ts](../../web/src/app/features/settings/malware-rescans.ts), the section Scanning of
+[malware-settings.html](../../web/src/app/features/settings/malware-settings.html),
+[malware-coverage.ts](../../web/src/app/features/vulnerabilities/malware-coverage.ts) above the finds, the column **Working on** of
+[scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts) and the dot of
+[time-ago.ts](../../web/src/app/shared/ui/time-ago.ts). English and German.
+
+Acceptance criteria:
+
+- Vitest ([malware-settings.spec.ts](../../web/src/app/features/settings/malware-settings.spec.ts), eleven cases more, about 0.4 s): the
+  controller's line with its capacity, calls, checks and how busy, and no summary of the replicas' rows beside it; no scanner reachable as
+  a warning with a paused and a resting replica, each with why and until when; the advice with its numbers while 40,303 rows wait for
+  4 slots busy 95 %, none while the scanning keeps up; the queue's reasons in words, its file for an administrator and the digest for a
+  reader without `content:metadata-read`; **Working on** by file and by digest; a failed read of the controller in its place; the backlog
+  with its time and before the count; the rescans folded with their values in days, saved as a merge patch of the changed members with
+  the `ETag`, a value outside its bounds at its field by the answer's pointer, read only for an auditor.
+  [malware-finds.spec.ts](../../web/src/app/features/vulnerabilities/malware-finds.spec.ts) (three cases): the legend's words and counts
+  with the bar hidden from assistive technology, the glyphs of the current and the overdue class, the oldest check's time; the fold of
+  the oldest with a file's link, a digest and a released verdict; "Not counted yet" and a failed read.
+  [scanner-replicas.spec.ts](../../web/src/app/shared/scanner/scanner-replicas.spec.ts) (one case): **Working on** by digest and by file,
+  none for an image scanner. [time-ago.spec.ts](../../web/src/app/shared/ui/time-ago.spec.ts): the dot.
+- Renders ([malware-controller.ts](../../web/e2e/renders/malware-controller.ts) of the renders), looked at and never committed: the
+  settings page as the profile answers (no controller has reported), at work with three replicas working, one paused and one resting,
+  the queue of 20 and the replicas' calls opened, far behind with the advice, the rescans opened, idle; the malware page with "Not counted
+  yet" and with the four classes and the 20 oldest opened; both schemes, 390, 1,024 and 1,440 px, English and German.
 
 ### R-UI-258 · The Bastion's pages show the malware mark
 Priority: **P1** · Covers: SEC-049
@@ -18214,6 +18292,9 @@ version is shown that was checked more than a month ago, which the sync of R-VUL
 **Revised by [Q-UI-431](#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)
 (2026-11-18):** the relative time has the one wording of the UI, "3 minutes ago (Nov 12, 2026, 2:22:37 PM)", not cogpit's short
 form; the component writes it for a list's cell too, with the absolute time as the title (`absolute="title"`).
+
+**Revised by [Q-UI-1525](#q-ui-1525--a-relative-time-and-its-absolute-time-are-joined-by-a-dot-not-brackets) (2026-11-27):** the
+absolute time stands after a dot, "3 hours ago · 26.11.2026 21:22:18 (Thu.)": the reader's form of R-UI-250 ends in brackets of its own.
 
 ### Q-UI-379 · The Vulnerabilities tab pages the open findings of a version from the findings API, filtered by the card's bar
 
@@ -30887,6 +30968,143 @@ what a new set changes (Q-MAL-133), and it has no `GET /api/v1/malware/signature
 | (b) The marks everywhere at once | | One rule | A class computed from members the Bastion strips (R-MAL-039) |
 
 **Choice:** (a). **Applied in the spec:** R-UI-255.
+
+### Q-UI-1519 · The switch asks first also while the backlog is not counted yet
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P6, from the coordinator's finding at the render's walk) — selected
+from the options below; the owner reviews it at the walkthrough. R-MAL-019, R-MAL-023, R-UI-257.
+
+Context: since Q-MAL-136 the settings' `backlog` is the scan controller's count, null until it has counted. The page asked before
+**Only checked artifacts can be downloaded** goes on only while the backlog was above zero, so an unknown backlog switched the gate on
+without a word, and from that moment artifacts without a verdict waited or were refused.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An unknown backlog asks too: "Quader has not counted yet how many artifacts have no verdict or could not be checked. They will wait or be refused until they are scanned or released."; a counted one keeps its sentence with the numbers (chosen) | | No switch goes on unasked while what it holds is unknown; the sentence says why there is no number | One question more on a fresh installation whose backlog is in fact empty |
+| (b) Refuse to switch until the count is there | | Exact | The switch would wait up to five minutes for a decision the administrator can take now |
+| (c) Treat it as zero | | No dialog | The defect: the gate on without a word (Q-MAL-136's option (c), rejected there) |
+
+**Choice:** (a). **Applied in the spec:** R-MAL-023; [malware-settings.ts](../../web/src/app/features/settings/malware-settings.ts)
+`backlogQuestion`.
+
+### Q-UI-1525 · A relative time and its absolute time are joined by a dot, not brackets
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P6, from the coordinator's finding at W-36 P4's popover) — selected from
+the options below; the owner reviews it at the walkthrough. R-UI-257, R-UI-250; it revises Q-UI-378's brackets.
+
+Context: the mark's details read "Checked 3 hours ago (26.11.2026 21:22:18 (Thu.))": since R-UI-250's default form ends in its weekday in
+brackets, every `<quader-time-ago>` of a card or a page wrote brackets inside brackets.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<quader-time-ago>` joins them with a dot, "3 hours ago · 26.11.2026 21:22:18 (Thu.)" (chosen) | | One change in the one component, so every place that pairs them follows; the dot is the separator of a line of facts already | A line of facts joined by dots holds one dot more |
+| (b) The relative time alone and the absolute time on its own line | | Each value whole | Two lines per time in every card; a list of facts grows by a line per time |
+| (c) Brackets only where the form has none | | Brackets stay for most forms | The default form, the owner's, is the one with them |
+
+**Choice:** (a). `absolute="beside"` is the default; `absolute="title"` of a list's cell stays. **Applied in the spec:** R-UI-250, R-UI-093,
+Q-UI-378; [time-ago.ts](../../web/src/app/shared/ui/time-ago.ts).
+
+### Q-UI-1526 · The scan controller's line is the section's summary of the scans that run
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P6) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-257; it revises the summary of [Q-MAL-110](malware-scanning.md#q-mal-110--the-settings-page-counts-the-scanners-from-the-rows-they-report).
+
+Context: the section Scanning said "2 ready, 1 scan running" from the replicas' own rows (Q-MAL-110: the job's peak of a past run had
+disagreed with the fold). The brief asks for the controller's line with its capacity and its calls in flight; two counts of the scans that
+run on one section are the disagreement Q-MAL-110 removed.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The controller's line is the summary: its calls in flight of its capacity; the line of the replicas' rows goes; the fold keeps each replica's own slots and calls (chosen) | | One count above the fold; the controller is what calls, and since R-MAL-038 it writes its calls of now every 15 s, not a past peak; a replica it does not call says so with why | The fold's slots and the line may differ for the seconds between a replica's report and the controller's row |
+| (b) Both lines | | Nothing removed | Two numbers of one fact, the defect of Q-MAL-110 |
+| (c) The replicas' line, the controller without calls | | Q-MAL-110 unchanged | The brief's calls in flight and capacity missing; the controller's view of a resting replica missing |
+
+**Choice:** (a). **Applied in the spec:** R-MAL-023, R-UI-257.
+
+### Q-UI-1527 · Working on names a call by its file where the queue lists it, else by its digest
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P6) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-257, R-MAL-041.
+
+Context: a scanner's report names each call by its blob's digest and since when (Q-OPS-460); no answer names the file of a digest
+except the controller's queue, which gives its rows' first item to a reader with `content:metadata-read` (Q-MAL-137). A row the
+controller calls is still due, so it is among the queue's first rows while the scanning keeps up.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The column **Working on** of the replicas' fold names a call by the file of the queue's row with the same digest, by its digest otherwise, with how long it has been at it (chosen) | | Paths only where the server gave them; no request more | A call beyond the queue's first 20 reads as a digest |
+| (b) Digests only | | One form | An administrator cannot tell what is checked even where the page knows it |
+| (c) A read of the file per call | | Every call named | A request per call and a new operation, for a fact that changes every few seconds |
+
+**Choice:** (a). **Applied in the spec:** R-UI-257, R-OPS-048.
+
+### Q-UI-1528 · The queue is folded and says in words why each row is due
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P6) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-257.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A fold **Queue by scan pressure** under the line: two columns, the file with its repository and why it is due, its lane's words or the parts of its pressure, with the pressure in percent and when it was checked or is due; "The first 20 of n." (chosen) | | Details on demand (CLAUDE.md); each reason a reader understands; the percent relates to "due at 100 %" of the column's help | The order inside the lane `new` is the age, not the controller's turn by repository (Q-MAL-124) |
+| (b) The queue open | | Seen at once | Twenty rows between the line and the rescans for every visit |
+| (c) The lane and the pressure as numbers | | Short | A reader has to know the formula |
+
+**Choice:** (a). There is no page of the whole queue; the count of what waits stands on the line Waiting. **Applied in the spec:** R-UI-257.
+
+### Q-UI-1529 · Add scanner replicas is said with its numbers while the busy slots fall behind
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P6) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-257, R-MAL-041.
+
+Context: the answer holds one row of now, not a history, so "the backlog grows faster than the capacity clears it" is read from the
+hour's figures: how busy the slots were, the time of a check, the slots, the rows that wait.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) While `utilization` ≥ 0.9 and the rows that wait take the slots more than an hour at `secondsPerScan`: "Add scanner replicas. 40,303 checks wait, about 6.7 hours of work for the 4 slots, busy 95 % of the last hour. About 12 more replicas of 2 slots clear them within an hour." (chosen) | | Plain words and numbers; quiet while the slots have room or the backlog is an hour's work; the replicas are counted in the size the installation runs | An hour of work is the bound by judgement; a backlog that the slots would clear overnight still asks for replicas |
+| (b) Utilization alone | | Simple | A busy hour with nothing waiting asks for nothing |
+| (c) The trend of the backlog over reads | | "Grows" literally | The page would remember reads; a fresh page says nothing |
+
+**Choice:** (a). **Applied in the spec:** R-UI-257.
+
+### Q-UI-1530 · The rescan settings are fields of days, with their defaults in the hints
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P6) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-257; the API's members are whole hours (Q-MAL-135).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Five fields of days, fractions allowed, as the token lifetimes are; each holds the value in force and its hint the default ("Days; 30 by default"); a field sends whole hours, rounded; a closed fold **Rescans** (chosen) | | The unit an administrator thinks in; the form of **Authentication**'s lifetimes; "a default is a value in the field" holds, the hint says what to go back to | One hour reads "0.042" |
+| (b) A number and a unit per field | | Exact | Ten controls for five settings |
+| (c) Hours | | The API's unit | "720" for a month |
+
+**Choice:** (a). Only the members that changed are sent, as a merge patch with `If-Match`; a `412` offers mine or theirs. **Applied in the
+spec:** R-UI-257.
+
+### Q-UI-1531 · The coverage is a bar for the eye and a legend of words and counts
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P6) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-257.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One bar of five segments by count, hidden from assistive technology, and under it a legend: a swatch, the glyph of the mark's class and "912,400 under today's signatures", for current, older, due, overdue and not checked yet (chosen) | | Never colour alone: words, counts and shapes; green only for today's signatures, amber for overdue | Five segments of which most are thin at a healthy installation |
+| (b) One sentence of counts | | Shortest | No sense of the share at a glance |
+| (c) The severity bar of the vulnerabilities | | Exists | Its words and its hatching are a severity's |
+
+**Choice:** (a). **Applied in the spec:** R-UI-257.
+
+### Q-UI-1532 · Checked longest ago lists the file, when, how current, and the daily
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P6) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-257.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A fold under the legend: the file linked to its page with its repository, or its digest where no live item holds it; the day it was checked, its time as the title; how current it is in the mark's words, or its verdict with "(released)"; its daily (chosen) | | The auditor goes from the oldest check to the file; the words are the mark's; the day tells the rows apart, where a relative time read "last month" in every row of the first render | The scan pressure stays out of the table |
+| (b) The marks themselves | | One form | A mark needs the whole member, which this answer does not carry |
+
+**Choice:** (a). **Applied in the spec:** R-UI-257.
 
 ### Q-UI-1535 · The grade is the button of its details, with the malware mark's card
 

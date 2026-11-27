@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { TimePipe } from '../time-pipe';
 import { Component, computed, input } from '@angular/core';
+import { MalwareItemRef } from '../../api/malware-api';
 import { ScannerList, ScannerReplica } from '../../api/system-api';
 import { DataTable, TableColumn } from '../ui/data-table';
 import { Disclosure } from '../ui/disclosure';
@@ -38,7 +39,9 @@ export function scannerReasonText(reason: string): string | null {
  * page (`view="open"`, the settings' columns without the fold, R-UI-188). The updater (`freshclam`) runs no calls: its rows have no
  * slots, and its database is the set its directory holds with the age of its newest `daily` (Q-UI-913). An image scanner's rows say
  * whether the pod holds the database in use with the age of its build, an older one, or none yet: in the column **Database** of the
- * settings, under the tool on the System page (R-VULN-049, Q-OPS-225, Q-UI-915). A kind without a replica says why in a sentence:
+ * settings, under the tool on the System page (R-VULN-049, Q-OPS-225, Q-UI-915). A malware scanner's rows say in the settings' column
+ * **Working on** what each of its calls checks now and since when, from its own report (R-MAL-041, Q-UI-1527): the file where the page
+ * knows it (`callItems`, the controller's queue for a reader with `content:metadata-read`), else the blob's digest. A kind without a replica says why in a sentence:
  * none reported, the scan listener cannot tell the kind, or no scanner is configured. Every value is the scanner's own statement,
  * bounded by the server (H-1161), and is bound as text.
  */
@@ -166,6 +169,26 @@ export function scannerReasonText(reason: string): string | null {
             @if (hasSlots()) {
               <td class="num" i18n="@@scanners.slots-value">{{ r.slots.inUse }} of {{ r.slots.total }}</td>
             }
+            @if (hasCalls()) {
+              <td class="calls-cell" data-testid="scanner-calls">
+                @if (r.calls?.length) {
+                  <ul class="calls">
+                    @for (c of r.calls; track c.sha256) {
+                      <li>
+                        @if (callItem(c.sha256); as item) {
+                          <code class="call-path" translate="no" [attr.title]="item.repository + ' · sha256:' + c.sha256">{{ item.path }}</code>
+                        } @else {
+                          <code translate="no" [attr.title]="'sha256:' + c.sha256">sha256:{{ c.sha256.slice(0, 12) }}</code>
+                        }
+                        &ngsp;<span class="secondary-inline"><quader-time-ago [at]="c.since" absolute="title" /></span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <quader-no-value />
+                }
+              </td>
+            }
           </tr>
         }
       </quader-data-table>
@@ -285,6 +308,19 @@ export function scannerReasonText(reason: string): string | null {
     .scanner-note {
       margin: 0;
     }
+    // What a malware scanner checks now (Q-UI-1527): one line a call, the file or the digest and how long it has been at it.
+    .calls {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .call-path {
+      overflow-wrap: anywhere;
+    }
+    .secondary-inline {
+      color: var(--quader-text-muted);
+      white-space: nowrap;
+    }
   `,
 })
 export class ScannerReplicas {
@@ -294,6 +330,11 @@ export class ScannerReplicas {
   readonly kind = input.required<string>();
   /** The System page's columns, the settings pages' in a fold, or the settings' columns open (the section **Updater**, R-UI-188). */
   readonly view = input<'system' | 'settings' | 'open'>('settings');
+  /**
+   * The files the page knows by their blob's digest (Q-UI-1527): **Working on** names a call by its file where this holds it, by the
+   * digest otherwise. Only a reader with `content:metadata-read` is given paths by the server (Q-MAL-137).
+   */
+  readonly callItems = input<ReadonlyMap<string, MalwareItemRef>>(new Map());
 
   protected readonly group = computed(() => scannerGroup(this.list(), this.kind()));
   protected readonly reasonText = scannerReasonText;
@@ -315,6 +356,16 @@ export class ScannerReplicas {
     return g !== null && (g.purpose === 'vuln' || g.kind === 'trivy');
   });
   protected readonly database = podDatabase;
+  /** A malware scanner says what it works on (`calls`, R-MAL-041); the other kinds' rows carry none. */
+  protected readonly hasCalls = computed(() => {
+    const g = this.group();
+    if (g === null || this.updater()) return false;
+    return g.kind === 'clamav' || g.rows.some((r: ScannerReplica) => r.calls !== null && r.calls !== undefined);
+  });
+
+  protected callItem(sha256: string): MalwareItemRef | null {
+    return this.callItems().get(sha256) ?? null;
+  }
   /** The column of an image scanner's database, and what its three words mean. */
   private readonly podDatabaseColumn: TableColumn = {
     id: 'database',
@@ -377,6 +428,15 @@ export class ScannerReplicas {
             label: $localize`:@@scanners.col.slots:Slots`,
             numeric: true,
             help: $localize`:@@scanners.col.slots-help:The scans the replica runs now, of the scans it runs at a time.`,
+          } satisfies TableColumn,
+        ]
+      : []),
+    ...(this.hasCalls()
+      ? [
+          {
+            id: 'calls',
+            label: $localize`:@@scanners.col.calls:Working on`,
+            help: $localize`:@@scanners.col.calls-help:What the replica checks now, by its own report, and for how long.`,
           } satisfies TableColumn,
         ]
       : []),

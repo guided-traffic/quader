@@ -59,6 +59,13 @@ Above the list stands what the scan promises and what it does not: it compares e
 and does not find malware that no signature describes yet, such as a malicious install script published today. For npm and NuGet, the
 vulnerability findings of the other view block known malicious packages by name.
 
+**How current the checks are** stands above the finds: a bar of every check, and under it each class in words with its count: **under
+today's signatures**, **under older ones**, **due** (checked again soon), **overdue** (due for longer than the installation's bound, 7 days
+by default: the scanning falls behind), and **not checked yet**; then when the oldest check was made and when Quader counted (every five
+minutes). **Checked longest ago**, closed, lists the 20 checks made longest ago, each with its file, when it was checked, how current it is
+and the ClamAV daily it was checked with. Before the first count the line says **Not counted yet**. When a check is repeated is the
+administrator's setting ([Monitoring and operations](../admin/operations.md#malware-scanning)).
+
 | Column | What it shows |
 |---|---|
 | **File** | The name of the first file that holds the bytes and the first twelve characters of their SHA-256; under it the first repository that holds the bytes, how many more do, and when the scan found them, the newest first. The button before it opens the row: every file that holds the bytes, with its repository, its path and its package and version, and the reason of a release |

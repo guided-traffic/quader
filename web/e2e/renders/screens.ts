@@ -38,6 +38,7 @@ import { anonymousCard, anonymousEndOfLife, anonymousFindings } from './anonymou
 import { bastionScreens } from './bastion-gui';
 import { malwarePackage, quarantine } from './malware';
 import { gradeDetailsVersion, gradeDetailsVersions } from './grade-details';
+import { controllerAtWork, controllerIdle, coverageCounted, scannersWithCalls } from './malware-controller';
 import { markedFile, markedFolder, markedList, markedVersion } from './malware-marks';
 import { malwareWaiting, scanFailedCard, scanStatesList, scanStatesPackage } from './scan-states';
 import { trivyDatabases } from './scanners';
@@ -1345,15 +1346,42 @@ async function answerWith(page: Page, url: string, change: (body: Record<string,
 }
 
 /**
- * **Settings › Malware scanning** (R-MAL-023): as seeded (the switch off, the backlog of the seed's files without a verdict, a current
- * database, two scanners); the question before the switch goes on with a backlog; a database four days old whose updates fail, a
- * backlog of tens of thousands, no scanner ready and an installation without internet with its commands; no database yet and the
- * switch on; the scanning off in the configuration.
+ * **Settings › Malware scanning** (R-MAL-023, R-MAL-041): as seeded (the switch off, the backlog of the seed's files without a verdict, a
+ * current database, two scanners, a controller that has not run: the profile runs no scanner); the scan controller at work with three
+ * replicas working, one paused for a signature reload and one resting, its queue of 20 opened and the replicas' calls opened; the same far
+ * behind its backlog, with the advice to add replicas; the rescans opened; an idle controller; the question before the switch goes on with
+ * a backlog; a database four days old whose updates fail, a backlog of tens of thousands, no scanner ready and an installation without
+ * internet with its commands; no database yet and the switch on; the scanning off in the configuration.
  */
 async function* malwareSettings(page: Page): AsyncGenerator<string> {
   const settings = '**/api/v1/malware/settings';
+  const controller = '**/api/v1/malware/controller';
   await expect(page.getByRole('heading', { name: 'Signature database' })).toBeVisible();
   yield '';
+  // The controller at work (R-MAL-041, R-UI-257): the replicas' calls name rows of its queue, so Working on names their files.
+  await routeWith(page, '**/api/v1/system/scanners', scannersWithCalls);
+  await answerWith(page, controller, controllerAtWork(false));
+  await expect(page.locator('main [data-testid="malware-controller-stopped"]')).toBeVisible();
+  yield 'controller';
+  await page.getByRole('button', { name: /^Queue by scan pressure/ }).click();
+  await expect(page.locator('main [data-testid="malware-queue"] tbody tr').first()).toBeVisible();
+  const clamavFold = page.locator('main quader-scanner-replicas quader-disclosure button.inline-toggle').first();
+  await clamavFold.click();
+  await expect(clamavFold).toHaveAttribute('aria-expanded', 'true');
+  yield 'queue';
+  await answerWith(page, controller, controllerAtWork(true));
+  await expect(page.locator('main [data-testid="malware-controller-advice"]')).toBeVisible();
+  yield 'behind';
+  await page.getByRole('button', { name: 'Rescans' }).click();
+  await expect(page.locator('main [data-testid="malware-rescans"] input[name="recent"]')).toBeVisible();
+  yield 'rescans';
+  await answerWith(page, controller, controllerIdle);
+  await expect(page.locator('main [data-testid="malware-controller"]')).toContainText('nothing presses');
+  yield 'idle';
+  await page.unroute(controller);
+  await page.unroute('**/api/v1/system/scanners');
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Signature database' })).toBeVisible();
   // The replicas of malware-scanner-clamav under the summary, and those of the updater malware-updater-freshclam, the folds opened
   // (R-OPS-048, Q-UI-897, Q-UI-913).
   const folds = page.locator('main quader-scanner-replicas quader-disclosure button.inline-toggle');
@@ -1362,11 +1390,19 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
     await expect(fold).toHaveAttribute('aria-expanded', 'true');
   }
   yield 'scanners';
-  await page.getByRole('checkbox', { name: 'Only checked artifacts can be downloaded' }).check();
-  await page.getByRole('button', { name: /^Save changes/ }).click();
-  await expect(page.getByRole('dialog', { name: 'Let only checked artifacts be downloaded?' })).toBeVisible();
-  yield 'confirm';
-  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  // The question before the switch goes on (R-MAL-019): with a counted backlog, and before the controller counted it (Q-UI-1519). The
+  // profile's controller counts on its own, so both are its answer changed in the browser, the switch off.
+  for (const [state, backlog] of [
+    ['confirm', { unchecked: 48213, notCheckable: 1207 }],
+    ['confirm-uncounted', null],
+  ] as const) {
+    await answerWith(page, settings, (b) => ({ ...b, onlyChecked: false, backlog, backlogAt: backlog ? b['backlogAt'] : null }));
+    await page.getByRole('checkbox', { name: 'Only checked artifacts can be downloaded' }).check();
+    await page.getByRole('button', { name: /^Save changes/ }).click();
+    await expect(page.getByRole('dialog', { name: 'Let only checked artifacts be downloaded?' })).toBeVisible();
+    yield state;
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  }
   await answerWith(page, settings, (b) => ({
     ...b,
     backlog: { unchecked: 48213, notCheckable: 1207 },
@@ -1416,8 +1452,18 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
  * drawer; the release dialog of the find in three repositories, sent without a reason; the empty list.
  */
 async function* malwareFinds(page: Page): AsyncGenerator<string> {
-  await expect(page.locator('main tbody tr').first()).toBeVisible();
+  await expect(page.locator('main quader-malware-finds > quader-data-table tbody tr').first()).toBeVisible();
   yield '';
+  // How current the checks are (R-MAL-041, R-UI-257): the profile's controller never counts, so the page opens with "Not counted yet";
+  // the four classes and the 20 checks made longest ago are the real answer changed in the browser, the fold opened.
+  const coverage = '**/api/v1/malware/coverage';
+  await answerWith(page, coverage, coverageCounted);
+  await page.getByRole('button', { name: /^Checked longest ago/ }).click();
+  await expect(page.locator('main [data-testid="malware-oldest"] tbody tr').first()).toBeVisible();
+  yield 'coverage';
+  await page.unroute(coverage);
+  await page.reload();
+  await expect(page.locator('main quader-malware-finds > quader-data-table tbody tr').first()).toBeVisible();
   await page.locator('main .name-cell button[aria-expanded="false"]').first().click();
   await expect(page.locator('main .collapse-region.open .find-items li').first()).toBeVisible();
   yield 'opened';
@@ -3684,7 +3730,7 @@ export const screens: readonly Screen[] = [
   { id: 'security-search', path: '/ui/security', kinds: ['auditor'], walk: searched('DEMO-2026-00001') },
   { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'], tables: 'quader-vulnerability-report > quader-data-table' },
   // The page Malware under Security audit (R-MAL-025, Q-UI-1005): what the auditor assesses and releases; an administrator sees the same.
-  { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds, tables: 'quader-malware-finds > quader-data-table' },
+  { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds, tables: 'quader-malware-finds > quader-data-table', de: true },
   // The find of that Go program and its release (Q-UI-1206): the limit, the false alarm with the manual's page, the scanner's text.
   {
     id: 'security-malware-limit',
@@ -3977,7 +4023,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins, de: true },
   { id: 'admin-settings-general', path: '/ui/admin/settings/general', kinds: admins, walk: restrictedLevels },
   // The malware scanning's page (R-MAL-023): every state of the administrator's, and the auditor's read-only page with the link to the finds.
-  { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings },
+  { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings, de: true },
   { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
   { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings, tables: 'quader-data-table' },
   // >>> download-links
