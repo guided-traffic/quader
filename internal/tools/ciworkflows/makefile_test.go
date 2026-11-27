@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -78,6 +79,7 @@ func TestTheLinterHasOneLimitAndWaitsForAnotherRun(t *testing.T) {
 		if !strings.Contains(out, "pgrep -f") {
 			t.Errorf("make %s does not say that it waits for another run", target)
 		}
+		lintWaitMatchesOnlyTheLinter(t, target, out)
 	}
 	var cfg struct {
 		Run map[string]any `yaml:"run"`
@@ -87,6 +89,36 @@ func TestTheLinterHasOneLimitAndWaitsForAnotherRun(t *testing.T) {
 	}
 	if v, ok := cfg.Run["timeout"]; ok {
 		t.Errorf(".golangci.yml sets run.timeout %v beside LINT_TIMEOUT of the Makefile; the limit lives in one place", v)
+	}
+}
+
+// lintWaitMatchesOnlyTheLinter: the pattern LINT_WAIT asks pgrep for matches the command line of the pinned golangci-lint as make
+// starts it, by a relative or an absolute path, and not a shell whose command text names such a run, which made a waiting lint say
+// "another golangci-lint runs" while none linted (2026-11-27). pgrep reads an extended regular expression; this one
+// means the same in Go's syntax.
+func lintWaitMatchesOnlyTheLinter(t *testing.T, target, out string) {
+	t.Helper()
+	_, rest, ok := strings.Cut(out, "pgrep -f '")
+	pattern, _, closed := strings.Cut(rest, "'")
+	if !ok || !closed {
+		t.Errorf("make %s: no quoted pattern after pgrep -f", target)
+		return
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		t.Fatalf("make %s: the pattern %q of pgrep: %v", target, pattern, err)
+	}
+	for line, want := range map[string]bool{
+		".bin/golangci-lint-v2.5.0-go1.27.4 run --timeout 20m --allow-serial-runners ./...":                     true,
+		"./.bin/golangci-lint-v2.5.0-go1.27.4 run":                                                              true,
+		"/src/quader/.bin/golangci-lint-v2.5.0-go1.27.4 run --enable-only=gosec ./...":                          true,
+		"/bin/sh -c GOLANGCI_LINT_CACHE=/src/.out/c .bin/golangci-lint-v2.5.0-go1.27.4 run --timeout 20m ./...": false,
+		"/bin/zsh -c make lint 2>&1 | grep 'golangci-lint run'":                                                 false,
+		".bin/golangci-lint-v2.5.0-go1.27.4 fmt ./...":                                                          false,
+	} {
+		if got := re.MatchString(line); got != want {
+			t.Errorf("make %s: the pattern of pgrep %q matches %q: %v, want %v", target, pattern, line, got, want)
+		}
 	}
 }
 

@@ -251,14 +251,16 @@ LINT_TIMEOUT ?= 20m
 # golangci-lint holds a lock in the system's temporary directory. Without --allow-serial-runners a second run on the machine (another
 # worktree, make gosec beside make lint) ended at once with "parallel golangci-lint is running"; with it, the second waits for the
 # first, so the machine runs one lint at a time (the lock stays: four builders' gates at once took it above a load of 100). LINT_WAIT
-# says that it waits.
+# says that it waits. It asks for a process whose command line begins with the pinned binary under .bin, as make starts it: a pattern
+# anywhere in the line also matched shells whose command text mentions such a run (a recipe, an agent's command) and said "another
+# golangci-lint runs" while none linted.
 # LINT_CACHE is the checkout's own cache of golangci-lint, keyed by its path and gone with it: a run in one worktree reported a finding
 # in a file of another worktree (W36-P8, 2026-11-27) and a rerun with a cache of its own did not; golangci-lint's default cache is one
 # directory for every checkout of the machine (docs/developer/build-and-test.md, "The lint's cache").
 LINT_CACHE ?= $(CURDIR)/.out/golangci-lint-cache
 LINT_ENV = GOLANGCI_LINT_CACHE=$(LINT_CACHE)
 LINT_FLAGS = --timeout $(LINT_TIMEOUT) --allow-serial-runners $(LINT_CONCURRENCY)
-LINT_WAIT = if pgrep -f '[g]olangci-lint[^ ]* run( |$$)' >/dev/null 2>&1; then \
+LINT_WAIT = if pgrep -f '^([^ ]*/)?\.bin/golangci-lint-[^ ]* run( |$$)' >/dev/null 2>&1; then \
   echo "make: another golangci-lint runs on this machine; this one waits for the lock while that run holds it"; fi
 
 .PHONY: lint
