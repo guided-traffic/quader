@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { ApiError } from './problem';
@@ -18,6 +18,7 @@ export interface ImportTaskFilter {
   readonly version?: string;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpAnsibleApi) })
 export abstract class AnsibleApi {
   /**
    * The screens' publish of a collection archive (R-ANS-061, Q-ANS-140): `POST …/upload-tokens` issues the caller's token of

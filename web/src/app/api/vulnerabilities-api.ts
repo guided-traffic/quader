@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { cleanQuery, seg } from './query';
@@ -111,6 +111,7 @@ export interface TrendQuery extends ScopeFilters {
  * The vulnerabilities (R-VULN-013 and the dashboard's reads): the reads of the views (`VulnerabilityReads`, R-UI-223) and what only the
  * main installation's screens ask, a finding with its triage, the summary, the trend, the sources and the export.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpVulnerabilitiesApi) })
 export abstract class VulnerabilitiesApi extends VulnerabilityReads {
   /** The finding with the `ETag` a triage needs. */
   abstract finding(id: string): Promise<Versioned<VulnerabilityFindingDetail>>;

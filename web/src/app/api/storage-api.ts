@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { seg } from './query';
@@ -47,6 +47,7 @@ export interface ProblemFilter {
   readonly connection?: string;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpStorageApi) })
 export abstract class StorageApi {
   /** `GET /api/v1/storage/overview` (R-STOR-107): the states of now and the problems of the period, each derived by the server (Q-STOR-505). */
   abstract overview(period?: StoragePeriod): Promise<StorageOverview>;

@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { UpstreamTestResult } from './repositories-api';
 import { Schema } from './types';
@@ -38,6 +38,7 @@ export interface LoadedUpstreamRepository {
  * account replace what an administrator typed and take the loaded `ETag`. The two bulk operations are one transaction each and
  * answer what they changed.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpUpstreamApi) })
 export abstract class UpstreamApi {
   /** `GET /api/v1/upstream-repositories`: every well-known repository, the presets in catalog order, then the system ones. */
   abstract list(): Promise<readonly UpstreamRepository[]>;

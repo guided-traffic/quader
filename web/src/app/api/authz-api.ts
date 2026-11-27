@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { cleanQuery, seg } from './query';
@@ -42,6 +42,7 @@ export interface RoleBindingFilters {
   readonly principal?: string;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpPolicyApi) })
 export abstract class PolicyApi {
   abstract list(filters: PolicyFilters): PageFetcher<PermissionPolicy>;
   /**
@@ -58,6 +59,7 @@ export abstract class PolicyApi {
   abstract validate(input: PermissionPolicyInput): Promise<PolicyValidation>;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpRolesApi) })
 export abstract class RolesApi {
   abstract roles(): Promise<readonly Role[]>;
   abstract bindings(filters: RoleBindingFilters): PageFetcher<RoleBinding>;

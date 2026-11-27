@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { cleanQuery, seg } from './query';
@@ -74,6 +74,7 @@ export interface GroupMembersChange {
   readonly source?: 'manual' | 'auto';
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpIdentityApi) })
 export abstract class IdentityApi {
   abstract me(): Promise<User>;
 

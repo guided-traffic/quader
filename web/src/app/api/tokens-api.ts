@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { cleanQuery, seg } from './query';
@@ -27,6 +27,7 @@ export interface TokenFilters {
   readonly lastUsedBefore?: string;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpTokensApi) })
 export abstract class TokensApi {
   abstract list(filters: TokenFilters): PageFetcher<Token>;
   /** For the caller (`POST /tokens`); `ownerName` is only the caller's own name (no impersonation). */

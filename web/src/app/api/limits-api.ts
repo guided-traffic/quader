@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient, QueryParams, newIdempotencyKey } from './client';
 import { collectAll } from './pagination';
 import { ProjectsApi } from './projects-api';
@@ -143,6 +143,7 @@ export function subjectPath(kind: UsageSubjectKind, id: string): string {
   return `${seg(kind)}/${seg(id)}`;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpLimitsApi) })
 export abstract class LimitsApi {
   // Profiles (R-LIM-031).
   abstract profiles(): Promise<readonly LimitProfile[]>;

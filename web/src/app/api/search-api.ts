@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { cleanQuery } from './query';
@@ -34,6 +34,7 @@ export interface SuggestRequest {
 }
 
 /** The suggestions of the top bar's search field: R-API-060 to R-API-064, R-UI-097. */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpSearchApi) })
 export abstract class SearchApi {
   /** `GET /api/v1/search/suggestions?q=&kind=&limit=`: one request for every kind of the filter. */
   abstract suggest(request: SuggestRequest): Promise<SearchSuggestions>;

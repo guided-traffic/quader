@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -24,6 +24,7 @@ export const SIGNING_TRUSTED_ROOT_URL = '/api/v1/signing/trusted-root.json';
  * upload of the CA's certificate, the import, the discard of a pending key, the removal of the current uploaded identity and the
  * retirement of a previous one for `security-settings:write` with a recent sign-in (401 `reauthentication_required` otherwise).
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpSigningApi) })
 export abstract class SigningApi {
   /** `GET /api/v1/signing/identity`. */
   abstract overview(): Promise<SigningOverview>;

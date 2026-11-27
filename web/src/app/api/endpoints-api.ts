@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient, QueryParams } from './client';
 import { collectAll } from './pagination';
 import { Versioned } from './repositories-api';
@@ -29,6 +29,7 @@ function ruleUrl(endpoint: string, name: string): string {
 }
 
 /** Endpoints, exposure rules and the dry run: R-EP-016, R-EP-017. */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpEndpointsApi) })
 export abstract class EndpointsApi {
   abstract list(): Promise<readonly Endpoint[]>;
   abstract get(name: string): Promise<Endpoint>;

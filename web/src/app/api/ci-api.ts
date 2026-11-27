@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { cleanQuery, seg } from './query';
@@ -51,6 +51,7 @@ export interface IssuanceFilters {
   readonly to?: string;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpCiApi) })
 export abstract class CiApi {
   abstract listIssuers(): Promise<readonly CiIssuer[]>;
   abstract getIssuer(name: string): Promise<Versioned<CiIssuer>>;

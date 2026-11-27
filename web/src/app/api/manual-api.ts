@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { seg } from './query';
 import { Schema } from './types';
@@ -10,6 +10,7 @@ export type ManualSection = Schema<'ManualSection'>;
 export type ManualPage = Schema<'ManualPage'>;
 
 /** The contents and the pages of the manual. Every caller reads the same text, so both answers are cached per tab. */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpManualApi) })
 export abstract class ManualApi {
   abstract contents(): Promise<ManualContents>;
   abstract page(section: string, page: string): Promise<ManualPage>;

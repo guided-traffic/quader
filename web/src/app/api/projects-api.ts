@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { cleanQuery, seg } from './query';
@@ -37,6 +37,7 @@ export interface ProjectFilters {
   readonly membership?: boolean;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpProjectsApi) })
 export abstract class ProjectsApi {
   abstract list(filters: ProjectFilters): PageFetcher<Project>;
   abstract get(key: string): Promise<Versioned<Project>>;

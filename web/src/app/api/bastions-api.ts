@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { cleanQuery, seg } from './query';
 import { Versioned } from './repositories-api';
@@ -76,6 +76,7 @@ export interface BastionConfigurationPatch {
 /** The name rule of a registration (R-BAS-004), checked live in the form; the server decides. */
 export const BASTION_NAME_PATTERN = /^[a-z][a-z0-9-]{0,19}$/;
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpBastionsApi) })
 export abstract class BastionsApi {
   /** Every registration, by name; each with its unrevoked tokens and the last contact of each replica. */
   abstract list(): Promise<readonly Bastion[]>;

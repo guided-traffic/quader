@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -23,6 +23,7 @@ export type ScannerReplica = Schema<'ScannerReplica'>;
  * Replica registry and installation facts: `GET /api/v1/system/info` and `/system/replicas`; the counts and the stored
  * content of the admin dashboard: `/system/overview` (Q-OPS-175).
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpSystemApi) })
 export abstract class SystemApi {
   abstract info(): Promise<SystemInfo>;
   abstract replicas(): Promise<readonly Replica[]>;
@@ -93,6 +94,7 @@ export class HttpSystemApi extends SystemApi {
 export type EncryptionStatus = Schema<'EncryptionStatus'>;
 // <<< M1 ui-a
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpEncryptionApi) })
 export abstract class EncryptionApi {
   abstract status(): Promise<EncryptionStatus>;
   /** `POST /api/v1/system/tasks/secrets-reencrypt/run`; resolves with the job id. */

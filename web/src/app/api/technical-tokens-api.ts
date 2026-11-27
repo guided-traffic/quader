@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { serviceAccountUrl } from './identity-api';
 import { seg } from './query';
@@ -24,6 +24,7 @@ export interface AccountAddress {
   readonly repository: string | null;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpTechnicalTokensApi) })
 export abstract class TechnicalTokensApi {
   abstract list(account: AccountAddress): Promise<readonly TechnicalToken[]>;
   abstract create(account: AccountAddress, request: NewTechnicalToken, idempotencyKey: string): Promise<TechnicalTokenCreated>;

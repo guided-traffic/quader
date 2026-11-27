@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -25,6 +25,7 @@ export type UpstreamDownload = UpstreamDownloadRunning | UpstreamDownloadFinishe
  * The downloads from upstreams (tag `system`, R-OPS-052): the list behind the panel of the top bar's button **Downloads**, and the
  * count behind its badge. Both need `content:metadata-read`; a refusal is an `ApiError`. A poll does not retry: its next tick does.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpUpstreamDownloadsApi) })
 export abstract class UpstreamDownloadsApi {
   /** `GET /api/v1/system/upstream-downloads`. */
   abstract list(): Promise<UpstreamDownloadList>;

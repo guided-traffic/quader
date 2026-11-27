@@ -1,10 +1,11 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
 /** `GET /api/v1/auth/login-options` (R-AUTH-009): the only source of the sign-in screen. */
 export type LoginOptions = Schema<'LoginOptions'>;
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpLoginApi) })
 export abstract class LoginApi {
   abstract options(): Promise<LoginOptions>;
   /** Break-glass sign-in, `POST /auth/local/login` (R-AUTH-014); the session arrives as a cookie. */

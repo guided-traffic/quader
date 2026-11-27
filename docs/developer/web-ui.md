@@ -1420,6 +1420,17 @@ from the `h1` to the end of step 2, code excluded, as the power user, measured o
   that tells what a chunk holds and why. A stylesheet several components share is emitted once per component, so a page's sections
   share their common rules in one file and keep their own in another (`styleUrls`, Settings › Storage, the tab Downloads), under
   the 4 kB budget of a component's styles.
+- **An API service is bound where it is used.** The abstract class of an `api/*-api.ts` names its HTTP implementation itself,
+  `@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpAuditApi) })` (`forwardRef`, because the implementation is
+  declared after the class it extends), so the service and its implementation lie in the chunk of the pages that inject it and
+  the first page holds only those the shell injects (the session and the guards' `LoginApi`, the preferences, the projects, the
+  avatars' `IdentityApi`, the search, the banners' and the time format's `SystemApi`, the top bar's downloads button). A spec's
+  `provideFakeApis()` replaces the binding as before. `provideApiServices()` of
+  [providers.ts](../../web/src/app/api/providers.ts) keeps only what the Bastion's application binds to its own implementation (the
+  reads of the views, the legal pages, `ClientSetupReads`, the dates of the scanners' databases): those abstract classes live in
+  modules without a client, so that the Bastion's bundle holds none, and their binding in the main installation keeps
+  `PackagesApi`, `VulnerabilitiesApi`, `SignaturesApi`, `FilesApi`, `MalwareApi`, `RepositoriesApi` (the formats) and
+  `UpstreamApi` (`SystemClients`) in the first page's chunk.
 
 ## How a server text reaches the screen (R-UI-214)
 
@@ -2484,7 +2495,8 @@ lives in [features/settings/storage/](../../web/src/app/features/settings/storag
    `selector: 'quader-…'`, no NgModule).
 2. Replace the placeholder in `<area>.routes.ts` with a `loadComponent` and keep the `$localize` title with its `@@route.<area>….title` id. A new area gets a
    `<area>.routes.ts` and one `loadChildren` entry in [app.routes.ts](../../web/src/app/app.routes.ts), behind `authGuard` unless it must work without a session.
-3. Read server data through the service of `api/` (add `api/<family>-api.ts`: abstract class, DTO, HTTP implementation; bind it in `providers.ts`;
+3. Read server data through the service of `api/` (add `api/<family>-api.ts`: abstract class, DTO, HTTP implementation; the abstract
+   class names its implementation in `@Injectable({ providedIn: 'root', useClass: forwardRef(() => Http…) })`, not `providers.ts`;
    add a fake to `api/testing/fakes.ts`). Use the generated type when `schema.d.ts` has the operation. Shared state goes in an injectable store
    exposing read-only signals.
 4. Create forms with an idempotency key from `newIdempotencyKey()` for creates and the loaded `ETag` for edits; show failures with `<quader-error-notice>`

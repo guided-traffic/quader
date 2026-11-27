@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { IdentityApi } from './identity-api';
 import { PermissionPolicyInput } from './authz-api';
 
@@ -43,6 +43,7 @@ export interface ExplainDraft {
   readonly invalid: boolean;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => DraftPolicyExplainer) })
 export abstract class PolicyExplainer {
   abstract explain(question: ExplainQuestion, draft: ExplainDraft): Promise<Explanation>;
 }

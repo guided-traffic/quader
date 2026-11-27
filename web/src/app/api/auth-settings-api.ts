@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -11,6 +11,7 @@ export interface LoadedAuthSettings {
   readonly etag: string;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpAuthSettingsApi) })
 export abstract class AuthSettingsApi {
   abstract load(): Promise<LoadedAuthSettings>;
   /** Merge patch with the loaded `ETag` (R-API-012); recent authentication applies. */

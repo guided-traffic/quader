@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -29,6 +29,7 @@ export interface LoadedDownloadLinkSettings {
  * The operations of the delivery by signed links (tag `download-links`, R-STOR-014, R-STOR-074): the settings for `settings:read`,
  * their change and the test link for `settings:write`, the switch for every signed-in caller.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpDownloadLinksApi) })
 export abstract class DownloadLinksApi {
   /** `GET /api/v1/download-links/settings` with its `ETag`. */
   abstract settings(): Promise<LoadedDownloadLinkSettings>;

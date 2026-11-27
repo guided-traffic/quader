@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { repositoryUrl } from './repositories-api';
 import { seg } from './query';
@@ -11,6 +11,7 @@ export type GuideSection = Schema<'GuideSection'>;
 export type FormatClient = Schema<'FormatClient'>;
 
 /** The guide of a repository (`ref` is its qualified name), or of a class of a format when no repository is chosen. */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpGuidesApi) })
 export abstract class GuidesApi {
   abstract repository(ref: string, client: string): Promise<Guide>;
   abstract format(format: string, cls: string, client: string): Promise<Guide>;

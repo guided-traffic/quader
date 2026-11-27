@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { seg } from './query';
 import { Schema } from './types';
@@ -6,6 +6,7 @@ import { Schema } from './types';
 /** Browser sessions of a user (R-AUTH-017; docs/developer/login.md). A user holds a bounded number. */
 export type UserSession = Schema<'Session'>;
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpSessionsApi) })
 export abstract class SessionsApi {
   abstract own(): Promise<readonly UserSession[]>;
   abstract endOwn(id: string): Promise<void>;

@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -11,6 +11,7 @@ export interface LoadedPreferences {
   readonly etag: string;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpPreferencesApi) })
 export abstract class PreferencesApi {
   abstract load(): Promise<LoadedPreferences>;
   /** Merge patch with the loaded `ETag` (R-API-013); `null` resets a member to its default. */

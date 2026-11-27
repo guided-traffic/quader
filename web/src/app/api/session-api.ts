@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -28,6 +28,7 @@ export interface LogoutAnswer {
   readonly redirectTo?: string | null;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpSessionApi) })
 export abstract class SessionApi {
   abstract whoami(): Promise<Whoami>;
   abstract authzMe(): Promise<AuthzMe>;

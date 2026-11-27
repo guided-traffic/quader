@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -17,6 +17,7 @@ export interface LoadedVisibilitySettings {
   readonly etag: string;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpVisibilityApi) })
 export abstract class VisibilityApi {
   /** The settings; `settings:read`, an administrator's read. */
   abstract load(): Promise<LoadedVisibilitySettings>;

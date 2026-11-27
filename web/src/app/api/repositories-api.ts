@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { repositoryUrl } from './refs';
 import { ApiClient, QueryParams } from './client';
 import { PageFetcher, collectAll } from './pagination';
@@ -95,6 +95,7 @@ export function refOf(repository: { readonly project?: string; readonly key: str
 export { repositoryUrl, splitRef } from './refs';
 
 /** Repositories and the format catalog: R-UI-020, R-UI-021, R-UI-010. */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpRepositoriesApi) })
 export abstract class RepositoriesApi {
   /** `GET /api/v1/formats`; the only source of the classes a format offers (R-UI-021). */
   abstract formats(): Promise<readonly FormatDescriptor[]>;

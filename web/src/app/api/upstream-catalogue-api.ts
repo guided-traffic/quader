@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -60,6 +60,7 @@ export function repositoryBase(repository: string): string {
  * (`catalogue_budget_exhausted` with its `Retry-After`, `upstream_assumed_offline`, `catalogue_answer_too_large`) are said by the
  * screen in its own words, so the reads are never sent again by the client's automatic retry.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpUpstreamCatalogueApi) })
 export abstract class UpstreamCatalogueApi {
   /** `GET …/upstream`. */
   abstract caps(repository: string): Promise<UpstreamCatalogue>;

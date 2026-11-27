@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient, QueryParams } from './client';
 import { PageFetcher, collectAll } from './pagination';
 import { Schema } from './types';
@@ -24,6 +24,7 @@ export function jobCancellable(state: JobState): boolean {
 }
 
 /** Background jobs and maintenance tasks: R-UI-038, R-UI-042 (progress), R-API-015. */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpJobsApi) })
 export abstract class JobsApi {
   abstract jobs(filters: JobFilters): PageFetcher<Job>;
   abstract job(id: string): Promise<Job>;

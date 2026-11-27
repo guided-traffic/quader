@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiError } from './problem';
 import { ScreenPublish, TransferOptions, UploadTransfer } from './upload-transfer';
 
@@ -18,6 +18,7 @@ export interface NuGetPublishOptions extends TransferOptions {
   readonly onSymbols?: () => void;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpNuGetApi) })
 export abstract class NuGetApi {
   /**
    * The screens' push of a `.nupkg`, and of its `.snupkg` after it (R-NUGET-006, Q-NUGET-162): `POST …/upload-tokens` issues the

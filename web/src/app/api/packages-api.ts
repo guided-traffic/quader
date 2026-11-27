@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { ClientSetupReads, PackageReads } from './package-reads';
 import { PageFetcher } from './pagination';
@@ -140,6 +140,7 @@ function deprecationUrl(repository: string, name: string): string {
  * Packages across repositories (R-API-029): the reads of the views (`PackageReads`, R-UI-223) and the main installation's writes of a
  * package, the deprecation (R-API-085).
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpPackagesApi) })
 export abstract class PackagesApi extends PackageReads {
   /**
    * Deprecates a version, or a whole package where the format deprecates packages, of a local repository (`<projectKey>/<repoKey>`),

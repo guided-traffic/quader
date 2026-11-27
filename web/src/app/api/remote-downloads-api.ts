@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 
@@ -94,6 +94,7 @@ export interface RemoteDownloadFilters {
  * row and of every failed row that matches, the cancel of a row, and a bulk with its cancel. `repository` is the qualified name
  * `<project>/<key>`. Who may do what is the server's (R-CUR-005): a refusal is an `ApiError`.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpRemoteDownloadsApi) })
 export abstract class RemoteDownloadsApi {
   /** `GET …/downloads`: one page, newest first within running and waiting first, with the counts by state. */
   abstract list(repository: string, filters: RemoteDownloadFilters, cursor: string | null, limit: number): Promise<RemoteDownloadPage>;

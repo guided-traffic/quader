@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { packageUrl } from './packages-api';
 import { PageFetcher } from './pagination';
@@ -106,6 +106,7 @@ export function attestationUrl(repository: string, path: string): string {
  * `security-settings:write`, a project's anchors for its members and their changes for its Owner while the switch is on, and the findings
  * of the security dashboard.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpSignaturesApi) })
 export abstract class SignaturesApi extends SignatureReads {
   /** `GET /api/v1/signatures/settings` with its `ETag`. */
   abstract settings(): Promise<LoadedSignatureSettings>;

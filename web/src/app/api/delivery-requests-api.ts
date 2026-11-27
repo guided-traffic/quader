@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 import { repositoryBase } from './upstream-catalogue-api';
@@ -31,6 +31,7 @@ export interface DeliveryRequestAllow {
  * of `manage` and the administrator, a reader's own entries to that reader), the ask, allow, decline and withdraw, and the discard of
  * what was fetched for examination. Who may do what is the server's (R-CUR-005): a refusal is an `ApiError`.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpDeliveryRequestsApi) })
 export abstract class DeliveryRequestsApi {
   /** `GET …/delivery-requests`: open entries first, then by the last ask or refusal. */
   abstract list(repository: string, filters: DeliveryRequestFilters, cursor: string | null, limit: number): Promise<DeliveryRequestPage>;

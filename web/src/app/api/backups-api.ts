@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { cleanQuery, seg } from './query';
@@ -47,6 +47,7 @@ export interface BackupRunFilters {
   readonly state?: string;
 }
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpBackupsApi) })
 export abstract class BackupsApi {
   abstract runs(filters: BackupRunFilters): PageFetcher<BackupRun>;
   abstract run(id: string): Promise<BackupRun>;

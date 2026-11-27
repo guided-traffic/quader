@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Schema } from './types';
 import { repositoryBase } from './upstream-catalogue-api';
@@ -34,6 +34,7 @@ export interface DeliveryRuleFilters {
  * `repositories:read-config` and the administrator), the write of a subject's rule (it replaces the rule of the same subject) and its
  * removal (holders of `manage` and the administrator). Who may do what is the server's (R-CUR-005): a refusal is an `ApiError`.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpDeliveryRulesApi) })
 export abstract class DeliveryRulesApi {
   /** `GET …/delivery-rules`: newest first. */
   abstract list(repository: string, filters: DeliveryRuleFilters, cursor: string | null): Promise<DeliveryRulePage>;

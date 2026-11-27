@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { JobReference } from './jobs-api';
 import { seg } from './query';
@@ -13,6 +13,7 @@ export type DebSigningKeyCreate = Schema<'DebSigningKeyCreate'>;
 export type DebIndexState = Schema<'DebIndexState'>;
 export type DebSuiteState = DebIndexState['suites'][number];
 
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpDebApi) })
 export abstract class DebApi {
   /** `GET …/deb/signing-keys`: every key in every state; a private key is never part of the answer. */
   abstract signingKeys(ref: string): Promise<readonly DebSigningKey[]>;

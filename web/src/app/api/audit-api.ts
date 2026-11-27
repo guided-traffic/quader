@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient, QueryParams } from './client';
 import { PageFetcher } from './pagination';
 import { Schema } from './types';
@@ -48,6 +48,7 @@ function filterParams(filters: AuditFilters): Record<string, string | undefined>
 }
 
 /** The audit trail: R-UI-037, R-OPS-017. */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpAuditApi) })
 export abstract class AuditApi {
   abstract events(filters: AuditFilters): PageFetcher<AuditEvent>;
   /**

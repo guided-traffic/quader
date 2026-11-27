@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, forwardRef, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { Child, FileReads, Item } from './file-reads';
 import { PageFetcher } from './pagination';
@@ -74,6 +74,7 @@ function itemsUrl(repository: string, suffix: 'items' | 'children' | 'stats'): s
  * Files and folders of a repository: the browser (R-UI-010, R-UI-011) and the deploy dialog (R-UI-012). The reads the views take are
  * {@link FileReads} (R-UI-223); this class adds the main installation's writes and its statistics.
  */
+@Injectable({ providedIn: 'root', useClass: forwardRef(() => HttpFilesApi) })
 export abstract class FilesApi extends FileReads {
   abstract stats(repository: string, path: string): Promise<ItemStats>;
   /**
