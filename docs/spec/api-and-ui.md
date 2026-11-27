@@ -5599,7 +5599,8 @@ Priority: **MVP** · Covers: OPS-023
   registry, in English and German, with the event name under it, which breaks after its dots only, [Q-UI-567](#q-ui-567--an-audit-actions-key-breaks-after-its-dots-only)); an unknown name is shown as sent), target (the actor and a
   repository's target wrap in their column and are never cut, UI-A-46; a resource the entry knows by name shows the name, any
   other its kind and its identifier on one line, [Q-UI-568](#q-ui-568--an-audit-target-the-entry-knows-by-name-shows-the-name-another-its-identifier-on-one-line);
-  a repository's project by its mark and its name under it), outcome (a badge, **Success**, **Failure**, **Denied**,
+  a repository's project by its mark and its name under it; a download's repository and unit count their longest piece in the log's
+  least width, [Q-UI-1655](#q-ui-1655--a-downloads-repository-and-unit-in-the-audit-log-count-their-longest-piece-in-the-logs-least-width)), outcome (a badge, **Success**, **Failure**, **Denied**,
   [Q-UI-564](#q-ui-564--a-status-word-starts-with-a-capital)); filters time range (presets and custom), actor, action, category,
   repository, the resource (its kind and its identifier,
   [Q-UI-998](#q-ui-998--the-audit-log-filters-by-the-resource-an-event-is-about-its-kind-and-its-identifier)),
@@ -33202,6 +33203,31 @@ Context: Q-UI-1617: every mark a visitor of a Bastion sees is the Bastion's towe
 
 **Choice:** (a). **Applied in the spec:** R-UI-273. Code: [setup-flow-art.ts](../../web/src/app/features/setup/setup-flow-art.ts),
 [setup-page.ts](../../web/src/bastion/pages/setup-page.ts).
+
+### Q-UI-1655 · A download's repository and unit in the audit log count their longest piece in the log's least width
+
+Status: **Decided by the development agent on 2026-11-27** (batch B-1127k, the open point 1 of batch B-1127j) — selected from the options
+below; the owner reviews it at the walkthrough. R-UI-037, R-OPS-055, Q-UI-997.
+
+Context: the renders of 2026-11-27 showed `admin-audit` at 1,024 px with the filters open with "acme.platform.screenupload" of a pushed
+NuGet package as "acme.platform." / "screenuploa" / "d" in a Target cell of 156 px. The repository and the unit of a download's row are
+pieces of `quader-parts-text`, each `overflow-wrap: anywhere`, so they gave the column no least width: measured on the profile's data at
+1,024 px, the columns' least widths were 134, 96, 152, 128 and 122 px (632 px against 712 px of room), Target's 128 px its 6 rem, and the
+table spread the rest by the columns' widest content, which left Target under the word's 100 px and the chevron. A width of 12 rem on
+Target had stacked every audit screen at 1,024 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A width budget: Target a fixed least width (9 rem) taken from Actor and Action | Q-UI-997's way | The log's least width does not depend on the rows | 680 px of least width against the log's 682 px beside an opened event at 1,440 px, which the runner's wider text breaks; a word longer than 9 rem still breaks |
+| (b) `break-word` on the download row's pieces, the version or tag (a digest) kept on `anywhere` (chosen) | The rule of the actor (R-UI-174) | A piece stands whole wherever the room allows; the column is as wide as its longest piece; a hyphen inside a piece still breaks at the least width | A piece longer than about 118 px (13 bold letters with no dot, slash or hyphen) stacks the log beside an opened event at 1,440 px |
+
+**Choice:** (b). Measured after it on the same data: Target's least width 162 px, the table's 666 px of 712 at 1,024 px and of 682 beside an
+opened event; "screenupload" on one line at 1,024 and 1,440 px, and the renders of the four audit screens without a layout finding. A
+name of the formats is cut at its dots and slashes (NuGet, OCI, npm scopes) and its words at their hyphens, so a piece of 13 letters is
+rare; the target's path and identifier, which may hold a digest, keep `anywhere`. **Applied in the spec:** R-UI-037. Code: the rule
+`quader-audit-log td.target .name-cell quader-parts-text .piece` of [_list-screens.scss](../../web/src/styles/_list-screens.scss) and
+`td.target .name-cell` of [audit-log.scss](../../web/src/app/features/audit/audit-log.scss); its fixture in
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts).
 
 ## What this does not cover
 

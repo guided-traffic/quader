@@ -697,6 +697,36 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
     expect(found, describe(found)).toEqual([]);
   });
 
+  // A download's row of the audit log (R-OPS-055) at the table's least width: the unit's longest piece, "screenupload" of
+  // acme.platform.screenupload, counts in its column's least width and stands whole, so the table keeps it or stacks (Q-UI-1655). With
+  // the component's `anywhere` on every piece the column took 6 rem and the word stood as "screenuploa" / "d" (1,024 px, filters open).
+  // The piece's style is break-parts.ts's and the cell's audit-log.scss's, inline; the rule under test is the shared stylesheet's.
+  test("R-UI-171 a download's unit in the audit log's target counts its longest piece in the table's least width", async ({ page }) => {
+    const piece = `.piece { display: inline-block; max-inline-size: 100%; overflow-wrap: anywhere; }
+      td.target .name-cell { display: flex; align-items: flex-start; gap: 4px; } td.target .name-cell > span { min-inline-size: 0; }`;
+    const parts = (v: string): string => v.split(/(?<=[./])/).map((p) => `<span class="piece">${p}</span><wbr />`).join('');
+    await check(
+      page,
+      `<quader-audit-log><table class="data" style="inline-size:0"><tbody><tr><td class="target"><div class="name-cell">
+         <button type="button" class="btn btn-icon"><span class="material-icons" aria-hidden="true">expand_more</span></button>
+         <span><span class="read-text"><quader-parts-text>${parts('platform/nuget-internal')}</quader-parts-text></span>
+           <span class="subject-name"><quader-parts-text>${parts('acme.platform.screenupload')}</quader-parts-text></span></span>
+       </div></td></tr></tbody></table></quader-audit-log>`,
+      piece,
+      true,
+    );
+    const word = page.locator('.subject-name .piece').last();
+    const box = await word.boundingBox();
+    const lines = await word.evaluate((el) => {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      return new Set([...r.getClientRects()].map((x) => Math.round(x.top))).size;
+    });
+    expect(await word.textContent()).toBe('screenupload');
+    expect(lines).toBe(1);
+    expect(box!.width).toBeGreaterThan(80);
+  });
+
   // `stackedFits` runs in the window a person has, apart from the checks of the grown window (2026-11-27).
   test('R-UI-174 a list stacked although its columns fit its region is found; one whose columns need more room is not', async ({ page }) => {
     const list = (px: number): string =>

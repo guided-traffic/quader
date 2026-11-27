@@ -949,3 +949,11 @@ td.class-cell .material-icons {
   gap: var(--quader-space-1) var(--quader-space-2);
   overflow-wrap: anywhere;
 }
+
+// The repository and the unit of a download's row in the audit log (R-OPS-055): each piece of `quader-parts-text` breaks inside itself
+// only where the column cannot hold it (`break-word`), so its longest piece counts in the log's least width. With the component's
+// `anywhere` a piece counted nothing: the table gave Target 156 px at 1,024 px with the filters open, and
+// "acme.platform.screenupload" stood as "acme.platform." / "screenuploa" / "d" (Q-UI-1655).
+quader-audit-log td.target .name-cell quader-parts-text .piece {
+  overflow-wrap: break-word;
+}
