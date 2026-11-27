@@ -7787,7 +7787,8 @@ The owner chose the design on 2026-11-20 (W-27, [Q-UI-800](#q-ui-800--set-up-cli
 - **A snippet is a window** ([Q-UI-801](#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)):
   a file (its `fileName`) is an editor window, its tab the file's name, its lines numbered, **Download** and the copy button in its
   bar; a command is a terminal window, its tab the command line (`shell`, `PowerShell`, `cmd`), each command after its prompt (`$`,
-  `PS>`, `>`), none on a line that continues the one before, a here-document or a block. The window is light in the light scheme
+  `PS>`, `>`), none on a line that continues the one before, a here-document or a block (`name() {` to `}`, and `name() (` to `)`, a
+  function whose body is a subshell, Q-GENERIC-13). The window is light in the light scheme
   and dark in the dark one, with syntax colours keyed by the snippet's `language`, never by its format, so a new format adds no
   highlighter. The parts the server names as the reader's (`marks`, R-API-030) are marked: where the token goes as a chip, what
   the reader replaces tinted, dashed underneath and in italics, each with a title. A long line wraps with an indent of two

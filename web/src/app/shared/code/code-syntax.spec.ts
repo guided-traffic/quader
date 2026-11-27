@@ -61,6 +61,8 @@ describe('code syntax (R-UI-121)', () => {
     const piped = highlight("printf 'x' | \\\n  kubectl create secret\n", 'shell')[1]!.segments.filter((s) => s.text.trim() !== '');
     expect(piped[0]).toMatchObject({ kind: 'command', text: 'kubectl' });
     expect(prompts('f() {\n  curl - <<EOF\nheader = "x"\nEOF\n}\nf --fail', 'shell')).toEqual(['$', '', '', '', '', '$']);
+    // A function whose body is a subshell (wget's, Q-GENERIC-13) is one command too; a ")" inside it closes nothing early.
+    expect(prompts('f() (\n  c=$(mktemp) || exit\n  cat > "$c" <<EOF\nh = x\nEOF\n  wget "$@"\n)\nf --fail', 'shell')).toEqual(['$', '', '', '', '', '', '', '$']);
     expect(prompts('# only a comment', 'shell')).toEqual(['']);
     expect(prompts('a `\n  -b', 'powershell')).toEqual(['PS>', '']);
     expect(prompts('a ^\n  -b\nREM note', 'cmd')).toEqual(['>', '', '']);

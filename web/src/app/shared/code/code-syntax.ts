@@ -157,8 +157,8 @@ function isComment(line: string, language: CodeLanguage): boolean {
 
 /**
  * The lines of a command. A line starts a command unless it continues the one before: after the continuation character, inside a
- * here-document (`<<EOF` to `EOF`) and inside a block (`name() {` to `}`). Only a starting line gets the prompt, and a comment gets
- * none: it is no command.
+ * here-document (`<<EOF` to `EOF`) and inside a block (`name() {` to `}`, or a function whose body is a subshell, `name() (` to `)`).
+ * Only a starting line gets the prompt, and a comment gets none: it is no command.
  */
 export function commandLines(lines: readonly string[], language: CodeLanguage): { segments: Segment[]; prompt: string }[] {
   const prompt = promptOf(language);
@@ -167,7 +167,8 @@ export function commandLines(lines: readonly string[], language: CodeLanguage): 
   // After a pipe at the end of a line, the continued line starts with a command.
   let expectNext = false;
   let heredoc: string | null = null;
-  let depth = 0;
+  // The closing lines of the blocks open now, innermost last.
+  const blocks: string[] = [];
   return lines.map((line) => {
     if (heredoc !== null) {
       const end = line.trim() === heredoc;
@@ -175,6 +176,7 @@ export function commandLines(lines: readonly string[], language: CodeLanguage): 
       // The body of a here-document is the text of a file: its words, so an address in it breaks after its slashes.
       return { segments: end ? [seg(line, 'punct')] : words(line), prompt: '' };
     }
+    const depth = blocks.length;
     const starts = !continued && depth === 0;
     if (line.trim() === '') {
       continued = false;
@@ -184,15 +186,16 @@ export function commandLines(lines: readonly string[], language: CodeLanguage): 
       continued = false;
       return { segments: [seg(line, 'comment')], prompt: '' };
     }
-    if (depth > 0 && line.trim() === '}') {
-      depth--;
+    if (depth > 0 && line.trim() === blocks[depth - 1]) {
+      blocks.pop();
       return { segments: [seg(line, 'punct')], prompt: '' };
     }
     const { segments, endsContinued, opensHeredoc, expectCommand } = commandWords(line, language, cont, starts || depth > 0 || (continued && expectNext));
     continued = endsContinued;
     expectNext = expectCommand;
     if (opensHeredoc) heredoc = opensHeredoc;
-    if (/\(\)\s*\{\s*$/.test(line)) depth++;
+    const opens = /\(\)\s*([{(])\s*$/.exec(line);
+    if (opens) blocks.push(opens[1] === '{' ? '}' : ')');
     return { segments, prompt: starts ? prompt : '' };
   });
 }
