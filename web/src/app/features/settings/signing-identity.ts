@@ -108,6 +108,12 @@ import { Loading } from '../../shared/ui/loading';
     .reason {
       overflow-wrap: anywhere;
     }
+    /* A date and a period of two dates stand on one line while the rows stand as a table, which gives them the room its other columns
+       leave (the period broke between its dates at 1,440 px once a date said its weekday, 2026-11-27); in a stacked block the period
+       wraps between its dates. */
+    quader-data-table:not(.stacked) td.nowrap {
+      white-space: nowrap;
+    }
     dl.facts code {
       overflow-wrap: anywhere;
     }

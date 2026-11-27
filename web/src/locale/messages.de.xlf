@@ -40115,7 +40115,7 @@
     </unit>
     <unit id="signing.prev.col.identity">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:173</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:179</note>
       </notes>
       <segment>
         <source>Identity</source>
@@ -40124,7 +40124,7 @@
     </unit>
     <unit id="signing.prev.col.source">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:174</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:180</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -40133,7 +40133,7 @@
     </unit>
     <unit id="signing.prev.col.until">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:175</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:181</note>
       </notes>
       <segment>
         <source>Valid until</source>
@@ -40142,7 +40142,7 @@
     </unit>
     <unit id="signing.prev.col.signed">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:176</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:182</note>
       </notes>
       <segment>
         <source>Signed</source>
@@ -40151,7 +40151,7 @@
     </unit>
     <unit id="signing.prev.col.actions">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:177</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:183</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -40160,7 +40160,7 @@
     </unit>
     <unit id="signing.prev.caption">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:187</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:193</note>
       </notes>
       <segment>
         <source>Previous signing identities</source>
@@ -40169,7 +40169,7 @@
     </unit>
     <unit id="signing.prev.hint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:188</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:194</note>
       </notes>
       <segment>
         <source>Identities that signed before. Their npm signatures stay valid until you retire them.</source>
@@ -40178,7 +40178,7 @@
     </unit>
     <unit id="signing.copy-fingerprint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:189</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:195</note>
       </notes>
       <segment>
         <source>Copy fingerprint</source>
@@ -40187,7 +40187,7 @@
     </unit>
     <unit id="signing.copy-keyid">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:190</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:196</note>
       </notes>
       <segment>
         <source>Copy npm key ID</source>
@@ -40196,7 +40196,7 @@
     </unit>
     <unit id="signing.copy-request">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:191</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:197</note>
       </notes>
       <segment>
         <source>Copy request</source>
@@ -40205,8 +40205,8 @@
     </unit>
     <unit id="signing.draft-restored">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:214</note>
-        <note category="location">src/app/features/settings/signing-identity.ts:217</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:220</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:223</note>
       </notes>
       <segment>
         <source>Your entries were restored. Send them again.</source>
@@ -40215,7 +40215,7 @@
     </unit>
     <unit id="signing.key.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:244</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:250</note>
       </notes>
       <segment>
         <source>The signing key is made. Have your company&apos;s CA issue a certificate for its request.</source>
@@ -40224,7 +40224,7 @@
     </unit>
     <unit id="signing.installed-announced">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:270</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:276</note>
       </notes>
       <segment>
         <source>The new signing identity is announced. It becomes current after the announce period; until then the current one signs.</source>
@@ -40233,7 +40233,7 @@
     </unit>
     <unit id="signing.installed-current">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:271</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:277</note>
       </notes>
       <segment>
         <source>The signing identity is current. Quader signs with it from now on.</source>
@@ -40242,7 +40242,7 @@
     </unit>
     <unit id="signing.discard.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:293</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:299</note>
       </notes>
       <segment>
         <source>Discard the signing key?</source>
@@ -40251,7 +40251,7 @@
     </unit>
     <unit id="signing.discard.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:294</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:300</note>
       </notes>
       <segment>
         <source>The key and its request are deleted. A certificate the CA issues for this request can no longer be uploaded.</source>
@@ -40260,7 +40260,7 @@
     </unit>
     <unit id="signing.discard.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:295</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:301</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -40269,7 +40269,7 @@
     </unit>
     <unit id="signing.discard.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:298</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:304</note>
       </notes>
       <segment>
         <source>The signing key is discarded.</source>
@@ -40278,7 +40278,7 @@
     </unit>
     <unit id="signing.remove.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:303</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:309</note>
       </notes>
       <segment>
         <source>Remove the signing identity?</source>
@@ -40287,7 +40287,7 @@
     </unit>
     <unit id="signing.remove.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:305</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:311</note>
       </notes>
       <segment>
         <source>It becomes a previous identity and Quader signs nothing until another identity is current. Its npm signatures stay valid, and the attestations it made stay served until its certificate expires.</source>
@@ -40296,7 +40296,7 @@
     </unit>
     <unit id="signing.remove.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:307</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:313</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -40305,7 +40305,7 @@
     </unit>
     <unit id="signing.remove.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:310</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:316</note>
       </notes>
       <segment>
         <source>The signing identity is removed. Quader signs nothing now.</source>
@@ -40314,7 +40314,7 @@
     </unit>
     <unit id="signing.retire.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:315</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:321</note>
       </notes>
       <segment>
         <source>Retire this identity?</source>
@@ -40323,7 +40323,7 @@
     </unit>
     <unit id="signing.retire.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:317</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:323</note>
       </notes>
       <segment>
         <source>Its key leaves npm&apos;s keys at once; Quader signs its packages and attestations again with the current identity.</source>
@@ -40332,7 +40332,7 @@
     </unit>
     <unit id="signing.retire.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:319</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:325</note>
       </notes>
       <segment>
         <source>Retire</source>
@@ -40341,7 +40341,7 @@
     </unit>
     <unit id="signing.retire.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:322</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:328</note>
       </notes>
       <segment>
         <source>The identity is retired.</source>
