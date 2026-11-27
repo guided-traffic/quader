@@ -1,0 +1,53 @@
+@let l = limit();
+<!-- An upstream's rate limit holds the queue (R-CUR-011, Q-UI-1100): one plain sentence, the upstream's answer folded under it. -->
+<div class="banner-warning limit-notice" role="status" data-testid="download-limit">
+  <p class="limit-sentence">
+    <span class="material-icons inline warn" aria-hidden="true">hourglass_empty</span>
+    <span>{{ sentence() }}</span>
+  </p>
+  <!-- An account would lift the limit (Q-UI-1160): where this reader adds one; the administrator of a well-known registry gets its page. -->
+  @if (offer(); as text) {
+    <p class="limit-offer" data-testid="download-limit-account">
+      {{ text }}
+      @if (accountLink(); as link) {
+        &ngsp;<a [routerLink]="link" i18n="@@downloads.limit.account-link">Add an account</a>
+      }
+    </p>
+  }
+  <quader-technical-details class="technical" [text]="l.failure.detail">
+    <dl class="facts limit-facts">
+      @if (l.failure.status) {
+        <dt i18n="@@downloads.limit.last">Last answer</dt>
+        <dd>HTTP {{ l.failure.status }}&ngsp;<ng-container i18n="@@downloads.limit.at">at</ng-container>&ngsp;<time [attr.datetime]="l.failure.at">{{ clock(l.failure.at) }}</time></dd>
+      }
+      <dt i18n="@@downloads.limit.waits">Waits in a row</dt>
+      <dd>{{ l.waits }}</dd>
+      <dt i18n="@@downloads.limit.until">Waiting until</dt>
+      <dd>
+        <time [attr.datetime]="l.until">{{ clock(l.until) }}</time>&ngsp;<span class="muted">
+          @if (l.hinted) {
+            <ng-container i18n="@@downloads.limit.until-hinted">(the upstream's time)</ng-container>
+          } @else {
+            <ng-container i18n="@@downloads.limit.until-backoff">(Quader's wait: the upstream named no time)</ng-container>
+          }
+        </span>
+      </dd>
+      @if (l.failure.address) {
+        <dt i18n="@@downloads.failure.address">Address</dt>
+        <dd><code translate="no">{{ l.failure.address }}</code>&ngsp;<span class="muted" i18n="@@downloads.failure.query-removed">(shown without its query, which can carry a credential)</span></dd>
+      }
+      @if (l.failure.headers; as h) {
+        <dt i18n="@@downloads.failure.headers">Headers of the limit</dt>
+        <dd class="limit-headers">
+          @for (e of headerList(h); track e.name) {
+            <code translate="no">{{ e.name }}: {{ e.value }}</code>
+          }
+        </dd>
+      }
+    </dl>
+    @if (l.failure.excerpt) {
+      <p class="excerpt-label" i18n="@@downloads.failure.excerpt">The start of the upstream's answer</p>
+      <pre class="code-block excerpt" translate="no">{{ l.failure.excerpt }}</pre>
+    }
+  </quader-technical-details>
+</div>

@@ -34,7 +34,6 @@ import { UPSTREAM_PROJECT, isUpstreamProject } from '../../../core/upstream-proj
 import {
   AccountOfferReader,
   accountOfferText,
-  clockText,
   limitBulkText,
   limitRowText,
   limitSentence,
@@ -54,6 +53,7 @@ import {
 import { FailureToasts } from '../../../shared/failure-dialog';
 import { DOWNLOADS_REFRESH_MS } from './downloads-refresh';
 import { DownloadSyncs } from './download-syncs';
+import { DownloadLimitNotice, headerEntries } from './download-limit-notice';
 import { Loading } from '../../../shared/ui/loading';
 import { Busy } from '../../../shared/ui/busy';
 
@@ -81,7 +81,7 @@ type FilterState = (typeof FILTER_STATES)[number];
  */
 @Component({
   selector: 'quader-remote-downloads',
-  imports: [Busy, Loading, DataTable, DownloadSyncs, ErrorNotice, MalwareMark, NoValue, RouterLink, TechnicalDetails, TimeAgo],
+  imports: [Busy, Loading, DataTable, DownloadLimitNotice, DownloadSyncs, ErrorNotice, MalwareMark, NoValue, RouterLink, TechnicalDetails, TimeAgo],
   templateUrl: './remote-downloads.html',
   styleUrls: ['./download-lists.scss', './remote-downloads.scss'],
 })
@@ -526,16 +526,9 @@ export class RemoteDownloads {
     return limitBulkText(l);
   }
 
-  /** A time of day of the limit's facts, with the day where it is not today. */
-  protected clock(iso: string): string {
-    return clockText(iso);
-  }
-
   /** The headers of a rate-limit answer in their names' order (Q-CUR-174). */
   protected headerList(h: Readonly<Record<string, string>>): readonly { readonly name: string; readonly value: string }[] {
-    return Object.entries(h)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([name, value]) => ({ name, value }));
+    return headerEntries(h);
   }
 
   /** The attempt of a row: "Attempt 2 of 5", for a row that has made one. */

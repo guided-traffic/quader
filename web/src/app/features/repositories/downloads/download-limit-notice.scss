@@ -1,0 +1,68 @@
+// The notice of an upstream's rate limit that holds the queue (Q-UI-1100), the rules the tab Downloads had for it. Only Quader's tokens,
+// so both schemes follow.
+
+:host {
+  display: block;
+}
+
+// The notice's sentence on its first line, the upstream's answer folded under it, the facts' names beside their values and above
+// them where narrow.
+.limit-notice {
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  margin-block: 0 var(--quader-space-4);
+
+  container: download-limit / inline-size;
+
+  quader-technical-details.technical {
+    margin: 0;
+  }
+
+  dl.facts {
+    grid-template-columns: 11rem minmax(0, 1fr);
+  }
+}
+
+// The mark on the sentence's first line, the sentence's lines beside it, as a notice's paragraph has them.
+.limit-sentence {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+}
+
+// The offer of an account (Q-UI-1160) continues the sentence: it starts where the sentence's text starts, after its icon.
+.limit-offer {
+  margin: 0;
+  padding-inline-start: calc(1.125rem + var(--quader-space-1));
+}
+
+@container download-limit (max-width: 30rem) {
+  .limit-notice dl.facts {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+
+    dd + dt {
+      margin-block-start: var(--quader-space-2);
+    }
+  }
+}
+
+// The headers of a limit, one a line; a long value breaks inside itself.
+.limit-headers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--quader-space-1);
+  overflow-wrap: anywhere;
+}
+
+.excerpt-label {
+  margin: var(--quader-space-3) 0 var(--quader-space-1);
+  font-weight: 600;
+}
+
+// The excerpt is read whole: it wraps inside itself instead of scrolling sideways at 390 px.
+.excerpt {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
