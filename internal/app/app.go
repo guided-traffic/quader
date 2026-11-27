@@ -48,6 +48,7 @@ import (
 	"github.com/guided-traffic/quader/internal/proxy/invalidation"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/secrets"
+	"github.com/guided-traffic/quader/internal/sysstate"
 	"github.com/guided-traffic/quader/internal/uploads"
 	"github.com/guided-traffic/quader/internal/webui"
 )
@@ -160,6 +161,9 @@ type App struct {
 	leases  *cluster.Leases
 	queue   *jobs.Queue
 	blobs   *blob.Store
+	// sys is the store of the system state, for the scheduler's read-only check, which runs on the lease manager's goroutine
+	// while the wiring still writes parts.
+	sys *sysstate.Store
 	// uploads is the upload session service (R-STOR-011), built with the blob store and handed to the format host.
 	uploads *uploads.Service
 

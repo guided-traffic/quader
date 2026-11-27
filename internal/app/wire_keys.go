@@ -47,21 +47,25 @@ func (a *App) wireInfra(_ context.Context, keys keysArea, pg postgresArea, au au
 		return infra{}, err
 	}
 	listenStorageKeys(bl, co)
-	// The exported accessors of the replica (Blobs, Queue, Caches, Changes, Signals)
-	// read these; wireInfra is their only writer.
 	in.sys = sysstate.New(sysstate.Options{
 		DB: in.db, Notifier: in.changes, Recorder: in.rec, Cache: in.caches, Fresh: in.changes, Bound: a.cfg.Auth.RevocationBound,
 	})
+	// The exported accessors of the replica (Blobs, Queue, Caches, Changes, Signals)
+	// and the scheduler's read-only check read these; wireInfra is their only writer.
 	a.mu.Lock()
-	a.signals, a.changes, a.caches, a.queue, a.blobs = co.signals, co.changes, co.caches, co.queue, bl.store
+	a.signals, a.changes, a.caches, a.queue, a.blobs, a.sys = co.signals, co.changes, co.caches, co.queue, bl.store, in.sys
 	a.mu.Unlock()
 	return in, nil
 }
 
 // readOnlyMode reports whether the installation is in read-only maintenance mode (R-OPS-024), for the scheduler. The store is built by
-// wireInfra, after the worker; the answer is read when it is asked. An error reading the mode is no reason to skip a task.
+// wireInfra, after the worker; the answer is read when it is asked. The scheduler asks on the lease manager's goroutine from its
+// first tick, while the wiring still writes a.parts, so the store is read under the replica's lock, never from a.parts. An error
+// reading the mode is no reason to skip a task.
 func (a *App) readOnlyMode(ctx context.Context) bool {
-	sys := part[infra](a.parts).sys
+	a.mu.Lock()
+	sys := a.sys
+	a.mu.Unlock()
 	if sys == nil {
 		return false
 	}
