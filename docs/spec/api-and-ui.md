@@ -8674,9 +8674,12 @@ Acceptance criteria:
   change, and a stacked table measures the longest name its rows show for their column of names, never narrower than their longest
   word, also a list in a block of a stacked list; a column of relative times holds the widest wording (`data-table.spec.ts`).
 - The render run's report names no `broken` column's name (a name broken inside a word), and no `stacked-fits`, no `stacked-place`,
-  no `stacked-offset` and no `label-apart` finding: a stacked
+  no `stacked-offset`, no `label-apart` and no `name-over` finding: a stacked
   table whose columns would fit is a finding, and so is a field of a stacked list off the place of the list's other fields, two fields
-  on one line of a block, and a stacked row's name off its value's line or off its neighbours' line.
+  on one line of a block, a stacked row's name off its value's line or off its neighbours' line, and a name that runs into its value.
+  A stacked row's name in a number's cell wraps in its column; with the name set `nowrap`, as it inherited from `td.num` until
+  2026-11-27, the fixture names `name-over` (`R-UI-174 a stacked row's name in a number's cell wraps in its column; one that runs
+  over its figure is found`, `make ui-layout-test`).
 
 ### R-UI-175 · A control or an icon beside a text stands on the middle of that text's first line
 Priority: **MVP** · Covers: quader-only

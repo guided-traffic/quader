@@ -756,6 +756,22 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
     expect(wide, describe(wide)).toEqual([]);
   });
 
+  // A place's usage at 390 px (2026-11-26, the caller's and the own usage page): a stacked row's name in a number's cell. `td.num` is
+  // nowrap, the name inherited it and ran over its figure; it wraps in its column since then. The measurement copies the name's
+  // white-space, so the defect is measured as it stood.
+  const numberFacts = `<div class="quader-data-table stacked" style="inline-size:358px"><div class="table-frame"><div class="table-scroll"><table class="data"><tbody>
+      <tr>
+        <th scope="row"><span>Bastion edge-1</span></th>
+        <td class="num" data-label="From the upstream in the last hour">1.2 GiB</td>
+        <td class="num" data-label="Requests">1,204</td>
+      </tr></tbody></table></div></div></div>`;
+  test("R-UI-174 a stacked row's name in a number's cell wraps in its column; one that runs over its figure is found", async ({ page }) => {
+    const ok = (await check(page, numberFacts, '', true)).filter((f) => f.check !== 'stacked-fits');
+    expect(ok, describe(ok)).toEqual([]);
+    const nowrap = await check(page, numberFacts, '.quader-data-table.stacked table.data td[data-label]::before { white-space: inherit; }', true);
+    expect(only(nowrap, 'name-over').map((f) => f.text), describe(nowrap)).toEqual(['From the upstream in the last hour']);
+  });
+
   test("R-UI-176 the guard can fail: the owner's row without the line rule is found with the app's stylesheet", async ({ page }) => {
     const html = patterns[0]!.html.replace('btn btn-tertiary btn-icon on-line', 'btn btn-tertiary btn-icon');
     expect(only(await check(page, html, '', true), 'off-line')).toHaveLength(1);

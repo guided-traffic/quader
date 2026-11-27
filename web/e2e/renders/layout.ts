@@ -11,7 +11,7 @@ export interface LayoutFinding {
   /**
    * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `stacked-place`, `label-apart`,
    * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`, `tab-scrollbar`, `english`,
-   * `inner-scroll`, `heading-broken`, `overlay-out`, `cut`, `separator-start`, `loading-place`, `loading-scroll`.
+   * `inner-scroll`, `heading-broken`, `overlay-out`, `cut`, `separator-start`, `loading-place`, `loading-scroll`, `name-over`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -587,8 +587,10 @@ export function layoutFindings(): LayoutFinding[] {
   nameStyle.textContent = `[${MEASURED}]::before { content: none !important; }`;
   document.head.append(nameStyle);
   // The span takes the pseudo-element's box as well as its text: in the shared table's blocks the name is a cell of its own, as wide as
-  // the list's column of names (Q-UI-1050), and the value stands beside that column, not beside the name's last letter.
-  const NAME_BOX = ['display', 'inline-size', 'box-sizing', 'padding-inline-end', 'vertical-align', 'flex', 'overflow-wrap', 'color'] as const;
+  // the list's column of names (Q-UI-1050), and the value stands beside that column, not beside the name's last letter. It takes the
+  // name's `white-space` too: a name inherits it from its cell, and a number's cell (`td.num`) is nowrap, so a name there stood on one
+  // line over its figure at 390 px (2026-11-26) where the span, which wraps, would have measured it in its column.
+  const NAME_BOX = ['display', 'inline-size', 'box-sizing', 'padding-inline-end', 'vertical-align', 'flex', 'overflow-wrap', 'white-space', 'color'] as const;
   // The name's text is measured as it stands, letter by letter: a name wraps between its words where its column is narrower than it,
   // never inside a word (Q-UI-1068). "Veröffentlicht" stood as "Veröffentli" / "cht" in the column of names of the list around it
   // (a Debian repository's versions opened in its packages at 390 px in German, 2026-11-24): `broken` is the word and where it broke.
@@ -663,6 +665,18 @@ export function layoutFindings(): LayoutFinding[] {
       facts.push({ cell, box: cell.getBoundingClientRect(), value, name, piece, room });
       // Where the value starts: the left of its first piece in reading order.
       const start = firstLeft(cell);
+      // ---- name-over: a column's name that runs into its value (R-UI-174) -----------------------------------------------------------
+      // The name's text ends before its value starts when the two share a line: a name that cannot wrap (it inherited `nowrap` from a
+      // number's cell) runs past its column and under the figure beside it ("From the upstream in the last hour" of a place's usage
+      // at 390 px, 2026-11-26).
+      if (start !== null && value && name.right > start + LINE_TOLERANCE && Math.min(name.bottom, value.bottom) - Math.max(name.top, value.top) > 0) {
+        add(
+          'name-over',
+          cell,
+          cell.getAttribute('data-label') ?? '',
+          `the column's name "${cell.getAttribute('data-label') ?? ''}" runs ${Math.round(name.right - start)} px into its value, which starts at the end of the ${Math.round(measured.column.width)} px column of names`,
+        );
+      }
       if (start !== null) {
         const table = cell.closest('.quader-data-table');
         if (table) {
