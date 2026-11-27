@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -387,8 +388,23 @@ func TestR_REPO_054_ALongWaitEndsTheJobDeferredAndTheNextJobContinuesAtThatTime(
 		if n := r.storedItems(); n != 10 {
 			t.Errorf("%d tarballs stored, want 10", n)
 		}
-		if n := r.st.Number(`SELECT count(*) FROM job WHERE kind = 'mirror-pass'`); n != 2 {
-			t.Errorf("%d mirror-pass jobs, want the deferred one and its continuation", n)
+		// The jobs of this pass, up to the one that completed it: the deferred one and its continuation. The pass started an hour
+		// and a minute ago on the engine's clock, more than its interval, so the next pass is due at once (R-REPO-053), and the
+		// dispatch of the next minute enqueues it as soon as the continuation has ended. That job belongs to the next pass and is
+		// not counted; the exclusive key of the pass keeps it from starting before.
+		var ends []string
+		r.st.Query(`SELECT COALESCE(result->>'deferred', result->>'outcome', '') FROM job WHERE kind = 'mirror-pass'
+			AND created_at <= (SELECT min(created_at) FROM job WHERE kind = 'mirror-pass' AND result->>'outcome' = 'complete')
+			ORDER BY created_at`, func(rows pgx.Rows) error {
+			var e string
+			if err := rows.Scan(&e); err != nil {
+				return err
+			}
+			ends = append(ends, e)
+			return nil
+		})
+		if !slices.Equal(ends, []string{"rate_limited", "complete"}) {
+			t.Errorf("the jobs of the pass ended %v, want the deferred one (rate_limited) and its continuation (complete)", ends)
 		}
 	})
 }
