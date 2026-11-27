@@ -12541,7 +12541,7 @@
         <note category="location">src/app/features/repositories/content/repository-items.ts:244</note>
         <note category="location">src/app/features/repositories/repository-list.ts:411</note>
         <note category="location">src/app/features/settings/storage/damaged-blobs.ts:119</note>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:192</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:195</note>
         <note category="location">src/app/features/system/backups/backups-page.html:156,158</note>
         <note category="location">src/app/features/system/job-table.ts:151</note>
         <note category="location">src/app/features/system/tasks-card.ts:123</note>
@@ -40687,7 +40687,7 @@
         <note category="location">src/app/features/settings/storage/availability-section.ts:55</note>
         <note category="location">src/app/features/settings/storage/connections-section.ts:53</note>
         <note category="location">src/app/features/settings/storage/encryption-section.ts:38</note>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:187</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:190</note>
         <note category="location">src/app/features/settings/storage/integrity-section.ts:69</note>
         <note category="location">src/app/features/settings/storage/problems-section.ts:44</note>
       </notes>
@@ -42611,7 +42611,7 @@
     </unit>
     <unit id="storage.col.when">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:186</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:189</note>
         <note category="location">src/app/features/settings/storage/problems-section.ts:43</note>
       </notes>
       <segment>
@@ -42621,7 +42621,7 @@
     </unit>
     <unit id="storage.col.blob">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:188</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:191</note>
       </notes>
       <segment>
         <source>Blob</source>
@@ -42630,7 +42630,7 @@
     </unit>
     <unit id="storage.col.bytes">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:189</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:192</note>
       </notes>
       <segment>
         <source>Bytes</source>
@@ -42639,7 +42639,7 @@
     </unit>
     <unit id="storage.col.found-by">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:190</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:193</note>
       </notes>
       <segment>
         <source>Found by</source>
@@ -42648,7 +42648,7 @@
     </unit>
     <unit id="storage.col.finding-state">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:191</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:194</note>
       </notes>
       <segment>
         <source>State</source>
@@ -42657,7 +42657,7 @@
     </unit>
     <unit id="storage.findings.empty-open">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:196</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:199</note>
       </notes>
       <segment>
         <source>No open damaged copy in this period.</source>
@@ -42666,7 +42666,7 @@
     </unit>
     <unit id="storage.findings.empty">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:197</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:200</note>
       </notes>
       <segment>
         <source>No damaged copy in this period.</source>
@@ -42675,7 +42675,7 @@
     </unit>
     <unit id="storage.findings.actions-label">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:230</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:233</note>
       </notes>
       <segment>
         <source>Actions for the damaged copy of <ph id="0" equiv="digest" disp="f.sha256.slice(0, 12)"/> on <ph id="1" equiv="connection" disp="f.connection"/></source>
@@ -42684,7 +42684,7 @@
     </unit>
     <unit id="storage.findings.checked-ok">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:240</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:243</note>
       </notes>
       <segment>
         <source>A connection holds <ph id="0" equiv="digest" disp="f.sha256.slice(0, 12)"/> whole.</source>
@@ -42693,7 +42693,7 @@
     </unit>
     <unit id="storage.findings.checked-still">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:241</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:244</note>
       </notes>
       <segment>
         <source>No connection holds <ph id="0" equiv="digest" disp="f.sha256.slice(0, 12)"/> whole yet.</source>
@@ -42702,7 +42702,7 @@
     </unit>
     <unit id="storage.findings.acknowledged">
       <notes>
-        <note category="location">src/app/features/settings/storage/findings-list.ts:258</note>
+        <note category="location">src/app/features/settings/storage/findings-list.ts:261</note>
       </notes>
       <segment>
         <source>The damaged copy is acknowledged. It stays open until its copy is repaired.</source>
