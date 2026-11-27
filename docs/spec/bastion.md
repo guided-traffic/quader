@@ -607,8 +607,9 @@ The Bastion interface has a version of its own, separate from the release number
   [Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8); built on 2026-11-26 by E7 with W-35's P5); 9, the request
   header `Quader-Bastion-For-Head` of a `GET` that answers a `HEAD` and the status's `cache.shared`
   ([the wire of interface version 9](#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports), built on
-  2026-11-26 by W34-E19). The version is
-  `iface.InterfaceVersion`; the comment beside it names the same list.
+  2026-11-26 by W34-E19); 10, the catalogue's document of a package's open findings per version, the public set's projects with their
+  names and the configuration's `display` with the installation's form of a time (R-BAS-128, built on 2026-11-27 by W35-P9e). The version
+  is `iface.InterfaceVersion`; the comment beside it names the same list.
 
 Acceptance criteria:
 
@@ -5140,7 +5141,10 @@ of the main installation decides; the chart keeps what the installation of the p
   ([Q-BAS-320](#q-bas-320--the-configuration-travels-as-one-member-with-each-rules-effective-figures-and-its-revision-is-the-registrations)).
   A change writes the transactional audit event `bastion.configuration.changed` (`details`: the registration, the parts changed, before
   and after), which the feed maps to a `settings` entry (R-BAS-015), so every replica handshakes again within one poll and one round trip
-  (about 3 s with the defaults); without the feed the next regular handshake (`bastion.main.handshake_interval`) brings it.
+  (about 3 s with the defaults); without the feed the next regular handshake (`bastion.main.handshake_interval`) brings it. *Since the
+  interface version 10 (R-BAS-128):* the member also carries `display`, the installation's default form of a time, which is no member of
+  the registration and changes without its revision; its change (`system.time_format_changed`) is a `settings` entry too, and a replica
+  applies a configuration that differs in any member.
 - **Applying.** A replica swaps the whole configuration at once, never a part of it: the guard's figures, the slots, the throughput, the
   ceiling, the switches and the place's table change together. A configuration the Bastion's rules refuse fails the handshake, as a format
   table does (Q-BAS-199). The replica exports `quader_bastion_configuration_revision` (the revision it applies) and
@@ -6210,7 +6214,7 @@ The priority is the one of R-BAS-100, the other requirement of W-35's web interf
 | `GET /api/v1/bastion/catalogue?after=<seq>&limit=<n>` | the changes after the cursor `after` (0 for the start), at most `limit`, clamped to the main installation's page | `iface.CatalogueChanges` |
 | `GET /api/v1/bastion/catalogue/document?path=<path>` | one document, gzip-compressed, `application/gzip`, the SHA-256 of its raw bytes as the `ETag` | the document's bytes |
 | `POST /api/v1/bastion/catalogue/documents` `{"paths": [...]}` | several documents in one answer of frames, `application/vnd.quader.catalogue-batch` ([Q-BAS-347](#q-bas-347--the-batch-read-answers-frames-of-a-json-line-and-the-compressed-bytes)) | `iface.CatalogueBatch`, `iface.CatalogueFrame` |
-| `GET /api/v1/bastion/catalogue/public` | the public set: the projects and the repositories (name, format, class, whether the wiki is public) the catalogue shows | `iface.CataloguePublic` |
+| `GET /api/v1/bastion/catalogue/public` | the public set: the projects (key, display name, description; R-BAS-128) and the repositories (name, format, class, whether the wiki is public) the catalogue shows | `iface.CataloguePublic` |
 
 - **The change list.** Every entry names a document path (R-BAS-103), its `sha256` and `size`, or `deleted`, and a `seq` above the cursor and
   above the entry before it; `cursor` is the last `seq` answered, `more` says the limit cut the answer, and `reset` that the cursor is no
@@ -6290,6 +6294,7 @@ A document of the catalogue is named by a path of this grammar (`iface.Catalogue
 | `index/<n>` | a page of the index of public packages |
 | `packages/<id>` | a package (`<id>` is the package's catalogue ID) |
 | `packages/<id>/versions` | its versions list |
+| `packages/<id>/vulnerabilities` | its open findings per version: each version's grade and counts (R-BAS-128) |
 | `packages/<id>/versions/<v>` | a version |
 | `packages/<id>/versions/<v>/readme`, `…/vulnerabilities`, `…/signatures`, `…/contents`, `…/docs` | the version's README, open findings, signatures, contents and docs tree |
 | `packages/<id>/versions/<v>/docs/entries/<type>/<name>` | an entry of the docs tree |
@@ -6352,14 +6357,15 @@ The priority is the one of R-BAS-101 to R-BAS-103.
   reported none, or one the installation does not list, is not built: the builder records `bastion_base_url_unknown` in its state for the
   registration's card and keeps what it built before. A disabled registration builds nothing.
 - **What it builds, per format** (W-35's section C): the index of public packages (`index/<n>`, pages of 100 in the list's order, name),
-  per package its summary and its versions, per version the version, its README (`docs` on and a public wiki, R-BAS-124), its open findings, its signatures, the
+  per package its summary, its versions and its open findings per version (R-BAS-128), per version the version, its README (`docs` on and a public wiki, R-BAS-124), its open findings, its signatures, the
   Debian contents (the changelog and the copyright only with `docs` on), the Ansible documentation tree with every entry that has
   documentation and every file (`docs` on), the set-up of every client of the format for the version in its first public repository, and
   its state; per public repository the set-up of every client; per generic repository (a format whose items are paths) every folder's
   listing, every file's description and its set-up per client; the signature objects the signatures name; `signing/trusted-root.json` and
   `signing/chain.pem` where the installation has a signing identity; and the catalogue's `state`. A set-up is rendered with
   `credentials=none` and `bastion=<name>`: the Bastion's addresses, no login line, no publish snippet. The public set of the routes is the
-  projects and repositories the anonymous caller lists, with the wiki public where the repository's wiki level is `public`.
+  projects and repositories the anonymous caller lists, with the wiki public where the repository's wiki level is `public`, and each
+  project with the display name and the description the anonymous caller reads (R-BAS-128).
 - **Bounds.** A document above `cataloguebounds.DocumentMaxBytes` is left out and named in its version's state (`omitted`); a path the
   grammar does not admit (a generic file's name with a control character) is left out (R-BAS-103).
 
@@ -6791,15 +6797,16 @@ to (R-BAS-107), in the main installation's JSON shapes, so that the shared views
 
 | Address | Answers |
 |---|---|
-| `state` | `{confirmedAt, staleAfterSeconds, stale, docs}`: the time of the state served, `bastion.gui.stale_after`, whether the state is older, the switch `docs` (W-35's B.2b) |
+| `state` | `{confirmedAt, staleAfterSeconds, stale, docs, timeFormat}`: the time of the state served, `bastion.gui.stale_after`, whether the state is older, the switch `docs` (W-35's B.2b), and the installation's default form of a time of the configuration the replica applies (R-BAS-128) |
 | `legal?locale=en\|de` | the Bastion's own imprint and privacy notice (R-BAS-100) in the shape of `GET /api/v1/legal` (R-UI-225); also while the replica is not ready |
-| `projects` | `{items}`: the keys of the projects the catalogue shows (the reader's `PublicSet`) that hold a package it lists or a repository with files, for the start page that leads a visitor into a project ([Q-BAS-399](#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package), [Q-BAS-400](#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)) |
+| `projects` | `{items}`: the projects the catalogue shows (the reader's `PublicSet`) that hold a package it lists or a repository with files, each `{key, displayName, description}` (R-BAS-128), for the start page that leads a visitor into a project ([Q-BAS-399](#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package), [Q-BAS-400](#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)) |
+| `repositories` | `{items}`: the public set's repositories, each `{name, format, class}`, for the page Set up client of a repository (R-BAS-129, [Q-BAS-404](#q-bas-404--the-public-repositories-with-their-format-are-an-address-of-their-own-for-the-page-set-up-client)) |
 | `files` | `{items}`: the qualified names (`<project>/<key>`) of the public repositories whose root folder the catalogue holds (`Reader.Files`, in the public set's order), for a project's page that leads a visitor to a generic repository's folders and files ([Q-BAS-400](#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)) |
 | `packages?q&format&project&repository&deprecated&sort&cursor&limit` | the search of the reader (R-BAS-113, W-35's B.8) in the envelope of R-API-010 (`items`, `nextCursor`), each item the package summary as the main installation answered it; `include` is accepted and changes nothing (the summaries carry the counts of open findings); any other parameter is `400 malformed_request` |
 | `packages/lookup?format&name` | the public package of the format by its name, else by its key ([Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key)), or `404` |
 | `packages/<id>/versions?cursor&limit` | a page of the package's versions in the main installation's order; the application sorts, searches and groups them in the browser, as the main installation's view does ([Q-BAS-396](#q-bas-396--the-versions-are-paged-in-the-main-installations-order-and-sorted-in-the-browser)) |
 | `search/documentation?q&project&cursor&limit` | the documentation of the public packages' newest versions searched across packages, in the shape of `GET /api/v1/search/documentation` (R-BAS-125; added by W-35's P11) |
-| every other path of the grammar (R-BAS-103) | the document as the builder stored it, by `Reader.Document`: a package, a version, its README, findings, signatures, contents, documentation, a set-up, a generic folder or file, a signature object, `signing/trusted-root.json` and `signing/chain.pem` (the last three as attachments); an index page and the catalogue's own `state` are not answered |
+| every other path of the grammar (R-BAS-103) | the document as the builder stored it, by `Reader.Document`: a package, its open findings per version, a version, its README, findings, signatures, contents, documentation, a set-up, a generic folder or file, a signature object, `signing/trusted-root.json` and `signing/chain.pem` (the last three as attachments); an index page and the catalogue's own `state` are not answered |
 
 - **One spelling.** A path is read segment by segment and written in the grammar's one spelling before it is looked up, so a browser that
   escapes less than the grammar (`+` of a version, `encodeURIComponent`'s `!'()*`) reaches the same document; a decoded `/` in a segment
@@ -6924,7 +6931,9 @@ Priority: **P1** · Covers: quader-only
   show is `404` with `noindex` and no canonical address: no route of the application, a package not public in the address's project, a
   version it does not hold, a project's list without a package, a legal page without a text. An address that opens the findings
   (`tab=vulnerabilities`, a `severity`) and a list with a search, a filter, a sort or a cursor are `noindex`, canonical without their
-  query; every other query is dropped from the canonical address; a documentation entry's keeps `tab` and `doc`. While the replica holds
+  query; every other query is dropped from the canonical address; a documentation entry's keeps `tab` and `doc`. A repository's page Set
+  up client is found while the public set holds the repository, titled "Set up client", and never indexed (R-BAS-129,
+  [Q-BAS-401](#q-bas-401--a-page-set-up-client-of-the-bastion-is-found-and-never-indexed)). While the replica holds
   no state a page is `503` with `Retry-After: 30`, `noindex` and the title "Quader" alone (R-BAS-117).
 - **Cost** ([Q-BAS-410](#q-bas-410--a-pages-head-and-text-are-written-per-request-without-a-cache)). Two or three documents of the
   catalogue per page, as a person's browser reads them a moment later; nothing is kept per address.
@@ -7148,6 +7157,124 @@ Acceptance criteria:
 - Rendered (rule 11, R-UI-230): an Ansible collection on its documentation and on its newest version's address, a module's page, the
   search inside the version with a hit, a project's search that finds a module, an npm and a NuGet version on their README, and a Debian
   version's changelog and copyright, in both schemes, at 390, 1,024 and 1,440 px, in English and German.
+
+## What a visitor of the web interface still missed: the interface version 10 and the page Set up client
+
+W-35's package P9e (2026-11-27), the owner's reason for the web interface (2026-11-26): it shows anonymous visitors the public images and
+the vulnerabilities found "um Vertrauen in die ausgelieferten Images zu schaffen". The builders of P9b, P9d and UI-1126 left four things a
+visitor met: no grade column in a package's versions table, no page Set up client (a generic file's command calls a function only its
+set-up defines), projects named by their keys, and the factory form of a time. Three of them change the interface between the Bastion and
+the main installation, which rises to version 10 (R-BAS-009); before the first stable release a raise costs nothing but the lockstep
+upgrade every raise needs.
+
+### R-BAS-128 · The interface version 10: a package's grade per version, the projects' names and the installation's form of a time
+Priority: **P1** · Covers: quader-only
+
+The priority is the one of R-BAS-116 to R-BAS-126, whose pages these complete.
+
+- **A package's open findings per version** ([Q-BAS-403](#q-bas-403--a-packages-open-findings-per-version-are-a-document-of-their-own-without-the-time-of-their-check)).
+  The document kind `packageVulnerabilities`, path `packages/<id>/vulnerabilities` (`iface.CataloguePackageVulnerabilities`, R-BAS-103), is
+  the main installation's anonymous answer of `GET /api/v1/packages/{id}/vulnerabilities`: per version its grade with the counts of the open
+  findings (`needs_triage`, `confirmed`, `blocked`; no dismissed or resolved finding, W-35's B.4b), the fixable count, the end of life, the
+  public state, over every public repository that holds the version, the worst first (R-VULN-038). The builder renders it with the package
+  (R-BAS-104); the strip (R-BAS-106) takes each grade's `checkedAt` out and keeps it nowhere, since the column does not show it and the
+  version's own report keeps its time in the version's state. The package's fingerprint already reads the findings and the image scans'
+  outcome (R-BAS-105), so the document follows a triage or a scan within a run. The Bastion serves it while the package is public
+  (R-BAS-112) at `/ui/data/v1/packages/<id>/vulnerabilities`, and `BastionVulnerabilityReads.packageReport` reads it: the versions' table of
+  the shared view gets its column with no change of the view (R-UI-229).
+- **The projects' names** ([Q-BAS-423](#q-bas-423--the-public-set-names-a-project-by-its-key-display-name-and-description)). A project of
+  the public set (`iface.CatalogueProject`) is `{key, displayName, description}`, the members the anonymous caller reads of it in
+  `GET /api/v1/projects` and nothing else of it (no owner, no member count); the description is `""` for a project without one, and both
+  texts have their links rewritten as a document's (R-BAS-107). The data path's `projects` answers them (R-BAS-118); the start lists a
+  project by its display name with its description, a project's packages are headed by them, and the head and title a crawler reads name
+  the project so (R-BAS-121: "Packages in <display name>"). The state record a replica keeps holds the public set; its form is raised to 2,
+  so a record of the form before is refused and the replica reads the catalogue again (R-BAS-110).
+- **The installation's form of a time** ([Q-BAS-402](#q-bas-402--the-installations-form-of-a-time-is-the-configurations-display-and-changes-without-the-registrations-revision)).
+  The configuration (R-BAS-093) has the member `display`, `{timeFormat}`: the installation's default form of a time (api-and-ui.md R-UI-251),
+  one of `iface.TimeFormats()` (the main installation's `sysstate.TimeFormats()`, a test holds them equal), the factory form `dmy-weekday` in
+  a replica's built-in configuration. The composition root sets it from the replica's copy of the system state where it answers a
+  handshake; it is the installation's, no member of the registration, and changes without the registration's revision: a replica applies a
+  configuration that differs in any member (`settings.Holder.Apply`). A change (`system.time_format_changed`) is an entry of the feed of the
+  kind `settings`, so every Bastion handshakes again within the feed's seconds. The data path's `state` answers it (R-BAS-118), and the
+  application writes every time in it (api-and-ui.md R-UI-250, closing [H-2390](api-and-ui.md#h-2390--the-bastions-pages-write-the-factory-form-of-a-time-not-the-installations-default)).
+- **What a main installation and a Bastion of different versions do** (R-BAS-009's rule): they do not talk; the handshake answers
+  `400 bastion_interface_mismatch` with `"interfaceVersion": 10`.
+- **Nothing of the main installation** (R-BAS-120): the new document is the builder's, through the strip and the link rewrite; a
+  project's names are what an anonymous reader of the main installation reads.
+
+*Built on 2026-11-27 (W35-P9e):* [catalogue.go](../../internal/bastion/iface/catalogue.go) and
+[configuration.go](../../internal/bastion/iface/configuration.go) of the interface, [version.go](../../internal/bastion/iface/version.go),
+`publicSet` and `pkg` of [builder.go](../../internal/bastionmain/catalogue/builder.go), `bastionDisplay` of
+[wire_bastion.go](../../internal/app/wire_bastion.go), the feed's mapping of `system.time_format_changed` in
+[feed.go](../../internal/bastionmain/feed.go), `state`, `projects` and `repositories` of [data.go](../../internal/bastion/gui/data.go), the
+names in [seo.go](../../internal/bastion/gui/seo.go), the record's form in [state.go](../../internal/bastion/catalogue/state.go), and the
+application's reads ([reads.ts](../../web/src/bastion/data/reads.ts), [state.ts](../../web/src/bastion/data/state.ts),
+[projects.ts](../../web/src/bastion/data/projects.ts)).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/iface`, milliseconds): `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` with the surface at version 10;
+  `TestR_BAS_103_TheCataloguePathGrammarRoundTrips` with `packages/<id>/vulnerabilities`; `TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold`
+  (the display written and read back, no form and an unknown form refused).
+- Unit ([builder_test.go](../../internal/bastionmain/catalogue/builder_test.go), a fake management API, milliseconds, bytes):
+  `TestR_BAS_128_TheCatalogueNamesItsProjectsAndAPackagesGradePerVersion` (the project's names with its description's link on the Bastion,
+  no owner; the package's grades and counts without `checkedAt`), and the package's document among the documents of
+  `TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase`, scanned by `TestR_BAS_106_…` and `TestR_BAS_103_…`.
+- Unit (`internal/bastionmain`, milliseconds): `TestR_BAS_128_TheConfigurationNamesTheFormsOfTheMainInstallation` (the two lists equal, the
+  factory form in a registration's configuration); the feed's case `R-BAS-128 the installation's form of a time changed …` of
+  `TestR_BAS_015_TheMappingTableOfTheFeed`.
+- Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go), microseconds): `TestR_BAS_128_TheDataNameTheProjectsGradeTheVersionsAndWriteTheInstallationsTime`
+  (the state's form, the factory form without one, the repositories, the package's document, off); the projects' names in
+  `TestR_BAS_118_…` and the names in the head and text of `TestR_BAS_121_…` ([seo_test.go](../../internal/bastion/gui/seo_test.go)).
+- Integration (area `bastion`, inside `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`, no world of its own):
+  `namesGradesAndTheFormOfATime` (each of the three packages has its document of findings per version without `checkedAt`; the public set
+  names the project; the handshake's form is the factory one, and the one an administrator sets after `PUT /api/v1/system/time-format`,
+  with the registration's revision unchanged).
+- Vitest ([visitor.spec.ts](../../web/src/bastion/visitor.spec.ts), under a second): the package's grade per version read from its
+  document; the state's form applied and an unknown one ignored; the start and a project's packages by their names.
+
+### R-BAS-129 · The page Set up client at the Bastion
+Priority: **P1** · Covers: quader-only
+
+W-35's P9d left a generic file's command calling a function (`quader_curl`, `quader_wget`, `$QuaderHeaders`) that only its repository's
+set-up defines, and every format whose install command relies on a configuration (npm's registry, NuGet's source, APT's source list) had
+the same gap, since the Bastion had no page Set up client and its panels of commands offered no link to one (Q-UI-1456).
+
+- **The page** (api-and-ui.md R-UI-120 at the Bastion, [Q-UI-1468](api-and-ui.md#q-ui-1468--the-bastion-has-the-page-set-up-client-of-a-public-repository)).
+  At the main installation's address, `/projects/<project>/repositories/<key>/setup?client=<client>`, the target of **Set up client** in every
+  panel of commands of the Bastion's pages. Its header names the repository (a link to its files for a generic repository, to the project's
+  packages otherwise), its format and its class, the client address of the set-up; a select **Client** where the format has several (the
+  Bastion's format table, now with the server's clients); one line that the snippets need no credentials; the steps Configure, Install and,
+  where the installation signs, Verify, from the shared view `views/setup/setup-steps.ts` (Q-UI-1469). No token, no **More options**, no
+  Bastion to choose, no Publish and no guide: the guide describes the main installation (R-BAS-120).
+- **Its data.** The snippets are the catalogue's set-up document of the repository and the client (`setup/<project>/<repo>/<client>`,
+  R-BAS-103), which the builder renders for every public repository and every client of its format with `credentials=none` and
+  `bastion=<name>` (R-BAS-104): the Bastion's address, no login, no publish line. So a generic repository's Configure defines the function
+  its files' commands call, without the header that would carry a credential. The repository's format and class come from the data path's
+  `repositories` (R-BAS-118, [Q-BAS-404](#q-bas-404--the-public-repositories-with-their-format-are-an-address-of-their-own-for-the-page-set-up-client));
+  a repository the public set does not hold says "This address offers no repository of that name." and asks for no set-up.
+- **For a crawler** (R-BAS-121): the address is found while the public set holds the repository, titled "Set up client", and `noindex`
+  ([Q-BAS-401](#q-bas-401--a-page-set-up-client-of-the-bastion-is-found-and-never-indexed)).
+- **Nothing of the main installation** (R-BAS-120): the snippets are the builder's documents, scanned by R-BAS-104's tests; the page's own
+  words name no party.
+
+*Built on 2026-11-27 (W35-P9e):* [setup-page.ts](../../web/src/bastion/pages/setup-page.ts), the route of
+[app.routes.ts](../../web/src/bastion/app.routes.ts), [setup-steps.ts](../../web/src/app/views/setup/setup-steps.ts) (composed by both
+applications), the panel's link of [client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts) in both applications
+(`SETUP_PAGES` removed), the clients of [formats.ts](../../web/src/bastion/data/formats.ts), the address `Setup` of
+[address.go](../../internal/bastion/gui/page/address.go) and `setupPage` of [seo.go](../../internal/bastion/gui/seo.go).
+
+Acceptance criteria:
+
+- Vitest ([visitor.spec.ts](../../web/src/bastion/visitor.spec.ts), under a second): `R-BAS-129 Set up client of a generic repository …`
+  (the format's three clients, the chosen client's set-up from the catalogue with the function the command calls, Configure and Install,
+  no token, nothing that names the main installation, the repository's link to its files), `R-BAS-129 Set up client of a repository the
+  Bastion does not offer …`; the main installation's page with the shared view: the specs of `features/setup/` unchanged.
+- Unit ([page_test.go](../../internal/bastion/gui/page/page_test.go), [seo_test.go](../../internal/bastion/gui/seo_test.go), microseconds):
+  the address read and written; a public repository's page `200`, `noindex`, titled "Client einrichten" in German, canonical without the
+  client; a repository the public set does not hold `404`.
+- Rendered (rule 11, R-UI-230): Set up client of an npm, an OCI and a generic repository, both schemes, 390, 1,024 and 1,440 px, English
+  and German.
 
 ## A registration the configuration declares
 
@@ -13905,6 +14032,88 @@ documentation opens on its newest version's page).
 | (b) The address becomes the table of versions while docs is off | The route asks the state | The table as the other formats open | An address that means two pages by a switch; search engines' entries change their page |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-126, R-UI-232.
+
+### Q-BAS-401 · A page Set up client of the Bastion is found and never indexed
+
+Status: **Decided by the development agent on 2026-11-27** (W35-P9e) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-129, R-BAS-121. The address grammar of the head a crawler reads knew no page of a repository; an address it does not know
+is answered `404` with `noindex`, and a person who opens the page by its address would read an application served with that status.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The address is a page of its own: `200` while the public set holds the repository, `noindex`, its canonical address without the client (chosen) | A kind `Setup` of the address grammar | A link a visitor shares answers `200`; a search engine does not list a page of commands per client, which the text never carries (Q-BAS-409) | A page nobody finds by a search engine |
+| (b) Indexed like a package's page | — | Findable | Its content is commands that depend on the query's client; the text has none, so the index would hold an empty page |
+| (c) Left to the grammar's `404` | No change of the server | — | A shared link answers `404`; a crawler drops a page that exists |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121, R-BAS-129.
+
+### Q-BAS-402 · The installation's form of a time is the configuration's display, and changes without the registration's revision
+
+Status: **Decided by the development agent on 2026-11-27** (W35-P9e, the brief's item 4) — selected from the options below; the owner reviews
+it at the walkthrough.
+
+Context: R-BAS-128, R-BAS-093, api-and-ui.md R-UI-251 and H-2390. The Bastion's application wrote the factory form, since the interface
+carried no display setting. The configuration is "what the main installation decides for a Bastion", delivered whole with the registration's
+revision, and a replica applies one that differs from the one it applies (`settings.Holder.Apply` compares the whole member).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A member `display.timeFormat` of the configuration, set by the composition root from the system state, which changes without the registration's revision; its change is a `settings` entry of the feed (chosen) | The handshake carries it; the feed brings it within seconds | One delivery for everything the main installation decides; a replica keeps it with the stored configuration through a restart; no write to every registration for an installation's setting | The revision says the registration's members, not everything of the member |
+| (b) The same member, and a change of the form raises every registration's revision | — | The revision changes with every member | A setting of the installation writes every registration's row; the revision's meaning (the registration's ETag) is lost |
+| (c) A member of the handshake beside the configuration | — | The configuration stays the registration's | A second delivery and a second store at the replica for one setting |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-093, R-BAS-128.
+
+### Q-BAS-403 · A package's open findings per version are a document of their own, without the time of their check
+
+Status: **Decided by the development agent on 2026-11-27** (W35-P9e, the brief's item 1; P9b's diagnosis) — selected from the options
+below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-128, R-BAS-103. The versions' table of the shared view takes its grade column from `VulnerabilityReads.packageReport`, the
+main installation's `GET /api/v1/packages/{id}/vulnerabilities`. The catalogue held a report per version only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A document kind `packages/<id>/vulnerabilities`, the anonymous answer, its grades' `checkedAt` taken out and kept nowhere (chosen) | One document per package | The view gets its column unchanged; one read per page; the document changes only with the findings, not with every rescan | The column has no time of a check, which it does not show anyway |
+| (b) The application reads every version's report and builds the grades | No interface change | — | One read per version: a package of 400 versions is 400 reads per page view |
+| (c) The grades as a member of the versions list | — | One document fewer | The versions list is the main installation's shape; a member of its own there is a shape the main installation does not answer |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-103, R-BAS-104, R-BAS-128.
+
+### Q-BAS-404 · The public repositories with their format are an address of their own, for the page Set up client
+
+Status: **Decided by the development agent on 2026-11-27** (W35-P9e) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-129, R-BAS-118. The page Set up client needs the repository's format to offer its clients and read the set-up of one; the
+set-up document names it, but which client's document to read depends on it. Q-BAS-400 had kept the public set off the data path, so
+that no page decides by a format's name which repositories have files.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `repositories`: the public set's repositories with their name, format and class, without the wiki (chosen) | A seventh address of the data path | The page knows the format and the class at once, as the main installation's page reads its repository; the files' list stays decided by the documents held (Q-BAS-400) | One more address |
+| (b) Read the set-up of every client of every format until one answers | — | No address | Up to twenty reads for one page |
+| (c) The format as a query parameter of the address | — | No address | A link without it is no page; the address is no longer the main installation's |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-118, R-BAS-129.
+
+### Q-BAS-423 · The public set names a project by its key, display name and description
+
+Status: **Decided by the development agent on 2026-11-27** (W35-P9e, the brief's item 3; P9b's open point 4) — selected from the options
+below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-128, R-BAS-101. The start page listed project keys, and a project's packages were headed "Packages". The main
+installation's anonymous `GET /api/v1/projects` answers a public project's display name and description, and its owners, its counts and
+its size besides.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The public set's projects become `{key, displayName, description}`, their links rewritten as a document's; the replica's state record raises its form (chosen) | The set every replica holds and keeps | One read of the set the replica already reads; the names follow a rename at the next round; nothing beyond the names (no owner, no count) | The set's shape changes, an interface change |
+| (b) A document per project in the grammar | — | The set stays a list of keys | A new path kind, a fingerprint per project, and a read per project on the start page |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-101, R-BAS-104, R-BAS-118, R-BAS-121, R-BAS-128.
 
 ### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
 

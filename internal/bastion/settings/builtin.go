@@ -86,5 +86,7 @@ func Builtin() iface.Configuration {
 				RequestsPerHour: figure(DefaultCeilingPerHour),
 			},
 		},
+		// The factory form of a time until the main installation names its own (R-BAS-128).
+		Display: iface.Display{TimeFormat: iface.FactoryTimeFormat},
 	}
 }

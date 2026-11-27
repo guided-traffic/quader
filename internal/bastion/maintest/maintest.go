@@ -262,7 +262,7 @@ func (m *Main) SetConfiguration(f func(*iface.Configuration)) { m.lock(func() { 
 
 // Configuration is the configuration a main installation sends for a new registration (R-BAS-093, R-LIM-046): the Internet preset
 // with its five kind rules and the two Bastion profiles' figures, its flood figures, the slots (64, a quarter, a wait of 5 s), the
-// anonymous ceiling and the throughput of 200 MB/s with a quarter for anonymous callers, all in Enforce, the web interface and its documentation off, and the switch handover as given;
+// anonymous ceiling and the throughput of 200 MB/s with a quarter for anonymous callers, all in Enforce, the web interface and its documentation off, the factory form of a time, and the switch handover as given;
 // the revision is a new registration's, 1. It is a copy of the Bastion's built-in configuration (settings.Builtin), since this package of
 // the infrastructure layer imports none of the domain: TestR_BAS_093_TheTestDoubleSendsTheBuiltInConfiguration (internal/bastion/settings)
 // holds it to that, and TestR_BAS_093_ANewRegistrationIsTheBuiltInConfiguration (internal/app) holds the main installation's
@@ -307,6 +307,7 @@ func Configuration(handover bool) iface.Configuration {
 			Throughput:       iface.Throughput{BytesPerSecond: figure(200_000_000), AnonymousShare: 0.25},
 			AnonymousCeiling: iface.Ceiling{RequestsPerSecond: figure(100), Burst: figure(2000), RequestsPerHour: figure(36000)},
 		},
+		Display: iface.Display{TimeFormat: iface.FactoryTimeFormat},
 	}
 }
 

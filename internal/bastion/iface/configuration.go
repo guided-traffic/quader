@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"slices"
 	"sort"
 )
 
@@ -11,12 +12,30 @@ import (
 // a Bastion, delivered whole with the registration's revision. Every member is always present; a figure of [Figures],
 // [Throughput] and [Ceiling] is a positive integer or null, which is unlimited.
 type Configuration struct {
-	// Revision is the registration's revision (its ETag), raised by every change of a member and by a change of a rule of
-	// the Bastion's place or of a profile such a rule names. A replica applies a configuration whose revision differs from
-	// the one it applies.
+	// Revision is the registration's revision (its ETag), raised by every change of a member the registration holds and by a
+	// change of a rule of the Bastion's place or of a profile such a rule names. [Display] is the installation's and changes
+	// without it (Q-BAS-402): a replica applies a configuration that differs in any member from the one it applies.
 	Revision int64    `json:"revision"`
 	Switches Switches `json:"switches"`
 	Limits   Limits   `json:"limits"`
+	Display  Display  `json:"display"`
+}
+
+// Display is how the Bastion's web interface writes what the main installation's screens write by the installation's settings
+// (R-BAS-128): the installation's default form of a time (api-and-ui.md R-UI-251), so that a time reads the same at both.
+type Display struct {
+	// TimeFormat is one of [TimeFormats].
+	TimeFormat string `json:"timeFormat"`
+}
+
+// FactoryTimeFormat is the form of a time while an administrator set none (api-and-ui.md R-UI-251): the form of a replica's
+// built-in configuration.
+const FactoryTimeFormat = "dmy-weekday"
+
+// TimeFormats are the forms an installation's default of a time can take (api-and-ui.md R-UI-250), the factory default first. The
+// main installation's list (sysstate.TimeFormats) is the same; a test of the main installation's configuration holds them equal.
+func TimeFormats() []string {
+	return []string{FactoryTimeFormat, "dmy", "iso", "dmy-slash", "mdy", "locale"}
 }
 
 // Switches are the registration's switches (R-BAS-093, R-BAS-102).
@@ -209,7 +228,8 @@ func refuse(format string, a ...any) error {
 	return fmt.Errorf("%w: "+format, append([]any{errConfiguration}, a...)...)
 }
 
-// Validate checks a configuration as a Bastion applies it (R-BAS-093): a revision not below 0; a known mode and preset;
+// Validate checks a configuration as a Bastion applies it (R-BAS-093): a revision not below 0; a known form of a time; a known
+// mode and preset;
 // rules with valid IDs and figures that are positive or null; address rules and exempt networks as canonical prefixes, no
 // prefix twice, each address rule and kind rule naming a rule of the table; flood figures that are positive with a block's
 // duration not above its longest; slots of at least one with a share in 0 to 1 and a wait not below 0; a throughput and a
@@ -218,6 +238,9 @@ func refuse(format string, a ...any) error {
 func (c Configuration) Validate() error {
 	if c.Revision < 0 {
 		return refuse("the revision %d is negative", c.Revision)
+	}
+	if !slices.Contains(TimeFormats(), c.Display.TimeFormat) {
+		return refuse("display.timeFormat %q", c.Display.TimeFormat)
 	}
 	l := c.Limits
 	switch {

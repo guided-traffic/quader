@@ -30,7 +30,7 @@ import { Tooltip } from '../../shared/ui/tooltip';
 import { reportedBastions } from './bastion-targets';
 import { SnippetText, snippetText } from './clients';
 import { SetupFlowArt } from './setup-flow-art';
-import { SetupSnippet } from './setup-snippet';
+import { SetupSteps } from '../../views/setup/setup-steps';
 import { checkTokenShape, TokenShape } from './token-shape';
 import { Loading } from '../../shared/ui/loading';
 import { Busy } from '../../shared/ui/busy';
@@ -93,7 +93,7 @@ type Step = 'configure' | 'install' | 'publish' | 'verify';
     FormatIconView,
     AddressField,
     CodeWindow,
-    SetupSnippet,
+    SetupSteps,
     SetupFlowArt,
     GuideView,
     Tooltip,
@@ -331,8 +331,6 @@ export class ClientSetupPage {
       verify: shown.filter((s) => s.tab === 'verify'),
     };
   });
-  /** The number of the step Verify: after Publish where the page offers it. */
-  protected readonly verifyNumber = computed(() => (this.offerPublish() ? 4 : 3));
   protected readonly needsToken = computed(() => !this.anonymous() && this.mode() === 'paste' && this.pastedToken() === null);
   protected readonly publishTarget = computed(() => this.setup()?.publishTarget ?? null);
   protected readonly canReadConfig = computed(() => this.session.has('repositories:read-config'));
@@ -373,11 +371,10 @@ export class ClientSetupPage {
   }
 
   /** The sentence under a snippet that is for a Bastion and holds what only a Bastion needs (R-BAS-007). */
-  protected bastionNote(sn: ClientSnippet): string | null {
-    return this.activeBastion() !== null && sn.content.includes('replace-registry-host=always')
+  protected readonly bastionNote = (sn: ClientSnippet): string | null =>
+    this.activeBastion() !== null && sn.content.includes('replace-registry-host=always')
       ? $localize`:@@setup.bastion.replace-host:\`replace-registry-host=always\` makes npm fetch every package from this address, also when a lockfile written against another host names that host.`
       : null;
-  }
 
   /**
    * Creates a personal token for this repository in place (R-UI-122): read on the repository, and read and deploy on the

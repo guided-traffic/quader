@@ -93,6 +93,29 @@ async function* notReady(page: Page): AsyncGenerator<string> {
   yield '';
 }
 
+/**
+ * The installation's default form of a time as the Bastion's state names it (bastion.md R-BAS-128): ISO 8601 in place of the factory
+ * form, with an old state so that the band writes an absolute time in it. The change itself travels as the configuration's display, which
+ * the profile shows with Admin › Settings › General; the walk answers the state as a Bastion does after that change.
+ */
+async function* isoTime(page: Page): AsyncGenerator<string> {
+  const at = new Date(Date.now() - 3 * 3_600_000).toISOString();
+  await page.route('**/ui/data/v1/state', async (route: Route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as Record<string, unknown>;
+    await route.fulfill({ response: res, body: JSON.stringify({ ...body, confirmedAt: at, stale: true, timeFormat: 'iso' }) });
+  });
+  await page.reload();
+  await expect(page.locator('.stale-band')).toContainText(/\d{4}-\d{2}-\d{2}/);
+  yield '';
+}
+
+/** Set up client of a public repository (bastion.md R-BAS-129): the snippets of the chosen client, read from the catalogue. */
+async function* setupSteps(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-setup-steps quader-code-window').first()).toBeVisible();
+  yield '';
+}
+
 const notReadyAnswer = [{ match: /^GET \/ui\/data\/v1\/state answered 503$/, why: 'the walk answers the state as a replica without a catalogue does' }];
 
 /** Every page of the Bastion's web interface the renders hold (R-UI-230), each as the anonymous visitor, in the German pass too. */
@@ -148,6 +171,14 @@ export const bastionScreens: readonly Screen[] = [
   { id: 'bastion-imprint', path: `${B}/legal/imprint`, kinds: ['anonymous'], de: true },
   { id: 'bastion-privacy', path: `${B}/legal/privacy`, kinds: ['anonymous'], de: true },
   { id: 'bastion-stale', path: `${P}/packages`, kinds: ['anonymous'], walk: stale, de: true },
+  // What a visitor met without (bastion.md R-BAS-128, R-BAS-129): the grade column of a package's versions (one version with open
+  // findings, one clean), Set up client of an npm, an OCI and a generic repository (whose configure step defines the function a file's
+  // command calls), and the installation's form of a time.
+  { id: 'bastion-versions-graded', path: `${pkg(publicGradedPackage)}/-/versions`, kinds: ['anonymous'], de: true },
+  { id: 'bastion-setup-npm', path: `${P}/repositories/npm-open-source/setup?client=npm`, kinds: ['anonymous'], walk: setupSteps, de: true },
+  { id: 'bastion-setup-oci', path: `${P}/repositories/${remoteSource.key}/setup?client=docker`, kinds: ['anonymous'], walk: setupSteps, de: true },
+  { id: 'bastion-setup-generic', path: `${downloads}/setup?client=curl`, kinds: ['anonymous'], walk: setupSteps, de: true },
+  { id: 'bastion-time-iso', path: `${P}/packages`, kinds: ['anonymous'], walk: isoTime, de: true },
   { id: 'bastion-not-ready', path: `${B}/`, kinds: ['anonymous'], walk: notReady, expected: notReadyAnswer, de: true },
   { id: 'bastion-not-found', path: `${B}/projects/${otherProject}/nothing-here`, kinds: ['anonymous'], de: true },
 ];

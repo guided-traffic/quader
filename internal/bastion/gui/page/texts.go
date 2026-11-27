@@ -8,6 +8,8 @@ import "strconv"
 type Texts struct {
 	Projects, Packages, Versions, Imprint, Privacy, NotFound, NotFoundText string
 	LatestVersion, Published, Licenses, Keywords, Documentation, Package   string
+	// SetupClient is the title of a repository's page Set up client (R-BAS-129).
+	SetupClient string
 	// PackagesIn is a project's list ("Packages in web"), VersionsOf a package's versions ("Versions of ui").
 	PackagesIn, VersionsOf func(string) string
 	// The page of a refusal of the class gui (R-BAS-123).
@@ -21,7 +23,7 @@ func TextsOf(locale string) Texts {
 			Projects: "Projekte", Packages: "Pakete", Versions: "Versionen", Imprint: "Impressum", Privacy: "Datenschutzhinweise",
 			NotFound: "Seite nicht gefunden", NotFoundText: "Unter dieser Adresse wird nichts angeboten.",
 			LatestVersion: "Neueste Version", Published: "Veröffentlicht", Licenses: "Lizenzen", Keywords: "Schlagwörter",
-			Documentation: "Dokumentation", Package: "Paket",
+			Documentation: "Dokumentation", Package: "Paket", SetupClient: "Client einrichten",
 			PackagesIn: func(p string) string { return "Pakete in " + p },
 			VersionsOf: func(n string) string { return "Versionen von " + n },
 			TooManyText: func(s int64) string {
@@ -39,7 +41,7 @@ func TextsOf(locale string) Texts {
 		Projects: "Projects", Packages: "Packages", Versions: "Versions", Imprint: "Imprint", Privacy: "Privacy notice",
 		NotFound: "Page not found", NotFoundText: "Nothing is offered at this address.",
 		LatestVersion: "Latest version", Published: "Published", Licenses: "Licenses", Keywords: "Keywords",
-		Documentation: "Documentation", Package: "Package",
+		Documentation: "Documentation", Package: "Package", SetupClient: "Set up client",
 		PackagesIn: func(p string) string { return "Packages in " + p },
 		VersionsOf: func(n string) string { return "Versions of " + n },
 		TooManyText: func(s int64) string {

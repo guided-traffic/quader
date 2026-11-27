@@ -179,81 +179,16 @@
   }
 }
 
-// The steps of the job on one rail: the number at the rail, the heading beside it, the windows under the heading. The rail runs
-// from a number to the next and ends at the last step, whichever that is for the reader.
-.steps {
-  margin-block-start: var(--quader-space-5);
+// The steps of the job are the view quader-setup-steps (views/setup/setup-steps.ts). What the Publish step of a virtual repository
+// without a target says is the page's own, projected into it.
+.why {
+  max-inline-size: 70ch;
 }
 
-.step {
-  position: relative;
-  padding-inline-start: 2.5rem;
-  padding-block-end: var(--quader-space-5);
-
-  &:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    inset-block: 1.875rem var(--quader-space-2);
-    inset-inline-start: calc(0.75rem - 0.5px);
-    border-inline-start: 1px solid var(--quader-border);
-  }
-
-  > h2 {
-    display: flex;
-    align-items: center;
-    gap: var(--quader-space-2);
-    margin-block: 0 var(--quader-space-2);
-    font: var(--quader-type-title-medium);
-  }
-
-  > h2 .step-no {
-    position: absolute;
-    inset-inline-start: 0;
-  }
-
-  .why {
-    max-inline-size: 70ch;
-  }
-
-  // A second way of the step (Q-UI-804): an inline fold after the step's own windows.
-  .second-way {
-    margin-block: 0 var(--quader-space-3);
-  }
-
-  .second-way:last-child {
-    margin-block-end: 0;
-  }
-}
-
-.step-no {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
-  border-radius: var(--quader-radius-full);
-  background: var(--quader-accent);
-  color: var(--quader-on-accent);
-  font-size: 0.8125rem;
-}
-
-// Narrow: no rail; the number stands before the heading. Create a token goes under the token's text, at the row's start.
+// Narrow: Create a token goes under the token's text, at the row's start.
 @container content (max-width: 36rem) {
   .create-row {
     margin-inline-start: 0;
-  }
-
-  .step {
-    padding-inline-start: 0;
-
-    &::before {
-      display: none;
-    }
-
-    > h2 .step-no {
-      position: static;
-    }
   }
 }
 

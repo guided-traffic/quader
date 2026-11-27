@@ -11,6 +11,7 @@ import { ListHead } from '../../app/shared/ui/list-head';
 import { PageHeader } from '../../app/shared/ui/page-header';
 import { PackageTable } from '../../app/views/packages/package-table';
 import { BastionData } from '../data/http';
+import { BastionProjects } from '../data/projects';
 import { DocumentationHits } from './documentation-hits';
 
 const KNOWN_SORTS: readonly string[] = ['name', '-name', 'createdAt', '-createdAt', 'updatedAt', '-updatedAt'];
@@ -26,7 +27,8 @@ const KNOWN_SORTS: readonly string[] = ['name', '-name', 'createdAt', '-createdA
   selector: 'quader-bastion-package-list',
   imports: [DocumentationHits, ErrorNotice, ListHead, PackageTable, PageHeader, RouterLink],
   template: `
-    <quader-page-header heading="Packages" i18n-heading="@@pkg.list.heading" />
+    <!-- The project by its display name and description (R-BAS-128, Q-UI-1470): its packages are the page. -->
+    <quader-page-header [heading]="named()?.displayName ?? project()" [name]="true" [description]="named()?.description" [descriptionAsWritten]="true" />
     @if (filesFailure(); as f) {
       <quader-error-notice [error]="f" (retry)="filesFailure.retry()" />
     } @else if (fileRepositories().length > 0) {
@@ -96,6 +98,7 @@ export class PackageListPage {
   private readonly router = inject(Router);
   private readonly catalog = inject(FormatCatalog);
   private readonly data = inject(BastionData);
+  private readonly projects = inject(BastionProjects);
 
   /** The project of the address, then the query's search and sort, bound by component input binding. */
   readonly project = input.required<string>();
@@ -114,6 +117,9 @@ export class PackageListPage {
   protected readonly emptyText = $localize`:@@bastion.list.empty:No package is published in this project.`;
   protected readonly emptyFilteredText = $localize`:@@bastion.list.empty-search:No package matches the search.`;
   protected readonly list = new PagedResource<PackageSummary>();
+  /** The project with its name and description; until it is read the heading is the key of the address. */
+  private readonly project$ = resource({ params: () => this.project(), loader: ({ params }) => this.projects.named(params) });
+  protected readonly named = computed(() => valueOf(this.project$) ?? null);
   private readonly formats = resource({ loader: () => this.catalog.formats() });
   /** The catalogue's repositories with files (`/ui/data/v1/files`), those of this project by their keys. */
   private readonly files = resource({ loader: () => this.data.get<{ items: readonly string[] }>('files') });
@@ -146,6 +152,7 @@ export class PackageListPage {
     live({
       reload: async () => {
         this.files.reload();
+        this.project$.reload();
         await this.list.refresh();
       },
       every: () => LIVE_IDLE_MS,

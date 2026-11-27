@@ -30,4 +30,8 @@ package iface
 // Version 9 (R-BAS-021, R-BAS-059, R-LIM-045, Q-BAS-479, Q-BAS-480): the request header [HeaderForHead] of a GET a Bastion
 // sends to answer a HEAD, which the main installation answers as the GET it is and counts as no download, and the status's
 // [CacheStatus.Shared], which says whether the cache's figures are the replica's own or the whole Bastion's.
-const InterfaceVersion = 9
+//
+// Version 10 (R-BAS-128): what a visitor of the web interface still missed. The catalogue's document of a package's open findings
+// per version ([CataloguePackageVulnerabilities]), the public set's projects with their display names and descriptions
+// ([CatalogueProject]), and the configuration's [Display] with the installation's default form of a time.
+const InterfaceVersion = 10

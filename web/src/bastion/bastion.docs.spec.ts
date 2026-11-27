@@ -25,7 +25,7 @@ import { VersionPage } from './pages/package-pages';
 
 const ID = '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10';
 const turn = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
-const STATE: BastionState = { confirmedAt: '2026-11-26T09:00:00Z', staleAfterSeconds: 3600, stale: false, docs: true };
+const STATE: BastionState = { confirmedAt: '2026-11-26T09:00:00Z', staleAfterSeconds: 3600, stale: false, docs: true, timeFormat: 'dmy-weekday' };
 
 /** The state store held at one answer. */
 @Injectable()

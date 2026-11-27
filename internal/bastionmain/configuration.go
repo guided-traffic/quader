@@ -151,7 +151,9 @@ func sameFlood(a, b iface.Flood) bool {
 
 // Configuration is the handshake's member of a registration (R-BAS-093, Q-BAS-320): its revision, its switches, and its limits
 // with the table of its place - every rule's effective figures, the address rules and the five kind rules. Its rules hold whatever
-// the Bastion's own rules accept (iface.Configuration.Validate); a place without its five kind rules is an error, never a guess.
+// the Bastion's own rules accept (iface.Configuration.Validate); a place without its five kind rules is an error, never a guess. Its
+// display is the factory form of a time: the installation's own is no member of the registration, and the composition root sets it
+// from the system state where it answers a handshake (R-BAS-128, Q-BAS-402).
 func Configuration(revision int64, sw iface.Switches, l Limits, rules []PlaceRule) (iface.Configuration, error) {
 	place := iface.PlaceTable{Rules: map[string]iface.Figures{}, AddressRules: []iface.AddressRule{}}
 	kinds := map[string]string{}
@@ -181,6 +183,7 @@ func Configuration(revision int64, sw iface.Switches, l Limits, rules []PlaceRul
 			Mode: l.Mode, Preset: EffectivePreset(l, rules), Place: place, Flood: flood, Slots: l.Slots, Throughput: l.Throughput,
 			AnonymousCeiling: l.AnonymousCeiling,
 		},
+		Display: iface.Display{TimeFormat: iface.FactoryTimeFormat},
 	}
 	if err := c.Validate(); err != nil {
 		return iface.Configuration{}, fmt.Errorf("the configuration of a Bastion registration: %w", err)
@@ -238,7 +241,7 @@ func ValidateLimits(l Limits) error {
 		Place: iface.PlaceTable{Rules: map[string]iface.Figures{"probe": {}}, KindRules: iface.KindRules{
 			Anonymous: "probe", User: "probe", TechnicalToken: "probe", CI: "probe", Administrator: "probe",
 		}},
-	}}
+	}, Display: iface.Display{TimeFormat: iface.FactoryTimeFormat}}
 	return probe.Validate()
 }
 

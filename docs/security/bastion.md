@@ -485,6 +485,14 @@ Interface version 9 (built on 2026-11-26 by W34-E19; [spec/bastion.md](../spec/b
 | A forwarded `GET` may say that it answers a `HEAD` | `Quader-Bastion-For-Head: true` makes the main installation record no download for the answer and charge no download figure: no statistics, no activity, no `artifact.downloaded`, no cached bytes, admission or parallel lease. Only a recognized forward's statement counts (an ordinary request's header is removed and means nothing), and only on a metadata or computed route, the route of a document ([Q-BAS-482](../spec/bastion.md#q-bas-482--the-main-installation-honours-the-statement-of-a-head-on-a-documents-route-only)): on a download route the `GET` counts as it always did, so whoever holds a Bastion token cannot take an artifact out of the count, the audit log's downloads or the caller's download figures. What a token holder can still do: fetch a counted document without a download for it ([H-2370](#h-2370--a-bastion-token-takes-a-counted-documents-download-out-of-the-count)) | R-BAS-021, R-BAS-059, Q-BAS-479, Q-BAS-481, Q-BAS-482 |
 | The status says whether the cache is shared | `cache.shared` is the Bastion's word like every figure of its state ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)): a Bastion that lies about it makes the card add or not add its cache figures, nothing else | R-LIM-045, Q-BAS-480 |
 
+Interface version 10 (built on 2026-11-27 by W35-P9e; [spec/bastion.md](../spec/bastion.md#r-bas-128--the-interface-version-10-a-packages-grade-per-version-the-projects-names-and-the-installations-form-of-a-time)) adds three members:
+
+| Change | What it means for trust | Held by |
+|---|---|---|
+| A package's open findings per version are a document | The anonymous answer of the main installation, open findings only (no dismissed or resolved one, W-35's B.4b), through the strip: what an anonymous visitor of the main installation reads of the package's grades, nothing more; the time of a check is taken out and kept nowhere | R-BAS-128, Q-BAS-403 |
+| The public set names a project | The key, the display name and the description an anonymous caller of the main installation reads, their links rewritten to the Bastion's (R-BAS-107); no owner, no member count, no size | R-BAS-128, Q-BAS-423 |
+| The configuration carries the installation's form of a time | A word of six values the Bastion's rules accept or refuse (a configuration with another fails the handshake); it says nothing of the installation but how it writes a date, which its public pages show anyway; its change is a `settings` entry of the feed, which names no registration ([H-2306](#h-2306--every-bastion-learns-when-some-catalogue-or-some-configuration-changed)) | R-BAS-093, R-BAS-128, Q-BAS-402 |
+
 ## The builder of the public catalogue
 
 W-35's package P6, built on 2026-11-26 ([spec/bastion.md](../spec/bastion.md#the-builder-of-the-public-catalogue), R-BAS-104 to R-BAS-108).

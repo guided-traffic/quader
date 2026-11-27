@@ -4,6 +4,7 @@ import { LegalPageName } from '../app/api/legal-api';
 import { LegalStore } from '../app/core/legal-store';
 import { leadsWithDocs, packageMatcher, versionMatcher, versionsMatcher } from '../app/features/packages/package-matchers';
 import { filesMatcher, filesTitle } from '../app/features/repositories/files-matchers';
+import { BastionProjects } from './data/projects';
 
 /**
  * A legal page exists only while some language has a text for it (R-UI-225): otherwise its address is not found, at the address that
@@ -24,8 +25,11 @@ function legalPage(name: LegalPageName): CanActivateFn {
  * a crawler does (R-UI-231, R-BAS-121): a crawler that renders the page reads the title the application sets, so a generic "Package"
  * would be every package's. The server's words (internal/bastion/gui/page/texts.go) are these.
  */
-const packagesTitle: ResolveFn<string> = (route: ActivatedRouteSnapshot) =>
-  $localize`:@@bastion.title.packages:Packages in ${route.paramMap.get('project') ?? ''}:project:`;
+const packagesTitle: ResolveFn<string> = async (route: ActivatedRouteSnapshot) => {
+  // The project by its display name, as the server's head names it (R-BAS-128); its key where the Bastion does not offer it.
+  const project = await inject(BastionProjects).named(route.paramMap.get('project') ?? '');
+  return $localize`:@@bastion.title.packages:Packages in ${project.displayName}:project:`;
+};
 const packageTitle: ResolveFn<string> = (route: ActivatedRouteSnapshot) => route.paramMap.get('name') ?? '';
 const versionTitle: ResolveFn<string> = (route: ActivatedRouteSnapshot) =>
   `${route.paramMap.get('name') ?? ''} ${route.paramMap.get('version') ?? ''}`;
@@ -87,6 +91,12 @@ export const BASTION_ROUTES: Routes = [
         pathMatch: 'full',
         title: (route) => route.paramMap.get('key') ?? '',
         loadComponent: () => import('./pages/files-page').then((m) => m.FilesPage),
+      },
+      {
+        // Set up client of a public repository (bastion.md R-BAS-129), the target of Set up client in a panel of commands.
+        path: 'setup',
+        title: $localize`:@@route.setup.title:Set up client`,
+        loadComponent: () => import('./pages/setup-page').then((m) => m.SetupPage),
       },
       { matcher: filesMatcher, title: filesTitle, loadComponent: () => import('./pages/files-page').then((m) => m.FilesPage) },
     ],

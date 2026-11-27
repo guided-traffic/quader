@@ -34,17 +34,21 @@ const (
 	Version
 	// Legal is the imprint or the privacy notice: legal/imprint, legal/privacy.
 	Legal
+	// Setup is a public repository's page Set up client: projects/<project>/repositories/<key>/setup (R-BAS-129).
+	Setup
 )
 
 // Address is an address of a page below /ui/<locale>/ as the application's routes read it.
 type Address struct {
 	Locale string
 	Kind   Kind
-	// Project, Format, Name and Version are a package's or a version's (Name with its slashes, an npm scope's); Project alone a list's.
-	Project string
-	Format  string
-	Name    string
-	Version string
+	// Project, Format, Name and Version are a package's or a version's (Name with its slashes, an npm scope's); Project alone a list's;
+	// Project and Repository (its key) a page Set up client's.
+	Project    string
+	Repository string
+	Format     string
+	Name       string
+	Version    string
 	// LegalPage is imprint or privacy.
 	LegalPage string
 	// Tab is the query's tab of a package's or a version's page; Doc its documentation page (`doc`, `<type>/<name>`).
@@ -76,8 +80,8 @@ func Parse(locale, tail string, q url.Values) Address {
 	return a
 }
 
-// parseProject reads what follows projects/<project>: nothing or packages (the list), or a package's, a version's or the versions'
-// address.
+// parseProject reads what follows projects/<project>: nothing or packages (the list), a package's, a version's or the versions'
+// address, or a repository's page Set up client.
 func (a *Address) parseProject(rest []string, q url.Values) {
 	if len(rest) == 0 || len(rest) == 1 && rest[0] == "packages" {
 		a.Kind = List
@@ -86,6 +90,10 @@ func (a *Address) parseProject(rest []string, q url.Values) {
 				a.Filtered = true
 			}
 		}
+		return
+	}
+	if len(rest) == 3 && rest[0] == "repositories" && rest[2] == "setup" {
+		a.Kind, a.Repository = Setup, rest[1]
 		return
 	}
 	if rest[0] != "packages" || len(rest) < 3 {
@@ -151,6 +159,8 @@ func (a Address) Route() string {
 		return "legal/" + a.LegalPage
 	case List:
 		return "projects/" + url.PathEscape(a.Project) + "/packages"
+	case Setup:
+		return "projects/" + url.PathEscape(a.Project) + "/repositories/" + url.PathEscape(a.Repository) + "/setup"
 	case Package, Versions, Version:
 		segs := strings.Split(a.Name, "/")
 		for i, s := range segs {

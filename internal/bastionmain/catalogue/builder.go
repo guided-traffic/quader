@@ -236,19 +236,24 @@ func (p repo) name() string { return p.project + "/" + p.key }
 
 // publicSet reads the projects and the repositories the anonymous caller reads (R-BAS-101's public set).
 func (r *run) publicSet(ctx context.Context) (iface.CataloguePublic, []repo, error) {
-	pub := iface.CataloguePublic{Projects: []string{}, Repositories: []iface.CatalogueRepository{}}
+	pub := iface.CataloguePublic{Projects: []iface.CatalogueProject{}, Repositories: []iface.CatalogueRepository{}}
 	projects, _, err := r.rd.list(ctx, "/api/v1/projects", listPage)
 	if err != nil {
 		return pub, nil, err
 	}
 	var repos []repo
 	for _, raw := range projects {
-		var p struct {
-			Key string `json:"key"`
-		}
+		// The project as the anonymous caller reads it: its key, and the display name and the description it reads of it (R-BAS-128).
+		// Their links are rewritten as a document's text is (R-BAS-107): an origin of the main installation in a description becomes
+		// the Bastion's.
+		var p iface.CatalogueProject
 		if json.Unmarshal(raw, &p) != nil || p.Key == "" {
 			continue
 		}
+		if p.DisplayName == "" {
+			p.DisplayName = p.Key
+		}
+		p.DisplayName, p.Description = r.rw.text(p.DisplayName), r.rw.text(p.Description)
 		items, ok, err := r.rd.list(ctx, "/api/v1/projects/"+esc(p.Key)+"/repositories", listPage)
 		if err != nil {
 			return pub, nil, err
@@ -256,7 +261,7 @@ func (r *run) publicSet(ctx context.Context) (iface.CataloguePublic, []repo, err
 		if !ok || len(items) == 0 {
 			continue
 		}
-		pub.Projects = append(pub.Projects, p.Key)
+		pub.Projects = append(pub.Projects, p)
 		for _, raw := range items {
 			var rr struct {
 				Key        string `json:"key"`
@@ -275,7 +280,7 @@ func (r *run) publicSet(ctx context.Context) (iface.CataloguePublic, []repo, err
 			pub.Repositories = append(pub.Repositories, iface.CatalogueRepository{Name: x.name(), Format: x.format, Class: x.class, Wiki: x.wiki})
 		}
 	}
-	sort.Strings(pub.Projects)
+	sort.Slice(pub.Projects, func(i, j int) bool { return pub.Projects[i].Key < pub.Projects[j].Key })
 	sort.Slice(pub.Repositories, func(i, j int) bool { return pub.Repositories[i].Name < pub.Repositories[j].Name })
 	sort.Slice(repos, func(i, j int) bool { return repos[i].name() < repos[j].name() })
 	return pub, repos, nil
@@ -516,6 +521,16 @@ func (r *run) pkg(ctx context.Context, e entry, repos []repo) ([]rendered, error
 		return nil, err
 	}
 	out = append(out, rendered{path: iface.CataloguePath{Kind: iface.CatalogueVersions, Package: e.ID}.String(), body: vp.Body})
+	// The open findings per version, the grade column of the versions' table (R-BAS-128): the anonymous answer counts the open statuses
+	// alone (W-35's B.4b), and the strip takes each grade's checkedAt out without a state to keep it in, since the column does not show
+	// it; the version's own report keeps its time in the version's state.
+	pv, err := r.doc(ctx, iface.CataloguePath{Kind: iface.CataloguePackageVulnerabilities, Package: e.ID}, base+"/vulnerabilities", nil, &none)
+	if err != nil {
+		return nil, err
+	}
+	if pv != nil {
+		out = append(out, *pv)
+	}
 	f := r.formats[e.Format]
 	for _, raw := range items {
 		var v struct {

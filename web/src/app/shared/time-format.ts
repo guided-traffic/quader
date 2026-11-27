@@ -9,7 +9,8 @@ import { signal } from '@angular/core';
  *
  * The form is the reader's choice (Q-UI-1560): their preference, else the installation's default, else the factory default, the
  * owner's `26.11.2026 21:39:22 (Thu.)`. [timeFormat] holds the form in force; the main application's `PreferencesStore` sets it, the
- * Bastion's application leaves the factory default (Q-UI-1565). Times stand in the browser's zone unless a caller names one.
+ * Bastion's application the installation's default its state names (`BastionStateStore`, Q-UI-1467, which revised Q-UI-1565). Times
+ * stand in the browser's zone unless a caller names one.
  */
 
 /** The forms a reader can choose, in the order the choice offers them (Q-UI-1561). */

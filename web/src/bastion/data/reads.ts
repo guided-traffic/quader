@@ -33,7 +33,6 @@ import { LegalApi, LegalPages } from '../../app/api/legal-api';
 import { FormatDescriptor } from '../../app/api/repositories-api';
 import { FormatCatalog } from '../../app/core/format-names';
 import { SIGNED_IN } from '../../app/core/signed-in';
-import { SETUP_PAGES } from '../../app/views/setup-pages';
 import { SystemClients } from '../../app/core/system-clients';
 import { narrowDocTree } from '../../app/views/packages/docs-model';
 import { BastionData, DATA_ROOT, seg } from './http';
@@ -209,8 +208,8 @@ export class BastionClientSetupReads extends ClientSetupReads {
 
 /**
  * The vulnerability reads of the Bastion's application (R-UI-228): a version's report of open findings (W-35's B.4a), which carries its
- * findings for a reader without a session (R-UI-224). The catalogue holds no report per package and no advisory: those answer as a
- * read the caller may not make, and the views show the version's report alone.
+ * findings for a reader without a session (R-UI-224), and a package's grade per version, the column of its versions' table (bastion.md
+ * R-BAS-128). The catalogue holds no advisory: that answers as a read the caller may not make.
  */
 @Injectable()
 export class BastionVulnerabilityReads extends VulnerabilityReads {
@@ -222,8 +221,13 @@ export class BastionVulnerabilityReads extends VulnerabilityReads {
     return this.times.with(packageId, version, 'vulnerabilities', report);
   }
 
-  override async packageReport(): Promise<VulnerabilityPackageReport> {
-    throw notHeld();
+  /**
+   * The grade of every version as the catalogue keeps it (`packages/<id>/vulnerabilities`): over every public repository that holds the
+   * version, the worst first, as the main installation answers an anonymous caller; the document has no narrower form, so a repository
+   * named here narrows nothing (no view of the Bastion names one).
+   */
+  override packageReport(packageId: string): Promise<VulnerabilityPackageReport> {
+    return this.data.get<VulnerabilityPackageReport>(`${packagePath(packageId)}/vulnerabilities`);
   }
 
   override findings(): PageFetcher<VulnerabilityFinding> {
@@ -327,7 +331,8 @@ export class BastionSystemClients extends SystemClients {
 
 /**
  * The reads of the Bastion's application, bound to the catalogue (R-UI-228): the views' abstract reads, the legal pages, the format
- * catalogue, the system repositories' switch, a reader who is never signed in, and no page Set up client.
+ * catalogue, the system repositories' switch, and a reader who is never signed in. A panel of commands leads to the Bastion's own page
+ * Set up client (bastion.md R-BAS-129), so `SETUP_PAGES` keeps its default.
  */
 export function provideBastionReads(): Provider[] {
   return [
@@ -340,7 +345,5 @@ export function provideBastionReads(): Provider[] {
     { provide: FormatCatalog, useClass: BastionFormatCatalog },
     { provide: SystemClients, useClass: BastionSystemClients },
     { provide: SIGNED_IN, useValue: signal(false).asReadonly() },
-    // The Bastion has no page Set up client: a panel of commands offers no link to one (Q-UI-1456).
-    { provide: SETUP_PAGES, useValue: false },
   ];
 }

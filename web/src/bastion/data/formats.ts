@@ -59,8 +59,8 @@ export const BASTION_FORMATS: readonly FormatDescriptor[] = [
     displayName: 'NuGet',
     clients: [
       { id: 'dotnet', displayName: '.NET CLI (dotnet)' },
-      { id: 'nuget', displayName: 'NuGet CLI (nuget.exe)' },
-      { id: 'visual-studio', displayName: 'Visual Studio' },
+      { id: 'nuget', displayName: 'nuget.exe' },
+      { id: 'visual-studio', displayName: 'Visual Studio 2022' },
     ],
     vulnerabilityScanning: true,
     wiki: true,
@@ -75,6 +75,7 @@ export const BASTION_FORMATS: readonly FormatDescriptor[] = [
     clients: [
       { id: 'docker', displayName: 'Docker CLI (with Buildx)' },
       { id: 'podman', displayName: 'Podman' },
+      { id: 'helm', displayName: 'Helm' },
     ],
     namespaces: { kind: 'path', separator: '/', marker: '', nested: true },
     vulnerabilityScanning: true,
@@ -108,7 +109,11 @@ export const BASTION_FORMATS: readonly FormatDescriptor[] = [
     displayName: 'Generic',
     classes: ['local'],
     patternSubject: 'path',
-    clients: [{ id: 'curl', displayName: 'curl' }],
+    clients: [
+      { id: 'curl', displayName: 'curl' },
+      { id: 'wget', displayName: 'wget' },
+      { id: 'powershell', displayName: 'PowerShell (Invoke-WebRequest)' },
+    ],
     signatureKinds: [{ name: 'signature file', role: 'publisher' }],
   }),
   format({

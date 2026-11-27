@@ -157,7 +157,7 @@ func (c *Catalogue) PublicSet() (iface.CataloguePublic, error) {
 		return iface.CataloguePublic{}, err
 	}
 	return iface.CataloguePublic{
-		Projects: append([]string{}, s.public.Projects...), Repositories: append([]iface.CatalogueRepository{}, s.public.Repositories...),
+		Projects: append([]iface.CatalogueProject{}, s.public.Projects...), Repositories: append([]iface.CatalogueRepository{}, s.public.Repositories...),
 	}, nil
 }
 

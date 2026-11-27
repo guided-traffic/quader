@@ -145,11 +145,13 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 			base + "/ui/en" + pkg + "?doc=module%2Fbutton&tab=documentation", "TechArticle", false,
 		},
 		{"/ui/en" + pkg + "?tab=documentation&doc=module/none", "@acme/ui – Quader", base + "/ui/en" + pkg, "SoftwareApplication", false},
-		{"/ui/de/projects/acme/packages", "Pakete in acme – Quader", base + "/ui/de/projects/acme/packages", "WebPage", false},
-		{"/ui/de/projects/acme", "Pakete in acme – Quader", base + "/ui/de/projects/acme/packages", "WebPage", false},
-		{"/ui/en/projects/acme/packages?q=ui", "Packages in acme – Quader", base + "/ui/en/projects/acme/packages", "WebPage", true},
+		{"/ui/de/projects/acme/packages", "Pakete in Acme platform – Quader", base + "/ui/de/projects/acme/packages", "WebPage", false},
+		{"/ui/de/projects/acme", "Pakete in Acme platform – Quader", base + "/ui/de/projects/acme/packages", "WebPage", false},
+		{"/ui/en/projects/acme/packages?q=ui", "Packages in Acme platform – Quader", base + "/ui/en/projects/acme/packages", "WebPage", true},
 		{"/ui/en/", "Projects – Quader", base + "/ui/en/", "WebPage", false},
 		{"/ui/en/legal/imprint", "Imprint – Quader", base + "/ui/en/legal/imprint", "WebPage", false},
+		// A public repository's page Set up client is found and never indexed (R-BAS-129, Q-BAS-401), its canonical address without the client.
+		{"/ui/de/projects/acme/repositories/npm/setup?client=pnpm", "Client einrichten – Quader", base + "/ui/de/projects/acme/repositories/npm/setup", "WebPage", true},
 	}
 	for _, c := range cases {
 		rec := do(h, http.MethodGet, c.target)
@@ -160,8 +162,8 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 			t.Errorf("%s = %d, want %q, %q, %s, noindex %t:\n%s", c.target, rec.Code, c.title, c.canonical, c.ldType, c.noindex, body)
 		}
 	}
-	if body := do(h, http.MethodGet, "/ui/en/").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/acme/packages">acme</a>`) ||
-		!strings.Contains(body, `<a href="/ui/en/projects/web/packages">web</a>`) || strings.Contains(body, ">upstream<") {
+	if body := do(h, http.MethodGet, "/ui/en/").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/acme/packages">Acme platform</a> – The packages Acme publishes.`) ||
+		!strings.Contains(body, `<a href="/ui/en/projects/web/packages">Web</a>`) || strings.Contains(body, ">upstream<") {
 		t.Errorf("the start's text:\n%s", body)
 	}
 	if body := do(h, http.MethodGet, "/ui/de/legal/imprint").Body.String(); !strings.Contains(body, "Beispiel GmbH") {
@@ -172,7 +174,7 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 	for _, target := range []string{
 		"/ui/en/nothing", "/ui/en/index.html", "/ui/en/projects/web/packages/npm/@acme/ui", "/ui/en/projects/acme/packages/npm/@acme/gone",
 		"/ui/en" + pkg + "@9.9.9", "/ui/en/projects/upstream/packages", "/ui/en/projects/nobody/packages", "/ui/en/legal/privacy",
-		"/ui/en/projects/acme/packages/npm/@acme/ui@1.0.0/-/versions",
+		"/ui/en/projects/acme/packages/npm/@acme/ui@1.0.0/-/versions", "/ui/en/projects/acme/repositories/internal/setup",
 	} {
 		rec := do(h, http.MethodGet, target)
 		body := rec.Body.String()

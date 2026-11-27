@@ -168,6 +168,59 @@ func (w *world) documentationFollowsTheWikiAndTheSwitch(docs *atomic.Bool) {
 	w.t.Logf("the documentation followed the wiki and the switch in %s", time.Since(start).Round(100*time.Millisecond))
 }
 
+// namesGradesAndTheFormOfATime (R-BAS-128): every package of the catalogue has its open findings per version as a document of its
+// own, read from the anonymous answer of the main installation; the public set names the project with its display name; and the
+// handshake's configuration carries the installation's default form of a time, the factory form first and the one an administrator
+// sets after it, without a change of the registration's revision. No world of its own; one handshake and one setting.
+func (w *world) namesGradesAndTheFormOfATime(docs map[string][]byte) {
+	w.t.Helper()
+	packages, graded := 0, 0
+	for p, raw := range docs {
+		switch {
+		case strings.HasPrefix(p, "packages/") && strings.Count(p, "/") == 1:
+			packages++
+		case strings.HasPrefix(p, "packages/") && strings.HasSuffix(p, "/vulnerabilities") && strings.Count(p, "/") == 2:
+			if !bytes.Contains(raw, []byte(`"versions":[{"grade":`)) || bytes.Contains(raw, []byte(`"checkedAt"`)) {
+				w.t.Errorf("%s: %.300s", p, raw)
+			}
+			graded++
+		}
+	}
+	if packages != 3 || graded != 3 {
+		w.t.Errorf("%d packages, %d with their findings per version", packages, graded)
+	}
+
+	a := w.catalogue("GET", iface.PathCataloguePublic, nil)
+	var pub iface.CataloguePublic
+	if a.Status != http.StatusOK || iface.DecodeStrict(bytes.NewReader(a.Body), &pub) != nil || len(pub.Projects) != 1 ||
+		pub.Projects[0].Key != testenv.DefaultProject || pub.Projects[0].DisplayName == "" {
+		w.t.Fatalf("the public set: %d %s", a.Status, a.Body)
+	}
+
+	display := func() (string, int64) {
+		a := w.api("GET", iface.PathHandshake, w.bst, nil, iface.HeaderInterface, strconv.Itoa(iface.InterfaceVersion),
+			"X-Forwarded-Proto", "https", "X-Forwarded-Host", baseHost)
+		var h iface.Handshake
+		if a.Status != http.StatusOK || iface.DecodeStrict(bytes.NewReader(a.Body), &h) != nil {
+			w.t.Fatalf("handshake: %d %s", a.Status, a.Body)
+		}
+		return h.Configuration.Display.TimeFormat, h.Configuration.Revision
+	}
+	form, revision := display()
+	if form != iface.FactoryTimeFormat {
+		w.t.Fatalf("the handshake's form of a time is %q, want the factory form", form)
+	}
+	w.mustAPI("PUT", "/api/v1/system/time-format", 200, map[string]any{"timeFormat": "iso"})
+	testenv.WaitFor(w.t, "the installation's form of a time in the handshake", 10*time.Second, func() bool {
+		f, r := display()
+		if r != revision {
+			w.t.Fatalf("the registration's revision moved from %d to %d with the installation's form of a time", revision, r)
+		}
+		return f == "iso"
+	})
+	w.mustAPI("PUT", "/api/v1/system/time-format", 200, map[string]any{"timeFormat": iface.FactoryTimeFormat})
+}
+
 // TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch: the catalogue of a registration whose web interface is on holds
 // the public packages within the debounce of their publish, every document is free of the main installation's base URL, of
 // another Bastion's and of the management API's path, a level lowered to private deletes what fell out, and the web interface
@@ -244,6 +297,7 @@ func TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch(t *testing.T) 
 	if !bytes.Contains(setup, []byte(baseHost)) {
 		t.Errorf("the set-up of a version does not name the Bastion: %s", setup)
 	}
+	w.namesGradesAndTheFormOfATime(docs)
 	w.documentationFollowsTheWikiAndTheSwitch(&docsOn)
 
 	// A level lowered to private: what fell out is deleted.

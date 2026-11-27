@@ -223,6 +223,36 @@ func (e BastionCataloguePublicRepositoriesClass) Valid() bool {
 	}
 }
 
+// Defines values for BastionConfigurationDisplayTimeFormat.
+const (
+	BastionConfigurationDisplayTimeFormatDmy        BastionConfigurationDisplayTimeFormat = "dmy"
+	BastionConfigurationDisplayTimeFormatDmySlash   BastionConfigurationDisplayTimeFormat = "dmy-slash"
+	BastionConfigurationDisplayTimeFormatDmyWeekday BastionConfigurationDisplayTimeFormat = "dmy-weekday"
+	BastionConfigurationDisplayTimeFormatIso        BastionConfigurationDisplayTimeFormat = "iso"
+	BastionConfigurationDisplayTimeFormatLocale     BastionConfigurationDisplayTimeFormat = "locale"
+	BastionConfigurationDisplayTimeFormatMdy        BastionConfigurationDisplayTimeFormat = "mdy"
+)
+
+// Valid indicates whether the value is a known member of the BastionConfigurationDisplayTimeFormat enum.
+func (e BastionConfigurationDisplayTimeFormat) Valid() bool {
+	switch e {
+	case BastionConfigurationDisplayTimeFormatDmy:
+		return true
+	case BastionConfigurationDisplayTimeFormatDmySlash:
+		return true
+	case BastionConfigurationDisplayTimeFormatDmyWeekday:
+		return true
+	case BastionConfigurationDisplayTimeFormatIso:
+		return true
+	case BastionConfigurationDisplayTimeFormatLocale:
+		return true
+	case BastionConfigurationDisplayTimeFormatMdy:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BastionConfigurationLimitsMode.
 const (
 	BastionConfigurationLimitsModeAudit   BastionConfigurationLimitsMode = "audit"
@@ -6105,28 +6135,28 @@ func (e TechnicalTokenCreatedState) Valid() bool {
 
 // Defines values for TimeFormat.
 const (
-	Dmy        TimeFormat = "dmy"
-	DmySlash   TimeFormat = "dmy-slash"
-	DmyWeekday TimeFormat = "dmy-weekday"
-	Iso        TimeFormat = "iso"
-	Locale     TimeFormat = "locale"
-	Mdy        TimeFormat = "mdy"
+	TimeFormatDmy        TimeFormat = "dmy"
+	TimeFormatDmySlash   TimeFormat = "dmy-slash"
+	TimeFormatDmyWeekday TimeFormat = "dmy-weekday"
+	TimeFormatIso        TimeFormat = "iso"
+	TimeFormatLocale     TimeFormat = "locale"
+	TimeFormatMdy        TimeFormat = "mdy"
 )
 
 // Valid indicates whether the value is a known member of the TimeFormat enum.
 func (e TimeFormat) Valid() bool {
 	switch e {
-	case Dmy:
+	case TimeFormatDmy:
 		return true
-	case DmySlash:
+	case TimeFormatDmySlash:
 		return true
-	case DmyWeekday:
+	case TimeFormatDmyWeekday:
 		return true
-	case Iso:
+	case TimeFormatIso:
 		return true
-	case Locale:
+	case TimeFormatLocale:
 		return true
-	case Mdy:
+	case TimeFormatMdy:
 		return true
 	default:
 		return false
@@ -10275,7 +10305,13 @@ type BastionCatalogueChanges struct {
 
 // BastionCataloguePublic The projects and repositories a registration's catalogue shows (R-BAS-101).
 type BastionCataloguePublic struct {
-	Projects     []string `json:"projects"`
+	// Projects The public projects, by key, each with the display name and the description an anonymous reader reads (R-BAS-128).
+	Projects []struct {
+		// Description "" for a project without one.
+		Description string `json:"description"`
+		DisplayName string `json:"displayName"`
+		Key         string `json:"key"`
+	} `json:"projects"`
 	Repositories []struct {
 		Class  BastionCataloguePublicRepositoriesClass `json:"class"`
 		Format string                                  `json:"format"`
@@ -10323,12 +10359,20 @@ type BastionCheckRequest struct {
 
 // BastionConfiguration The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
 // or `null` for unlimited. The main installation answers it from its snapshot of the registrations: the registration's own
-// members and the rules of its place with each rule's effective figures, of one moment.
+// members and the rules of its place with each rule's effective figures, of one moment, and the installation's display.
 type BastionConfiguration struct {
+	// Display How the Bastion's web interface writes what the installation's settings decide (R-BAS-128).
+	Display struct {
+		// TimeFormat The installation's default form of a time (R-UI-251), which the web interface writes every time in.
+		TimeFormat BastionConfigurationDisplayTimeFormat `json:"timeFormat"`
+	} `json:"display"`
+
 	// Limits A Bastion's limits (R-BAS-093 to R-BAS-097).
 	Limits BastionConfigurationLimits `json:"limits"`
 
 	// Revision The registration's revision, raised also by a change of a rule of the Bastion's place or of a profile such a rule names.
+	// `display` is the installation's and changes without it (Q-BAS-402): a replica applies a configuration that differs in any
+	// member.
 	Revision int64 `json:"revision"`
 	Switches struct {
 		// Docs Its documentation, effective only with `gui` (R-BAS-102). Off for a new registration.
@@ -10341,6 +10385,9 @@ type BastionConfiguration struct {
 		Handover bool `json:"handover"`
 	} `json:"switches"`
 }
+
+// BastionConfigurationDisplayTimeFormat The installation's default form of a time (R-UI-251), which the web interface writes every time in.
+type BastionConfigurationDisplayTimeFormat string
 
 // BastionConfigurationLimits A Bastion's limits (R-BAS-093 to R-BAS-097).
 type BastionConfigurationLimits struct {
@@ -10584,7 +10631,7 @@ type BastionHandshake struct {
 
 	// Configuration The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
 	// or `null` for unlimited. The main installation answers it from its snapshot of the registrations: the registration's own
-	// members and the rules of its place with each rule's effective figures, of one moment.
+	// members and the rules of its place with each rule's effective figures, of one moment, and the installation's display.
 	Configuration BastionConfiguration `json:"configuration"`
 	Feed          struct {
 		Cursor string `json:"cursor"`

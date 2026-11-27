@@ -381,8 +381,29 @@ func (a *App) bastionConfiguration() func(context.Context, bastionmain.Recogniti
 		}
 		// The test's switches gui and docs, when it set them (Options.BastionSwitches); the stored ones otherwise.
 		c.Switches = a.bastionSwitches(rec.Bastion, c.Switches)
+		display, err := a.bastionDisplay(ctx)
+		if err != nil {
+			return iface.Configuration{}, errs.Wrap(err, "bastion.configuration")
+		}
+		c.Display = display
 		return c, nil
 	}
+}
+
+// bastionDisplay is the configuration's display (R-BAS-128): the installation's default form of a time (R-UI-251), read from the
+// replica's copy of the system state, which follows a change within the bound of R-ARCH-018. A replica without the store (a test
+// without a database) names the factory form. A change of the form reaches every Bastion as a settings entry of the feed
+// (system.time_format_changed), which makes it handshake again.
+func (a *App) bastionDisplay(ctx context.Context) (iface.Display, error) {
+	sys := part[infra](a.parts).sys
+	if sys == nil {
+		return iface.Display{TimeFormat: iface.FactoryTimeFormat}, nil
+	}
+	st, err := sys.Get(ctx)
+	if err != nil {
+		return iface.Display{}, err
+	}
+	return iface.Display{TimeFormat: st.TimeFormat.TimeFormat}, nil
 }
 
 // bastionSnapshot is the replica's snapshot of the Bastion registrations: the switches of the handover per blob (R-BAS-071),

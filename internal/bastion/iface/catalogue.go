@@ -89,7 +89,7 @@ func (c CatalogueChanges) Validate(after int64) error {
 // Bastion re-reads on a feed entry of the kinds grants and settings and hides what fell out of. The lists are written as []
 // when empty.
 type CataloguePublic struct {
-	Projects     []string              `json:"projects"`
+	Projects     []CatalogueProject    `json:"projects"`
 	Repositories []CatalogueRepository `json:"repositories"`
 }
 
@@ -98,12 +98,30 @@ func (p CataloguePublic) MarshalJSON() ([]byte, error) {
 	type plain CataloguePublic
 	q := plain(p)
 	if q.Projects == nil {
-		q.Projects = []string{}
+		q.Projects = []CatalogueProject{}
 	}
 	if q.Repositories == nil {
 		q.Repositories = []CatalogueRepository{}
 	}
 	return json.Marshal(q)
+}
+
+// CatalogueProject is one public project of the catalogue (R-BAS-128): its key, the display name and the description an anonymous
+// reader of the main installation reads of it, so that the Bastion's pages name a project as the main installation's do. Description
+// is "" for a project that has none.
+type CatalogueProject struct {
+	Key         string `json:"key"`
+	DisplayName string `json:"displayName"`
+	Description string `json:"description"`
+}
+
+// ProjectKeys are the keys of the projects, in their order.
+func (p CataloguePublic) ProjectKeys() []string {
+	out := make([]string, 0, len(p.Projects))
+	for _, x := range p.Projects {
+		out = append(out, x.Key)
+	}
+	return out
 }
 
 // CatalogueRepository is one public repository of the catalogue: its qualified name "<projectKey>/<repoKey>", its format
@@ -122,21 +140,24 @@ type CatalogueKind string
 // The kinds of document and the form of their path. A placeholder is one segment percent-encoded by the rule of
 // [CataloguePath]; <file...> is one or more of them.
 const (
-	CatalogueIndex           CatalogueKind = "index"           // index/<n>
-	CataloguePackage         CatalogueKind = "package"         // packages/<id>
-	CatalogueVersions        CatalogueKind = "versions"        // packages/<id>/versions
-	CatalogueVersion         CatalogueKind = "version"         // packages/<id>/versions/<v>
-	CatalogueReadme          CatalogueKind = "readme"          // packages/<id>/versions/<v>/readme
-	CatalogueVulnerabilities CatalogueKind = "vulnerabilities" // packages/<id>/versions/<v>/vulnerabilities
-	CatalogueSignatures      CatalogueKind = "signatures"      // packages/<id>/versions/<v>/signatures
-	CatalogueContents        CatalogueKind = "contents"        // packages/<id>/versions/<v>/contents
-	CatalogueDocs            CatalogueKind = "docs"            // packages/<id>/versions/<v>/docs
-	CatalogueDocEntry        CatalogueKind = "docEntry"        // packages/<id>/versions/<v>/docs/entries/<type>/<name>
-	CatalogueDocFile         CatalogueKind = "docFile"         // packages/<id>/versions/<v>/docs/files/<file...>
-	CatalogueSetup           CatalogueKind = "setup"           // setup/<project>/<repo>/<client>[/<package>/<version>]
-	CatalogueSignatureObject CatalogueKind = "signatureObject" // signatures/objects/<sha256>
-	CatalogueTrustedRoot     CatalogueKind = "trustedRoot"     // signing/trusted-root.json
-	CatalogueChain           CatalogueKind = "chain"           // signing/chain.pem
+	CatalogueIndex    CatalogueKind = "index"    // index/<n>
+	CataloguePackage  CatalogueKind = "package"  // packages/<id>
+	CatalogueVersions CatalogueKind = "versions" // packages/<id>/versions
+	// CataloguePackageVulnerabilities is a package's open findings per version: the grade and the counts of every version
+	// (R-BAS-128), the main installation's anonymous answer of GET /api/v1/packages/{id}/vulnerabilities.
+	CataloguePackageVulnerabilities CatalogueKind = "packageVulnerabilities" // packages/<id>/vulnerabilities
+	CatalogueVersion                CatalogueKind = "version"                // packages/<id>/versions/<v>
+	CatalogueReadme                 CatalogueKind = "readme"                 // packages/<id>/versions/<v>/readme
+	CatalogueVulnerabilities        CatalogueKind = "vulnerabilities"        // packages/<id>/versions/<v>/vulnerabilities
+	CatalogueSignatures             CatalogueKind = "signatures"             // packages/<id>/versions/<v>/signatures
+	CatalogueContents               CatalogueKind = "contents"               // packages/<id>/versions/<v>/contents
+	CatalogueDocs                   CatalogueKind = "docs"                   // packages/<id>/versions/<v>/docs
+	CatalogueDocEntry               CatalogueKind = "docEntry"               // packages/<id>/versions/<v>/docs/entries/<type>/<name>
+	CatalogueDocFile                CatalogueKind = "docFile"                // packages/<id>/versions/<v>/docs/files/<file...>
+	CatalogueSetup                  CatalogueKind = "setup"                  // setup/<project>/<repo>/<client>[/<package>/<version>]
+	CatalogueSignatureObject        CatalogueKind = "signatureObject"        // signatures/objects/<sha256>
+	CatalogueTrustedRoot            CatalogueKind = "trustedRoot"            // signing/trusted-root.json
+	CatalogueChain                  CatalogueKind = "chain"                  // signing/chain.pem
 	// CatalogueVersionState is the times of a version's documents (built, checked, scanned) that the documents themselves do not
 	// carry, so that a document changes only with its content (R-BAS-103).
 	CatalogueVersionState CatalogueKind = "versionState" // packages/<id>/versions/<v>/state
@@ -228,6 +249,8 @@ func (p CataloguePath) String() string {
 		return "packages/" + e(p.Package)
 	case CatalogueVersions:
 		return "packages/" + e(p.Package) + "/versions"
+	case CataloguePackageVulnerabilities:
+		return "packages/" + e(p.Package) + "/vulnerabilities"
 	case CatalogueVersion:
 		return version
 	case CatalogueReadme, CatalogueVulnerabilities, CatalogueSignatures, CatalogueContents, CatalogueDocs:
@@ -361,6 +384,10 @@ func parsePackagePath(raw, segs []string, bad func() (CataloguePath, error)) (Ca
 	}
 	p := CataloguePath{Kind: CataloguePackage, Package: segs[1]}
 	if n == 2 {
+		return p, nil
+	}
+	if n == 3 && raw[2] == "vulnerabilities" {
+		p.Kind = CataloguePackageVulnerabilities
 		return p, nil
 	}
 	if raw[2] != "versions" {

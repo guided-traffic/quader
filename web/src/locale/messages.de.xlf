@@ -14333,8 +14333,8 @@
         <note category="location">src/app/features/packages/package-list.html:2,5</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:25,27</note>
         <note category="location">src/app/features/repositories/repository-list.html:211,212</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:130,131</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:146,147</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:129,130</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:145,146</note>
         <note category="location">src/app/views/packages/package-version-view.html:79,82</note>
       </notes>
       <segment>
@@ -43283,36 +43283,9 @@
         <target>Akzeptierte Vertrauensanker:</target>
       </segment>
     </unit>
-    <unit id="setup.tab.configure">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:284,285</note>
-      </notes>
-      <segment>
-        <source>Configure</source>
-        <target>Konfigurieren</target>
-      </segment>
-    </unit>
-    <unit id="setup.tab.install">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:288,289</note>
-      </notes>
-      <segment>
-        <source>Install</source>
-        <target>Installieren</target>
-      </segment>
-    </unit>
-    <unit id="setup.tab.publish">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:293,294</note>
-      </notes>
-      <segment>
-        <source>Publish</source>
-        <target>Veröffentlichen</target>
-      </segment>
-    </unit>
     <unit id="setup.publish.no-target">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:296,298</note>
+        <note category="location">src/app/features/setup/client-setup.html:272,275</note>
       </notes>
       <segment>
         <source> This virtual repository has no default deployment target, so there is nothing to publish to through it. Publish to one of its local repositories instead. </source>
@@ -43321,25 +43294,16 @@
     </unit>
     <unit id="setup.publish.members">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:300,303</note>
+        <note category="location">src/app/features/setup/client-setup.html:276,279</note>
       </notes>
       <segment>
         <source>Open the repository&apos;s settings to see its members</source>
         <target>Einstellungen des Repositorys öffnen, um seine Mitglieder zu sehen</target>
       </segment>
     </unit>
-    <unit id="setup.tab.verify">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:308,309</note>
-      </notes>
-      <segment>
-        <source>Verify</source>
-        <target>Prüfen</target>
-      </segment>
-    </unit>
     <unit id="setup.loading.client">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:314,317</note>
+        <note category="location">src/app/features/setup/client-setup.html:281,284</note>
       </notes>
       <segment>
         <source>Loading the client setup.</source>
@@ -43348,7 +43312,7 @@
     </unit>
     <unit id="setup.bastion.no-guide">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:320,322</note>
+        <note category="location">src/app/features/setup/client-setup.html:287,289</note>
       </notes>
       <segment>
         <source>The explanation describes this installation. Choose This installation under More options to read it.</source>
@@ -43357,7 +43321,7 @@
     </unit>
     <unit id="setup.guide.heading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:323,324</note>
+        <note category="location">src/app/features/setup/client-setup.html:290,291</note>
       </notes>
       <segment>
         <source>Guide</source>
@@ -43411,7 +43375,7 @@
     </unit>
     <unit id="setup.bastion.replace-host">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:378</note>
+        <note category="location">src/app/features/setup/client-setup.ts:376</note>
       </notes>
       <segment>
         <source>`replace-registry-host=always` makes npm fetch every package from this address, also when a lockfile written against another host names that host.</source>
@@ -43420,7 +43384,7 @@
     </unit>
     <unit id="setup.token.description">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:399</note>
+        <note category="location">src/app/features/setup/client-setup.ts:396</note>
       </notes>
       <segment>
         <source>Client setup: <ph id="0" equiv="client" disp="setup.client"/>, <ph id="1" equiv="repository" disp="repository"/>, <ph id="2" equiv="date" disp="new Date().toISOString().slice(0, 10)"/></source>
@@ -60377,8 +60341,8 @@
       <notes>
         <note category="location">src/app/views/files/file-view.ts:61,62</note>
         <note category="location">src/app/views/files/file-view.ts:277</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:122,123</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:375</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:121,122</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:373</note>
       </notes>
       <segment>
         <source>Download address</source>
@@ -60563,7 +60527,7 @@
     <unit id="files.copy-download-address">
       <notes>
         <note category="location">src/app/views/files/file-view.ts:278</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:376</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:374</note>
       </notes>
       <segment>
         <source>Copy download address</source>
@@ -61705,7 +61669,7 @@
     </unit>
     <unit id="pkg.install.repository">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:111,112</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:110,111</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -61714,7 +61678,7 @@
     </unit>
     <unit id="pkg.command-menu.by-digest">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:173,175</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:172,174</note>
       </notes>
       <segment>
         <source>By digest</source>
@@ -61723,7 +61687,7 @@
     </unit>
     <unit id="pkg.command-menu.checksum">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:188,190</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:187,189</note>
       </notes>
       <segment>
         <source>Check the download</source>
@@ -61732,7 +61696,7 @@
     </unit>
     <unit id="pkg.command-menu.label-file">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:368</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:366</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="verb" disp="this.verb()"/> <ph id="1" equiv="name" disp="this.name()"/></source>
@@ -61741,7 +61705,7 @@
     </unit>
     <unit id="pkg.command-menu.label">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:369</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:367</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="verb" disp="this.verb()"/> <ph id="1" equiv="name" disp="this.name()"/> <ph id="2" equiv="version" disp="this.version()"/></source>
@@ -61750,7 +61714,7 @@
     </unit>
     <unit id="pkg.command-menu.split">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:374</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:372</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="verb" disp="this.verb()"/> with a client</source>
@@ -61759,7 +61723,7 @@
     </unit>
     <unit id="pkg.command-menu.field">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:388</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:386</note>
       </notes>
       <segment>
         <source>Command for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -61768,7 +61732,7 @@
     </unit>
     <unit id="pkg.command-menu.copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:392</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:390</note>
       </notes>
       <segment>
         <source>Copy the command for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -61777,7 +61741,7 @@
     </unit>
     <unit id="pkg.command-menu.digest-field">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:396</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:394</note>
       </notes>
       <segment>
         <source>Command for <ph id="0" equiv="client" disp="c.label"/> by digest</source>
@@ -61786,7 +61750,7 @@
     </unit>
     <unit id="pkg.command-menu.digest-copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:400</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:398</note>
       </notes>
       <segment>
         <source>Copy the command for <ph id="0" equiv="client" disp="c.label"/> by digest</source>
@@ -61795,7 +61759,7 @@
     </unit>
     <unit id="pkg.command-menu.check-field">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:404</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:402</note>
       </notes>
       <segment>
         <source>Check of the download for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -61804,7 +61768,7 @@
     </unit>
     <unit id="pkg.command-menu.check-copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:408</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:406</note>
       </notes>
       <segment>
         <source>Copy the check of the download for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -65054,6 +65018,42 @@
         <target>Version <ph id="0" equiv="version" disp="this.shown()"/>, Version wechseln</target>
       </segment>
     </unit>
+    <unit id="setup.tab.configure">
+      <notes>
+        <note category="location">src/app/views/setup/setup-steps.ts:36,37</note>
+      </notes>
+      <segment>
+        <source>Configure</source>
+        <target>Konfigurieren</target>
+      </segment>
+    </unit>
+    <unit id="setup.tab.install">
+      <notes>
+        <note category="location">src/app/views/setup/setup-steps.ts:40,41</note>
+      </notes>
+      <segment>
+        <source>Install</source>
+        <target>Installieren</target>
+      </segment>
+    </unit>
+    <unit id="setup.tab.publish">
+      <notes>
+        <note category="location">src/app/views/setup/setup-steps.ts:45,46</note>
+      </notes>
+      <segment>
+        <source>Publish</source>
+        <target>Veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="setup.tab.verify">
+      <notes>
+        <note category="location">src/app/views/setup/setup-steps.ts:54,55</note>
+      </notes>
+      <segment>
+        <source>Verify</source>
+        <target>Prüfen</target>
+      </segment>
+    </unit>
     <unit id="sig.gate.word.missing">
       <notes>
         <note category="location">src/app/views/signatures/gate-words.ts:13</note>
@@ -66968,16 +66968,16 @@
     </unit>
     <unit id="bastion.title.packages">
       <notes>
-        <note category="location">src/bastion/app.routes.ts:28</note>
+        <note category="location">src/bastion/app.routes.ts:31</note>
       </notes>
       <segment>
-        <source>Packages in <ph id="0" equiv="project" disp="route.paramMap.get(&apos;project&apos;) ?? &apos;&apos;"/></source>
-        <target>Pakete in <ph id="0" equiv="project" disp="route.paramMap.get(&apos;project&apos;) ?? &apos;&apos;"/></target>
+        <source>Packages in <ph id="0" equiv="project" disp="project.displayName"/></source>
+        <target>Pakete in <ph id="0" equiv="project" disp="project.displayName"/></target>
       </segment>
     </unit>
     <unit id="bastion.title.versions">
       <notes>
-        <note category="location">src/bastion/app.routes.ts:33</note>
+        <note category="location">src/bastion/app.routes.ts:37</note>
       </notes>
       <segment>
         <source>Versions of <ph id="0" equiv="name" disp="route.paramMap.get(&apos;name&apos;) ?? &apos;&apos;"/></source>
@@ -66986,8 +66986,8 @@
     </unit>
     <unit id="bastion.start.title">
       <notes>
-        <note category="location">src/bastion/app.routes.ts:45</note>
-        <note category="location">src/bastion/pages/start-page.ts:17</note>
+        <note category="location">src/bastion/app.routes.ts:49</note>
+        <note category="location">src/bastion/pages/start-page.ts:18</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -67059,8 +67059,8 @@
     </unit>
     <unit id="bastion.list.files">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:35</note>
-        <note category="location">src/bastion/pages/package-list-page.ts:35,37</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:37</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:37,39</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -67069,7 +67069,7 @@
     </unit>
     <unit id="bastion.list.search">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:113</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:116</note>
       </notes>
       <segment>
         <source>Search packages</source>
@@ -67078,7 +67078,7 @@
     </unit>
     <unit id="bastion.list.empty">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:114</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:117</note>
       </notes>
       <segment>
         <source>No package is published in this project.</source>
@@ -67087,16 +67087,34 @@
     </unit>
     <unit id="bastion.list.empty-search">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:115</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:118</note>
       </notes>
       <segment>
         <source>No package matches the search.</source>
         <target>Kein Paket passt zur Suche.</target>
       </segment>
     </unit>
+    <unit id="bastion.setup.unknown">
+      <notes>
+        <note category="location">src/bastion/pages/setup-page.ts:58,60</note>
+      </notes>
+      <segment>
+        <source>This address offers no repository of that name.</source>
+        <target>Unter dieser Adresse gibt es kein Repository dieses Namens.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.setup.no-credentials">
+      <notes>
+        <note category="location">src/bastion/pages/setup-page.ts:70,72</note>
+      </notes>
+      <segment>
+        <source>Everything here is public: the snippets need no credentials.</source>
+        <target>Alles hier ist öffentlich: Die Snippets brauchen keine Zugangsdaten.</target>
+      </segment>
+    </unit>
     <unit id="bastion.start.empty">
       <notes>
-        <note category="location">src/bastion/pages/start-page.ts:22,24</note>
+        <note category="location">src/bastion/pages/start-page.ts:23,25</note>
       </notes>
       <segment>
         <source>No package is published here yet.</source>
@@ -67105,7 +67123,7 @@
     </unit>
     <unit id="bastion.start.loading">
       <notes>
-        <note category="location">src/bastion/pages/start-page.ts:33,37</note>
+        <note category="location">src/bastion/pages/start-page.ts:37,40</note>
       </notes>
       <segment>
         <source>Loading the projects.</source>

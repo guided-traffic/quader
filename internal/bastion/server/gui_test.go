@@ -21,7 +21,7 @@ func TestR_BAS_116_TheWebInterfaceIsMountedBeforeTheEngineAndNeverReachesTheMain
 	main.SetAnonymous(true)
 	main.SetConfiguration(func(c *iface.Configuration) { c.Switches.GUI, c.Switches.Docs = true, true })
 	main.SetPublic(iface.CataloguePublic{
-		Projects: []string{"acme"}, Repositories: []iface.CatalogueRepository{{Name: "acme/npm-local", Format: "npm", Class: "local"}},
+		Projects: []iface.CatalogueProject{{Key: "acme", DisplayName: "Acme"}}, Repositories: []iface.CatalogueRepository{{Name: "acme/npm-local", Format: "npm", Class: "local"}},
 	})
 	const id = "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10"
 	summary := `{"id":"` + id + `","format":"npm","name":"left-pad","key":"left-pad","latestVersion":"1.0.0","repositories":["acme/npm-local"]}`

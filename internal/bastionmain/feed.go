@@ -64,7 +64,7 @@ func feedActions() []string {
 		audit.EventMalwareFound, audit.EventMalwareReleaseWithdrawn,
 		audit.EventSignatureReleaseWithdrawn, audit.EventSignatureAnchorRemoved, audit.EventSignatureAnchorUpdated,
 		audit.EventSignatureSettingsChanged, audit.EventSignatureSignerBlocked,
-		audit.EventBastionConfigurationChanged,
+		audit.EventBastionConfigurationChanged, audit.EventTimeFormatChanged,
 	}
 }
 
@@ -198,12 +198,15 @@ var mappers = sync.OnceValue(func() map[string]mapper {
 		audit.EventSettingsAuthChanged: mapSettings,
 		// A registration's configuration changed (R-BAS-093): every Bastion handshakes again and applies its own (Q-BAS-349).
 		audit.EventBastionConfigurationChanged: mapSettings,
-		audit.EventProjectVisibilityChanged:    mapVisibility,
-		audit.EventUserExternalChanged:         mapExternal,
-		audit.EventRepositoryNarrowed:          mapRepository,
-		eventClaimsChanged:                     mapRepository,
-		audit.EventNPMUnpublish:                mapWithdrawal,
-		audit.EventPackageDeleted:              mapWithdrawal,
+		// The installation's default form of a time changed (R-UI-251): it is the configuration's display, so every Bastion handshakes
+		// again and its web interface writes the new form (R-BAS-128, Q-BAS-402).
+		audit.EventTimeFormatChanged:        mapSettings,
+		audit.EventProjectVisibilityChanged: mapVisibility,
+		audit.EventUserExternalChanged:      mapExternal,
+		audit.EventRepositoryNarrowed:       mapRepository,
+		eventClaimsChanged:                  mapRepository,
+		audit.EventNPMUnpublish:             mapWithdrawal,
+		audit.EventPackageDeleted:           mapWithdrawal,
 		// The withdrawals of the formats a Bastion serves since every format reaches it (R-BAS-050, R-BAS-055, Q-BAS-175): a deleted
 		// manifest (and the tags and children its cascade took), a withheld Debian package file, a package taken out of a suite, a new
 		// primary key and a withdrawn key, and a deleted Galaxy version each change which bytes a URL of the repository is answered with.

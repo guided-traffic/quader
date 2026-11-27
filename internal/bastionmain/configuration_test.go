@@ -9,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/limits"
+	"github.com/guided-traffic/quader/internal/sysstate"
 )
 
 // presetRules are the five kind rules of a preset, each rule named after its kind.
@@ -209,5 +210,19 @@ func TestR_LIM_045_ABatchsUsageGoesToTheBuffer(t *testing.T) {
 	}
 	if ov := sink[3]; ov.Subject.Ref != "overflow" || ov.Subject.Kind != limits.KindAnonymous || ov.Requests != 400 {
 		t.Fatalf("the overflow row %+v", ov)
+	}
+}
+
+// TestR_BAS_128_TheConfigurationNamesTheFormsOfTheMainInstallation: the forms of a time the interface admits are the main
+// installation's, in its order, the factory default first, and a registration's configuration carries the factory form until the
+// composition root sets the installation's.
+func TestR_BAS_128_TheConfigurationNamesTheFormsOfTheMainInstallation(t *testing.T) {
+	if !slices.Equal(iface.TimeFormats(), sysstate.TimeFormats()) || iface.FactoryTimeFormat != sysstate.FactoryTimeFormat {
+		t.Fatalf("the interface's forms %v (%s) are not the main installation's %v (%s)", iface.TimeFormats(), iface.FactoryTimeFormat,
+			sysstate.TimeFormats(), sysstate.FactoryTimeFormat)
+	}
+	c, err := Configuration(1, iface.Switches{}, DefaultLimits(), presetRules(iface.PresetInternet))
+	if err != nil || c.Display.TimeFormat != iface.FactoryTimeFormat {
+		t.Fatalf("the configuration's display: %+v %v", c.Display, err)
 	}
 }

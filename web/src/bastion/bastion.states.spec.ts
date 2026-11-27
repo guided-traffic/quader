@@ -28,7 +28,7 @@ import { PackagePage, VersionPage } from './pages/package-pages';
 /** The state store as a page reads it, held at one answer: a fresh state with the documentation on (R-BAS-126) unless a state sets another. */
 @Injectable()
 class HeldState {
-  readonly answer = signal<BastionState | null>({ confirmedAt: '2026-11-26T09:00:00Z', staleAfterSeconds: 3600, stale: false, docs: true });
+  readonly answer = signal<BastionState | null>({ confirmedAt: '2026-11-26T09:00:00Z', staleAfterSeconds: 3600, stale: false, docs: true, timeFormat: 'dmy-weekday' });
   readonly failureValue = signal<ApiError | null>(null);
   readonly state = this.answer.asReadonly();
   readonly failure = this.failureValue.asReadonly();
@@ -79,7 +79,7 @@ async function shell(state: BastionState | null, failure: ApiError | null): Prom
 describe("the Bastion's pages in a browser (R-UI-227, R-UI-229)", () => {
   it('the shell with an old state: the band, the footer with the legal links and As of', async () => {
     await expectState('bastion-shell-stale', () =>
-      shell({ confirmedAt: '2026-11-26T07:15:00Z', staleAfterSeconds: 3600, stale: true, docs: true }, null),
+      shell({ confirmedAt: '2026-11-26T07:15:00Z', staleAfterSeconds: 3600, stale: true, docs: true, timeFormat: 'dmy-weekday' }, null),
     );
   });
 
@@ -123,6 +123,7 @@ describe("the Bastion's pages in a browser (R-UI-227, R-UI-229)", () => {
             staleAfterSeconds: 3600,
             stale: false,
             docs: false,
+            timeFormat: 'dmy-weekday',
           });
           const fake = get(PackagesApi) as FakePackagesApi;
           ansibleFixture(fake);

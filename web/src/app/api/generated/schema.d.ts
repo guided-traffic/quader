@@ -15166,12 +15166,14 @@ export interface components {
         /**
          * @description The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
          *     or `null` for unlimited. The main installation answers it from its snapshot of the registrations: the registration's own
-         *     members and the rules of its place with each rule's effective figures, of one moment.
+         *     members and the rules of its place with each rule's effective figures, of one moment, and the installation's display.
          */
         BastionConfiguration: {
             /**
              * Format: int64
              * @description The registration's revision, raised also by a change of a rule of the Bastion's place or of a profile such a rule names.
+             *     `display` is the installation's and changes without it (Q-BAS-402): a replica applies a configuration that differs in any
+             *     member.
              */
             revision: number;
             switches: {
@@ -15183,6 +15185,14 @@ export interface components {
                 docs: boolean;
             };
             limits: components["schemas"]["BastionConfigurationLimits"];
+            /** @description How the Bastion's web interface writes what the installation's settings decide (R-BAS-128). */
+            display: {
+                /**
+                 * @description The installation's default form of a time (R-UI-251), which the web interface writes every time in.
+                 * @enum {string}
+                 */
+                timeFormat: "dmy-weekday" | "dmy" | "iso" | "dmy-slash" | "mdy" | "locale";
+            };
         };
         /** @description A Bastion's limits (R-BAS-093 to R-BAS-097). */
         BastionConfigurationLimits: {
@@ -15506,7 +15516,15 @@ export interface components {
         };
         /** @description The projects and repositories a registration's catalogue shows (R-BAS-101). */
         BastionCataloguePublic: {
-            projects: string[];
+            /** @description The public projects, by key, each with the display name and the description an anonymous reader reads (R-BAS-128). */
+            projects: {
+                /** @example web */
+                key: string;
+                /** @example Web platform */
+                displayName: string;
+                /** @description "" for a project without one. */
+                description: string;
+            }[];
             repositories: {
                 /** @example web/npm-all */
                 name: string;

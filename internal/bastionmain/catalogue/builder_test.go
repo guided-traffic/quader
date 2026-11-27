@@ -69,7 +69,8 @@ func (f *fakeAPI) body(base string, u *url.URL) (string, bool) {
 		return `{"formats":[{"name":"npm","wiki":true,"clients":[{"id":"npm"}],"upstreamPresets":[{"url":"https://registry.npmjs.org"}]},
 			{"name":"generic","patternSubject":"path","clients":[{"id":"curl"}],"upstreamPresets":[]}]}`, true
 	case "/api/v1/projects":
-		return `{"items":[{"key":"acme"}],"nextCursor":null}`, true
+		return `{"items":[{"key":"acme","displayName":"Acme platform","description":"See ` + mainOrigin + `/ui/en/projects/acme",
+			"owners":["user:alice"],"visibility":"public","members":3}],"nextCursor":null}`, true
 	case "/api/v1/projects/acme/repositories":
 		return `{"items":[{"key":"npm-local","format":"npm","class":"local","visibility":{"artifacts":"public","wiki":"public"}},
 			{"key":"files","format":"generic","class":"local","visibility":{"artifacts":"public","wiki":"private"}}]}`, true
@@ -81,6 +82,10 @@ func (f *fakeAPI) body(base string, u *url.URL) (string, bool) {
 			"vulnerabilityGrade":{"grade":"B","checkedAt":"` + f.now + `"}}],"nextCursor":null}`, true
 	case "/api/v1/packages/" + pkgID:
 		return `{"id":"` + pkgID + `","name":"left-pad","downloadCount":51,"latestVersion":"` + f.latest + `"}`, true
+	case "/api/v1/packages/" + pkgID + "/vulnerabilities":
+		return `{"packageId":"` + pkgID + `","versions":[{"version":"1.0.0","grade":{"grade":"B","open":{"critical":0,"high":0,"medium":1,
+			"low":0,"none":0,"unknown":0},"fixable":1,"eosl":false,"checkedAt":"` + f.now + `","state":"checked","stateSince":null,
+			"stateCode":null,"repository":"acme/npm-local"}}]}`, true
 	case "/api/v1/packages/" + pkgID + "/versions":
 		return `{"items":[{"version":"1.0.0","downloadCount":3,"lastDownloadedAt":"` + f.now + `"}]}`, true
 	case v:
@@ -160,7 +165,7 @@ func TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase(t *testing.T)
 	docs := store.Raw(regID)
 	v := "packages/" + pkgID + "/versions/1.0.0"
 	for _, p := range []string{
-		"index/0", "packages/" + pkgID, "packages/" + pkgID + "/versions", v, v + "/readme", v + "/vulnerabilities", v + "/signatures",
+		"index/0", "packages/" + pkgID, "packages/" + pkgID + "/versions", "packages/" + pkgID + "/vulnerabilities", v, v + "/readme", v + "/vulnerabilities", v + "/signatures",
 		v + "/state", "setup/acme/npm-local/npm/" + pkgID + "/1.0.0", "setup/acme/npm-local/npm", "setup/acme/files/curl",
 		"files/acme/files/folder", "files/acme/files/file/tool.bin", "files/acme/files/setup/curl/tool.bin",
 		"signatures/objects/" + sigObject, "state",
@@ -172,6 +177,34 @@ func TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase(t *testing.T)
 	pub, err := store.Public(context.Background(), regID)
 	if err != nil || len(pub.Repositories) != 2 || !pub.Repositories[1].Wiki || pub.Repositories[0].Wiki {
 		t.Fatalf("the public set: %+v %v", pub, err)
+	}
+}
+
+// TestR_BAS_128_TheCatalogueNamesItsProjectsAndAPackagesGradePerVersion: the public set carries each project's key, display name and
+// description as the anonymous caller reads them, its links on the Bastion and nothing else of the project (no owner); a package's
+// open findings per version are a document of their own, the grade and the counts of each version without the time of their check.
+func TestR_BAS_128_TheCatalogueNamesItsProjectsAndAPackagesGradePerVersion(t *testing.T) {
+	store, api := cataloguetest.New(), newFake()
+	run(t, builder(store, api), reg(true, true))
+	pub, err := store.Public(context.Background(), regID)
+	if err != nil || len(pub.Projects) != 1 {
+		t.Fatalf("the public set: %+v %v", pub, err)
+	}
+	if p := pub.Projects[0]; p.Key != "acme" || p.DisplayName != "Acme platform" || p.Description != "See "+bastionURL+"/ui/en/projects/acme" {
+		t.Errorf("the project: %+v", p)
+	}
+	raw, _ := json.Marshal(pub)
+	if strings.Contains(string(raw), "alice") || strings.Contains(string(raw), "members") {
+		t.Errorf("the public set names more of the project than its names: %s", raw)
+	}
+	doc := string(store.Raw(regID)["packages/"+pkgID+"/vulnerabilities"])
+	for _, want := range []string{`"packageId":"` + pkgID + `"`, `"version":"1.0.0"`, `"grade":"B"`, `"medium":1`, `"fixable":1`, `"state":"checked"`} {
+		if !strings.Contains(doc, want) {
+			t.Errorf("the package's findings lack %s: %s", want, doc)
+		}
+	}
+	if strings.Contains(doc, "checkedAt") {
+		t.Errorf("the package's findings carry the time of their check: %s", doc)
 	}
 }
 

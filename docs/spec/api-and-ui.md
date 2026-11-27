@@ -10576,7 +10576,7 @@ main installation", for anonymous visitors from the internet who want to know wh
   hold), both locales, built and embedded by R-BAS-119.
 - **Its addresses** are the main installation's: the start (`/`), a project's packages (`/projects/<project>/packages`), a package, a
   version (`…/packages/<format>/<name>@<version>`), the versions' table of a format whose packages lead with their documentation
-  (`…/-/versions`), the imprint and the privacy notice (`/legal/imprint`, `/legal/privacy`, each only while it has a text), and not found;
+  (`…/-/versions`), a public repository's Set up client (`/projects/<project>/repositories/<key>/setup`, R-BAS-129), the imprint and the privacy notice (`/legal/imprint`, `/legal/privacy`, each only while it has a text), and not found;
   nothing else. A screen whose script the Bastion no longer holds after a rollout is loaded from the server (Q-UI-1370).
 - **The shell.** The mark and the product's name (a link to the start), the other language as a link to the same address in its build
   (`/ui/<locale>/…`), the theme (follow the system, light, dark), kept in the browser alone
@@ -10609,10 +10609,11 @@ Priority: **P1** · Covers: quader-only
   `ClientSetupReads`, `VulnerabilityReads`, `SignatureReads`, `FileReads` and `LegalApi` to implementations that read `/ui/data/v1/` with the
   catalogue's spelling of a path, GET only (`web/src/bastion/data/reads.ts`). A folder's document holds every entry, which the reads answer
   in the view's pages; a file's clients' commands are the set-up document of its path
-  ([Q-UI-1454](#q-ui-1454--the-files-views-read-a-folder-and-an-item-through-filereads-a-files-commands-stay-the-client-set-ups)). The
-  application has no page Set up client, and binds `SETUP_PAGES` (`views/setup-pages.ts`) to false, so a panel of commands offers no link
-  to one ([Q-UI-1456](#q-ui-1456--a-panel-of-commands-leads-to-set-up-client-only-where-the-application-has-the-page)). What the catalogue holds no document for (the packages
-  that depend on one, a namespace's page, a package's vulnerability report, an advisory, a file's signatures, the gate's releases)
+  ([Q-UI-1454](#q-ui-1454--the-files-views-read-a-folder-and-an-item-through-filereads-a-files-commands-stay-the-client-set-ups)). A
+  package's grade per version is the catalogue's document of it ([bastion.md](bastion.md) R-BAS-128). The application has the page Set up
+  client of a public repository ([bastion.md](bastion.md) R-BAS-129, [Q-UI-1468](#q-ui-1468--the-bastion-has-the-page-set-up-client-of-a-public-repository)),
+  so a panel of commands links it as at the main installation (Q-UI-1456's token `SETUP_PAGES` is gone). What the catalogue holds no
+  document for (the packages that depend on one, a namespace's page, an advisory, a file's signatures, the gate's releases)
   answers as a read the caller may not make, which the views show as none. A failed read is the `ApiError` every notice shows whole,
   with one retry of a read after no answer, a `429` or a `503` with `Retry-After` but `not_ready` (R-UI-042, R-UI-216). A list's page asks
   at most 100, the bound of the Bastion's data path, whatever the view asks
@@ -10646,11 +10647,15 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 - **The start** lists the projects whose packages the catalogue shows (`/ui/data/v1/projects`, a project of the public set without a package
-  left out, [Q-BAS-399](bastion.md#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package)); with one, it leads into it
-  ([Q-UI-1438](#q-ui-1438--the-bastions-start-lists-its-projects-and-one-project-leads-into-it)); with none, "No package is published here
-  yet."
-- **A project's packages** (W-35's B.8): the search by name, description and keyword in the list's head, the table of R-UI-223
-  (`views/packages/package-table.ts`) with its sorts and "Load more", the search and the sort in the address.
+  left out, [Q-BAS-399](bastion.md#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package)), each by its display name
+  with its description under it, its link by its key ([Q-UI-1470](#q-ui-1470--the-bastion-names-a-project-by-its-display-name-its-address-by-its-key));
+  with one, it leads into it ([Q-UI-1438](#q-ui-1438--the-bastions-start-lists-its-projects-and-one-project-leads-into-it)); with none,
+  "No package is published here yet."
+- **A project's packages** (W-35's B.8): headed by the project's display name and description (Q-UI-1470), the search by name,
+  description and keyword in the list's head, the table of R-UI-223 (`views/packages/package-table.ts`) with its sorts and "Load more",
+  the search and the sort in the address.
+- **Set up client** of a public repository ([bastion.md](bastion.md) R-BAS-129, Q-UI-1468): its client's Configure, Install and Verify from
+  the catalogue's set-up document, on the rail of `views/setup/setup-steps.ts` ([Q-UI-1469](#q-ui-1469--the-steps-of-set-up-client-are-a-view-both-applications-compose)).
 - **A package and a version** are `views/packages/package-detail-view.ts` and `package-version-view.ts` for a reader who is never
   signed in: the tab Vulnerabilities lists the version report's open findings (R-UI-224, W-35's B.4a), signatures and their trust state
   (W-35's B.9), the format's own parts (an image's platforms and layers, an Ansible collection's documentation while `docs` is on, a
@@ -10685,9 +10690,8 @@ Priority: **P1** · Covers: quader-only
   packages lead to its repositories with files above the list (`/ui/data/v1/files`,
   [Q-BAS-400](bastion.md#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)), since no
   search of packages finds a file.
-- *Not built:* the column Vulnerabilities of a package's versions: the catalogue holds a report per version and none per
-  package, and a package's report as a document of its own is a new form of path in the catalogue's grammar, a change of the interface
-  between the Bastion and the main installation.
+- **The column Vulnerabilities of a package's versions**: the catalogue's document of the package's grades per version
+  ([bastion.md](bastion.md) R-BAS-128, built by W35-P9e), which `packageReport` reads; the view is unchanged.
 
 *Built on 2026-11-26 (W-35's P9; the download and the namespace as text by W-35's P9b):* [start-page.ts](../../web/src/bastion/pages/start-page.ts),
 [package-list-page.ts](../../web/src/bastion/pages/package-list-page.ts), [package-pages.ts](../../web/src/bastion/pages/package-pages.ts),
@@ -10706,11 +10710,14 @@ Acceptance criteria:
   does, a data path does not).
 - Unit ([files.spec.ts](../../web/src/bastion/files.spec.ts), under a second): `R-UI-229 the file reads ask the repository's documents in
   the catalogue spelling, a folder in pages of the view's size` (a file, a folder cut into pages, a nested folder, a file's set-up, a
-  folder's upload refused without a request, no page Set up client), `R-UI-229 a file's page shows its path with Download through the
+  folder's upload refused without a request), `R-UI-229 a file's page shows its path with Download through the
   Bastion, …`, `R-UI-229 a folder is a folder when the path names no file …` and `R-UI-229 a project's packages lead to its repositories
   with files, …`.
 - Rendered (rule 11): see R-UI-230; the main installation's folder and file screens before and after the split (`files-*`, 34 screens and
   kinds, both schemes, three widths) compared picture by picture.
+- Unit ([visitor.spec.ts](../../web/src/bastion/visitor.spec.ts), under a second; W35-P9e): the package's grade per version from its
+  document, the start and a project's packages by the project's names, Set up client of a generic repository and of one the Bastion does
+  not offer.
 
 ### R-UI-230 · The Bastion's pages are rendered and their layout checked
 Priority: **P1** · Covers: quader-only
@@ -10732,13 +10739,15 @@ mirrored a run of the builder after the seed, and holds the generic repository's
 beside them as the check in seconds. *Added by W-35's P11 (R-UI-232):* the documentation: an Ansible collection on its newest version's
 address, a module's page, the search inside the version with a hit, a project's search that finds a module, an npm and a NuGet
 package on their README (the seed's `yaml-lines` and `Acme.Platform.Json`, each with a README) and a Debian version's changelog and
-copyright.
+copyright. *Added by W35-P9e ([bastion.md](bastion.md) R-BAS-128, R-BAS-129):* a package's versions with the grade column (`config-merge`,
+one version with open findings and one clean), Set up client of an npm, an OCI and a generic repository, and a page whose times stand in
+the installation's form ISO 8601 (the walk answers the state as a Bastion does after the change).
 
 Acceptance criteria:
 
 - States ([bastion.states.spec.ts](../../web/src/bastion/bastion.states.spec.ts), 3.4 s, measured 2026-11-26): the render set's
   `layoutFindings` and `innerScroll` find nothing in any of the states at either width.
-- Renders: `make ui-renders GREP=bastion-` renders the twenty-four screens `bastion-*` against the profile's Bastion, and the render set's
+- Renders: `make ui-renders GREP=bastion-` renders the twenty-nine screens `bastion-*` against the profile's Bastion, and the render set's
   layout checks find nothing in any picture; `make ui-renders-parts-check` holds every Bastion screen exactly once in the parts of the job
   ui-layout.
 
@@ -10748,7 +10757,7 @@ Priority: **P1** · Covers: quader-only
 W-35's B.11 and P10 ([bastion.md](bastion.md) R-BAS-121 to R-BAS-123): what a crawler that renders the Bastion's application reads.
 
 - **Titles name the page** ([Q-UI-1460](#q-ui-1460--the-bastions-titles-name-the-page-in-the-servers-words)). A project's list is "Packages
-  in <project>", a package's page its name, a version's its name and version, the versions' "Versions of <name>", each with "– Quader";
+  in <project>" (its display name since W35-P9e, Q-UI-1470), a package's page its name, a version's its name and version, the versions' "Versions of <name>", each with "– Quader";
   the start, the legal pages and not found keep theirs. They are the words of the head the Bastion writes (R-BAS-121), so the title a
   rendering crawler reads is the one a crawler that runs no script reads.
 - **No snippet of the findings** ([Q-UI-1461](#q-ui-1461--the-grade-and-the-findings-are-wrapped-in-a-span-or-div-with-data-nosnippet)).
@@ -10851,8 +10860,10 @@ a slip for 2026: his example is that minute.)
   error notice's **Time** row (R-UI-216) is in the reader's form without a zone, and its **Copy report**, which is pasted into tickets,
   writes the time in the reader's form followed by ISO 8601 with its zone (`2026-11-26T20:39:22.000Z`), as the connection test's report
   does.
-- **The Bastion's pages** write the factory default ([Q-UI-1565](#q-ui-1565--the-bastions-pages-write-the-factory-default)): the
-  interface between the Bastion and the main installation carries no installation default ([H-2390](#h-2390--the-bastions-pages-write-the-factory-form-of-a-time-not-the-installations-default)).
+- **The Bastion's pages** write the installation's default ([Q-UI-1467](#q-ui-1467--the-bastions-pages-write-the-installations-default-form-of-a-time),
+  revising Q-UI-1565): the configuration the main installation sends carries it ([bastion.md](bastion.md) R-BAS-128), the data path's
+  `state` answers it, and `BastionStateStore` sets the form in force at every read of the state, so a change reaches an open page at its
+  next read (60 s while seen); a visitor has no own choice. Closes [H-2390](#h-2390--the-bastions-pages-write-the-factory-form-of-a-time-not-the-installations-default).
 
 *Built on 2026-11-26 (UI-1126):* the formatter and the pipe, the call sites of both applications (the pipes of 42 components and 13
 functions), the field in **Preferences**, `TimeFormatStore` ([time-format-store.ts](../../web/src/app/core/time-format-store.ts)) that
@@ -10889,7 +10900,8 @@ with today's time as its example) and **Save changes**. The factory default is t
 
 *Built on 2026-11-26 (UI-1126):* the operation ([system_state_api.go](../../internal/api/v1/system_state_api.go)), the event, the
 section of General settings ([general-settings.html](../../web/src/app/features/settings/general-settings.html)) and the read with the
-banner ([banner-store.ts](../../web/src/app/core/banner-store.ts)). The Bastion does not read it (R-UI-250, H-2390).
+banner ([banner-store.ts](../../web/src/app/core/banner-store.ts)). *Since W35-P9e (2026-11-27):* a Bastion's pages follow it through
+the configuration's `display` ([bastion.md](bastion.md) R-BAS-128); its change is a `settings` entry of the Bastions' feed.
 
 Acceptance criteria:
 
@@ -30055,7 +30067,8 @@ a link to `…/repositories/<key>/setup`. The Bastion has no such page: the link
 **Choice:** (a); (b) stays open (the Bastion's catalogue holds the documents). What (a) leaves: a command that needs the client's
 configuration from Set up client is shown without it at the Bastion. A generic file's command calls `quader_curl`, `quader_wget` or
 `$QuaderHeaders` (Q-GENERIC-9), which the set-up's `configure` snippet defines; the renders of 2026-11-26 show the panel of
-`platform/downloads` with that call and no definition. **Applied in the spec:** R-UI-228.
+`platform/downloads` with that call and no definition. **Applied in the spec:** R-UI-228. *Revised on 2026-11-27 by
+[Q-UI-1468](#q-ui-1468--the-bastion-has-the-page-set-up-client-of-a-public-repository):* option (b) is built, and `SETUP_PAGES` is gone.
 
 ### Q-UI-1457 · A folder's and a file's acts and the management API's reads are the page's projected content
 
@@ -30163,6 +30176,65 @@ no page of it.
 | (c) The section always, with its empty sentence | — | The reader sees that documentation was searched | An empty section under every search of an npm project |
 
 **Choice:** (a). **Applied in the spec:** R-UI-232.
+
+### Q-UI-1467 · The Bastion's pages write the installation's default form of a time
+
+Status: **Decided by the development agent on 2026-11-27** (W35-P9e, the brief's item 4) — selected from the options below; the owner
+reviews it at the walkthrough.
+
+Context: R-UI-250, Q-UI-1565, H-2390; [bastion.md](bastion.md) R-BAS-128 carries the installation's default in the configuration. The
+Bastion's application has no session, so no reader's own choice.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The state the shell reads at its idle cadence names the form; the store sets the form in force at every read, one the build does not know kept (chosen) | One member of an answer the shell reads anyway | A change reaches an open page within a minute (R-UI-213); no read of its own | The first paint before the state's answer is in the factory form; the shell shows its spinner until then |
+| (b) A read of its own beside the state | — | The state stays what it was | A second read at the same cadence for one word |
+
+**Choice:** (a). **Applied in the spec:** R-UI-250, R-UI-251.
+
+### Q-UI-1468 · The Bastion has the page Set up client of a public repository
+
+Status: **Decided by the development agent on 2026-11-27** (W35-P9e, the brief's item 2) — selected from the options below; the owner
+reviews it at the walkthrough.
+
+Context: R-UI-120, R-UI-228, Q-UI-1456; [bastion.md](bastion.md) R-BAS-129. A command of a panel can rely on its client's configuration
+(a generic file's function, npm's registry), which only Set up client shows; the Bastion had no such page and its panels no link.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A page of the Bastion's own at the main installation's address, composed of the shared steps (Q-UI-1469) and the catalogue's set-up documents; the panel's link in both applications, `SETUP_PAGES` removed (chosen) | Configure, Install and Verify of the chosen client; no token, no More options, no guide | A visitor reads what the command relies on, at the address a link copied at the main installation has; simple: no choice a visitor cannot use | A second page of the same purpose beside the main installation's |
+| (b) The main installation's page, its token, Bastion choice and guide hidden by inputs | One page | — | The page reads the session, the token API, the Bastions and the guides: the Bastion's bundle may hold none of them (R-UI-228) |
+| (c) The configure snippet in the panel itself | — | No page | The panel holds one command per client; a configuration file in it is not what a panel is for, and npm's or NuGet's would not fit at 390 px |
+
+**Choice:** (a). **Applied in the spec:** R-UI-228, R-UI-229, [bastion.md](bastion.md) R-BAS-129.
+
+### Q-UI-1469 · The steps of Set up client are a view both applications compose
+
+Status: **Decided by the development agent on 2026-11-27** (W35-P9e) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-121, R-UI-223, Q-UI-1468. The rail of steps with the windows of the snippets was the main installation's page's template.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The rail, its snippets, the sentences and the folds as `views/setup/setup-steps.ts`; the main installation projects what its Publish step says without a target (chosen) | A view of R-UI-223 | One rail for both: a change of the steps reaches the Bastion; the views rule keeps acts out of it | The main installation's template changes (its specs unchanged, its pages rendered again) |
+| (b) A copy in the Bastion's page | — | The main installation untouched | Two rails that drift apart |
+
+**Choice:** (a). **Applied in the spec:** R-UI-228, [bastion.md](bastion.md) R-BAS-129.
+
+### Q-UI-1470 · The Bastion names a project by its display name, its address by its key
+
+Status: **Decided by the development agent on 2026-11-27** (W35-P9e, the brief's item 3) — selected from the options below; the owner
+reviews it at the walkthrough.
+
+Context: R-UI-229, R-UI-231; [bastion.md](bastion.md) R-BAS-128 carries a project's display name and description in the public set.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The start lists each project by its display name with its description; a project's packages are headed by its display name with its description; the title is "Packages in <display name>", as the server's head; the addresses keep the key (chosen) | One read of the projects, shared for a moment by the page and its title | A visitor reads the names the company gave, as at the main installation; a link stays the main installation's | A title that waits for one read |
+| (b) The heading "Packages" with the name in the trail | — | — | The Bastion has no trail beside its pages; the page would not say whose packages they are |
+
+**Choice:** (a). **Applied in the spec:** R-UI-229, R-UI-231.
 
 ### Q-UI-1490 · The audit log holds its German actions by the act's word and a shorter word where it reads right
 
@@ -30664,7 +30736,8 @@ part stops and the Bastion uses the factory default.
 | (b) A member of the Bastion's configuration that the main installation sends | | The same form at both | A change of the interface, its version and `interface.txt`, outside this package |
 | (c) The Bastion reads `GET /api/v1/system/time-format` of the main installation | | — | The Bastion's application talks to its Bastion only (R-UI-228) |
 
-**Choice:** (a). **Applied in the spec:** R-UI-250, H-2390.
+**Choice:** (a). **Applied in the spec:** R-UI-250, H-2390. *Revised on 2026-11-27 by [Q-UI-1467](#q-ui-1467--the-bastions-pages-write-the-installations-default-form-of-a-time):*
+the interface carries the installation's default since version 10 (option (b)).
 
 ### Q-UI-1566 · A page's load fills its screen's host down to the legal line
 
@@ -31371,6 +31444,12 @@ have kept Audit after seeing the callers the Bastion would refuse. The usage ove
 limited** shows them by hand.
 
 ### H-2390 · The Bastion's pages write the factory form of a time, not the installation's default
+
+Closed on 2026-11-27 by W35-P9e ([Q-UI-1467](#q-ui-1467--the-bastions-pages-write-the-installations-default-form-of-a-time),
+[bastion.md](bastion.md) R-BAS-128, interface version 10): the configuration the main installation sends carries the installation's
+default (`display.timeFormat`), the Bastion's state answers it and its application writes every time in it (Vitest of
+[visitor.spec.ts](../../web/src/bastion/visitor.spec.ts); the integration step `namesGradesAndTheFormOfATime` of the area `bastion`).
+What it was:
 
 Stage: R-UI-250, R-UI-251, Q-UI-1565. The Bastion's application writes every time as `26.11.2026 21:39:22 (Thu.)`, whatever an
 administrator set under **Settings › General**: the interface between the Bastion and the main installation carries no display setting.

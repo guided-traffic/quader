@@ -264,52 +264,19 @@
     </p>
   }
 
-  <!-- The job first (R-UI-121): the steps on one rail, each snippet a window with at most one short sentence; a second way of a
-       step sits behind an inline fold. -->
-  <ng-template #snippetList let-list>
-    @for (sn of list; track sn.id) {
-      @let words = textOf(sn);
-      @if (words?.fold; as fold) {
-        <quader-disclosure class="second-way" [inline]="true" [heading]="fold">
-          <quader-setup-snippet [snippet]="sn" [explanation]="words?.caption ?? null" [note]="bastionNote(sn)" />
-        </quader-disclosure>
-      } @else {
-        <quader-setup-snippet [snippet]="sn" [explanation]="words?.caption ?? null" [note]="bastionNote(sn)" />
-      }
-    }
-  </ng-template>
+  <!-- The job first (R-UI-121): the steps on one rail (the view of views/setup/, which the Bastion's page composes too). -->
   @if (snippets().length > 0) {
-    <div class="steps">
-      <section class="step" aria-labelledby="step-configure">
-        <h2 id="step-configure"><span class="step-no" aria-hidden="true">1</span><span i18n="@@setup.tab.configure">Configure</span></h2>
-        <ng-container [ngTemplateOutlet]="snippetList" [ngTemplateOutletContext]="{ $implicit: byStep().configure }" />
-      </section>
-      <section class="step" aria-labelledby="step-install">
-        <h2 id="step-install"><span class="step-no" aria-hidden="true">2</span><span i18n="@@setup.tab.install">Install</span></h2>
-        <ng-container [ngTemplateOutlet]="snippetList" [ngTemplateOutletContext]="{ $implicit: byStep().install }" />
-      </section>
-      @if (offerPublish()) {
-        <section class="step" aria-labelledby="step-publish">
-          <h2 id="step-publish"><span class="step-no" aria-hidden="true">3</span><span i18n="@@setup.tab.publish">Publish</span></h2>
-          @if (byStep().publish.length === 0) {
-            <p class="why" i18n="@@setup.publish.no-target">
-              This virtual repository has no default deployment target, so there is nothing to publish to through it. Publish to
-              one of its local repositories instead.
-            </p>
-            @if (settingsLink(); as link) {
-              <p><a [routerLink]="link" i18n="@@setup.publish.members">Open the repository's settings to see its members</a></p>
-            }
-          }
-          <ng-container [ngTemplateOutlet]="snippetList" [ngTemplateOutletContext]="{ $implicit: byStep().publish }" />
-        </section>
-      }
-      @if (byStep().verify.length > 0) {
-        <section class="step" aria-labelledby="step-verify">
-          <h2 id="step-verify"><span class="step-no" aria-hidden="true">{{ verifyNumber() }}</span><span i18n="@@setup.tab.verify">Verify</span></h2>
-          <ng-container [ngTemplateOutlet]="snippetList" [ngTemplateOutletContext]="{ $implicit: byStep().verify }" />
-        </section>
-      }
-    </div>
+    <quader-setup-steps [snippets]="snippets()" [anonymous]="anonymous()" [publish]="offerPublish()" [note]="bastionNote">
+      <div publishWhy>
+        <p class="why" i18n="@@setup.publish.no-target">
+          This virtual repository has no default deployment target, so there is nothing to publish to through it. Publish to
+          one of its local repositories instead.
+        </p>
+        @if (settingsLink(); as link) {
+          <p><a [routerLink]="link" i18n="@@setup.publish.members">Open the repository's settings to see its members</a></p>
+        }
+      </div>
+    </quader-setup-steps>
   } @else if (!loadFailure() && (setupAnswer.isLoading() || guideAnswer.isLoading() || loaded.isLoading())) {
     <quader-loading size="page" i18n="@@setup.loading.client">Loading the client setup.</quader-loading>
   }

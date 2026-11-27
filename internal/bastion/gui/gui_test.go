@@ -62,7 +62,12 @@ func (r *reader) served() error {
 
 func (r *reader) PublicSet() (iface.CataloguePublic, error) {
 	return iface.CataloguePublic{
-		Projects: []string{"acme", "tools", "upstream", "web"},
+		Projects: []iface.CatalogueProject{
+			{Key: "acme", DisplayName: "Acme platform", Description: "The packages Acme publishes."},
+			{Key: "tools", DisplayName: "tools"},
+			{Key: "upstream", DisplayName: "Upstream"},
+			{Key: "web", DisplayName: "Web"},
+		},
 		Repositories: []iface.CatalogueRepository{
 			{Name: "acme/npm", Format: "npm", Class: "local", Wiki: true},
 			{Name: "upstream/npmjs", Format: "npm", Class: "remote"},
@@ -227,6 +232,7 @@ func newReader() *reader {
 		docs: map[string][]byte{
 			"packages/" + pkgID + "/versions/1.0.0%2Bbuild.1":       []byte(`{"version":"1.0.0+build.1"}`),
 			"packages/" + pkgID + "/versions/1.0.0/vulnerabilities": []byte(`{"repositories":[]}`),
+			"packages/" + pkgID + "/vulnerabilities":                []byte(`{"packageId":"` + pkgID + `","versions":[{"version":"1.0.0","grade":{"grade":"B"}}]}`),
 			"files/tools/downloads/folder":                          []byte(`{"items":[{"path":"tools","kind":"folder"}]}`),
 			"files/tools/downloads/folder/tools":                    []byte(`{"items":[{"path":"agent.tar.gz","kind":"file"}]}`),
 			"files/tools/downloads/file/tools/agent.tar.gz":         []byte(`{"path":"tools/agent.tar.gz","kind":"file"}`),
@@ -490,7 +496,7 @@ func TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue(t *testi
 	}
 
 	rec := get("/ui/data/v1/state")
-	if rec.Code != 200 || rec.Body.String() != `{"confirmedAt":"2026-11-26T09:30:00Z","staleAfterSeconds":3600,"stale":false,"docs":true}` ||
+	if rec.Code != 200 || rec.Body.String() != `{"confirmedAt":"2026-11-26T09:30:00Z","staleAfterSeconds":3600,"stale":false,"docs":true,"timeFormat":"dmy-weekday"}` ||
 		rec.Header().Get("Cache-Control") != "no-cache" || rec.Header().Get("ETag") == "" {
 		t.Errorf("state = %d %v %s", rec.Code, rec.Header(), rec.Body.String())
 	}
@@ -500,7 +506,7 @@ func TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue(t *testi
 
 	// The project upstream holds no package and no folder the catalogue shows and is not offered (Q-BAS-399); the project tools
 	// holds a generic repository's files and no package, and is (Q-BAS-400).
-	if rec := get("/ui/data/v1/projects"); rec.Code != 200 || rec.Body.String() != `{"items":["acme","tools","web"]}` {
+	if rec := get("/ui/data/v1/projects"); rec.Code != 200 || rec.Body.String() != `{"items":[{"key":"acme","displayName":"Acme platform","description":"The packages Acme publishes."},{"key":"tools","displayName":"tools","description":""},{"key":"web","displayName":"Web","description":""}]}` {
 		t.Errorf("projects = %d %s", rec.Code, rec.Body.String())
 	}
 	if rec := get("/ui/data/v1/files"); rec.Code != 200 || rec.Body.String() != `{"items":["tools/downloads"]}` {
@@ -703,5 +709,34 @@ func TestR_BAS_116_TheEmbeddedBundleCarriesItsNotices(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestR_BAS_128_TheDataNameTheProjectsGradeTheVersionsAndWriteTheInstallationsTime: the state names the form of a time of the
+// configuration the replica applies (the factory form without one), the repositories carry their format and class for the page Set up
+// client and nothing of the wiki, and a package's open findings per version are the catalogue's document.
+func TestR_BAS_128_TheDataNameTheProjectsGradeTheVersionsAndWriteTheInstallationsTime(t *testing.T) {
+	r := newReader()
+	form := "iso"
+	h := newGUI(t, r, func(o *Options) { o.TimeFormat = func() string { return form } })
+	if rec := do(h, http.MethodGet, "/ui/data/v1/state"); rec.Code != 200 || !strings.Contains(rec.Body.String(), `"timeFormat":"iso"`) {
+		t.Errorf("state = %d %s", rec.Code, rec.Body.String())
+	}
+	form = ""
+	if rec := do(h, http.MethodGet, "/ui/data/v1/state"); !strings.Contains(rec.Body.String(), `"timeFormat":"dmy-weekday"`) {
+		t.Errorf("state without a form = %s", rec.Body.String())
+	}
+	want := `{"items":[{"name":"acme/npm","format":"npm","class":"local"},{"name":"upstream/npmjs","format":"npm","class":"remote"},` +
+		`{"name":"web/galaxy","format":"ansible","class":"local"}]}`
+	if rec := do(h, http.MethodGet, "/ui/data/v1/repositories"); rec.Code != 200 || rec.Body.String() != want {
+		t.Errorf("repositories = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := do(h, http.MethodGet, "/ui/data/v1/packages/"+pkgID+"/vulnerabilities"); rec.Code != 200 ||
+		!strings.Contains(rec.Body.String(), `"grade":{"grade":"B"}`) {
+		t.Errorf("the package's findings = %d %s", rec.Code, rec.Body.String())
+	}
+	r.state = catalogue.State{Enabled: false, Decided: true}
+	if rec := do(h, http.MethodGet, "/ui/data/v1/repositories"); rec.Code != 404 {
+		t.Errorf("repositories while off = %d", rec.Code)
 	}
 }

@@ -106,12 +106,12 @@ func (r *rig) restart(volume string) {
 func (r *rig) on(gui, docs bool) { r.cat.SetSwitches(iface.Switches{GUI: gui, Docs: docs}, true) }
 
 func public(repos ...string) iface.CataloguePublic {
-	p := iface.CataloguePublic{Projects: []string{}, Repositories: []iface.CatalogueRepository{}}
+	p := iface.CataloguePublic{Projects: []iface.CatalogueProject{}, Repositories: []iface.CatalogueRepository{}}
 	seen := map[string]bool{}
 	for _, name := range repos {
 		project := strings.SplitN(name, "/", 2)[0]
 		if !seen[project] {
-			p.Projects, seen[project] = append(p.Projects, project), true
+			p.Projects, seen[project] = append(p.Projects, iface.CatalogueProject{Key: project, DisplayName: project}), true
 		}
 		p.Repositories = append(p.Repositories, iface.CatalogueRepository{Name: name, Format: "npm", Class: "local", Wiki: true})
 	}

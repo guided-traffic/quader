@@ -55,8 +55,35 @@ func (h *Handler) describe(ctx context.Context, a pg.Address) (pg.Page, int) {
 		return h.packagePage(ctx, a)
 	case pg.Legal:
 		return h.legalPage(a)
+	case pg.Setup:
+		return h.setupPage(a)
 	}
 	return pg.Page{}, http.StatusNotFound
+}
+
+// setupPage is a public repository's page Set up client (R-BAS-129): found while the public set holds the repository, never indexed
+// (Q-BAS-401: its content is commands per client, which the text never carries, Q-BAS-409), its canonical address without the client.
+func (h *Handler) setupPage(a pg.Address) (pg.Page, int) {
+	pub, err := h.o.Catalogue.PublicSet()
+	if err != nil {
+		return pg.Page{}, http.StatusNotFound
+	}
+	held := false
+	for _, r := range pub.Repositories {
+		held = held || r.Name == a.Project+"/"+a.Repository
+	}
+	if !held {
+		return pg.Page{}, http.StatusNotFound
+	}
+	t := pg.TextsOf(a.Locale)
+	p := h.base(a, a.Route(), nil)
+	p.Title, p.Heading, p.Lead, p.Noindex = t.SetupClient, t.SetupClient, a.Project+"/"+a.Repository, true
+	p.LD = webPage(t.SetupClient, p.Canonical)
+	p.Crumbs = []pg.Link{
+		{Text: t.Projects, Href: local(a.Locale, "")},
+		{Text: h.projectName(a.Project).DisplayName, Href: local(a.Locale, pg.Address{Kind: pg.List, Project: a.Project}.Route())},
+	}
+	return p, http.StatusOK
 }
 
 // base is a page with what every page has: its language, its canonical address and the other languages' addresses, the footer's links.
@@ -97,15 +124,16 @@ func webPage(name, url string) map[string]any {
 	return map[string]any{"@context": "https://schema.org", "@type": "WebPage", "name": name, "url": url}
 }
 
-// shownProjects are the projects the start page offers: those of the public set that hold a package the catalogue lists (Q-BAS-399).
-func (h *Handler) shownProjects() ([]string, error) {
+// shownProjects are the projects whose list the text links: those of the public set that hold a package the catalogue lists
+// (Q-BAS-399), each with its name (R-BAS-128).
+func (h *Handler) shownProjects() ([]iface.CatalogueProject, error) {
 	pub, err := h.o.Catalogue.PublicSet()
 	if err != nil {
 		return nil, err
 	}
-	out := []string{}
+	out := []iface.CatalogueProject{}
 	for _, p := range pub.Projects {
-		res, err := h.o.Catalogue.Search(catalogue.Query{Project: p, Limit: 1})
+		res, err := h.o.Catalogue.Search(catalogue.Query{Project: p.Key, Limit: 1})
 		if err != nil {
 			return nil, err
 		}
@@ -114,6 +142,18 @@ func (h *Handler) shownProjects() ([]string, error) {
 		}
 	}
 	return out, nil
+}
+
+// projectName is a project's display name as the public set names it (R-BAS-128), its key where the set does not hold it.
+func (h *Handler) projectName(key string) iface.CatalogueProject {
+	if pub, err := h.o.Catalogue.PublicSet(); err == nil {
+		for _, p := range pub.Projects {
+			if p.Key == key {
+				return p
+			}
+		}
+	}
+	return iface.CatalogueProject{Key: key, DisplayName: key}
 }
 
 func (h *Handler) startPage(a pg.Address) (pg.Page, int) {
@@ -127,7 +167,9 @@ func (h *Handler) startPage(a pg.Address) (pg.Page, int) {
 	p.LD = webPage(t.Projects, p.Canonical)
 	s := pg.Section{Heading: t.Projects}
 	for _, pr := range projects {
-		s.Links = append(s.Links, pg.Link{Text: pr, Href: local(a.Locale, pg.Address{Kind: pg.List, Project: pr}.Route())})
+		s.Links = append(s.Links, pg.Link{
+			Text: pr.DisplayName, Note: pg.Cut(pr.Description, 160), Href: local(a.Locale, pg.Address{Kind: pg.List, Project: pr.Key}.Route()),
+		})
 	}
 	p.Sections = []pg.Section{s}
 	return p, http.StatusOK
@@ -142,8 +184,10 @@ func (h *Handler) listPage(a pg.Address) (pg.Page, int) {
 	}
 	route := pg.Address{Kind: pg.List, Project: a.Project}.Route()
 	p := h.base(a, route, nil)
-	p.Title = t.PackagesIn(a.Project)
-	p.Heading = p.Title
+	project := h.projectName(a.Project)
+	p.Title = t.PackagesIn(project.DisplayName)
+	p.Heading = project.DisplayName
+	p.Lead, p.Description = project.Description, project.Description
 	// A list of results is not indexed; its canonical address is the list itself (W-35's B.11).
 	p.Noindex = a.Filtered
 	p.LD = webPage(p.Title, p.Canonical)
@@ -254,7 +298,7 @@ func (h *Handler) packagePage(ctx context.Context, a pg.Address) (pg.Page, int) 
 	p.Noindex = a.Findings
 	p.Crumbs = []pg.Link{
 		{Text: t.Projects, Href: local(a.Locale, "")},
-		{Text: a.Project, Href: local(a.Locale, pg.Address{Kind: pg.List, Project: a.Project}.Route())},
+		{Text: h.projectName(a.Project).DisplayName, Href: local(a.Locale, pg.Address{Kind: pg.List, Project: a.Project}.Route())},
 	}
 	p.Lead = e.Description
 	p.Description = e.Description

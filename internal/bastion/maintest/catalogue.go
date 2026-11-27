@@ -44,7 +44,7 @@ type catalogue struct {
 func newCatalogue() *catalogue {
 	return &catalogue{
 		rows: map[string]catalogueRow{}, docs: map[string][]byte{}, corrupt: map[string]bool{},
-		public: iface.CataloguePublic{Projects: []string{}, Repositories: []iface.CatalogueRepository{}},
+		public: iface.CataloguePublic{Projects: []iface.CatalogueProject{}, Repositories: []iface.CatalogueRepository{}},
 	}
 }
 

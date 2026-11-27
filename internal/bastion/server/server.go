@@ -203,8 +203,9 @@ func New(o Options) (*Server, error) {
 func (s *Server) newGUI() (*gui.Handler, error) {
 	return gui.New(gui.Options{
 		Catalogue: s.catalogue, Legal: s.legal, BaseURL: s.cfg.Server.BaseURL, Guard: s.deps.Guard, Quiet: engine.MarkQuiet,
-		Flood: func(ctx context.Context) settings.Rate { return s.configuration.For(ctx).Flood.GUI },
-		Log:   s.log.With("component", "gui"),
+		Flood:      func(ctx context.Context) settings.Rate { return s.configuration.For(ctx).Flood.GUI },
+		TimeFormat: func() string { return s.configuration.Current().Configuration.Display.TimeFormat },
+		Log:        s.log.With("component", "gui"),
 	})
 }
 

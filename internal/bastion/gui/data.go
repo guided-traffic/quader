@@ -29,50 +29,77 @@ const (
 	pathLookup   = "packages/lookup"
 	pathProjects = "projects"
 	pathFiles    = "files"
+	// pathRepositories is the public repositories with their format and class (R-BAS-129).
+	pathRepositories = "repositories"
 	// pathDocs is the documentation searched across packages (R-BAS-125): the main installation's GET /api/v1/search/documentation.
 	pathDocs = "search/documentation"
 )
 
-// projectsBody is the answer of /ui/data/v1/projects: the keys of the projects the catalogue shows, in their order, so that the
-// start page leads a visitor into a project, whose list and pages carry it in their addresses as the main installation's do.
+// projectsBody is the answer of /ui/data/v1/projects: the projects the catalogue shows, in the order of their keys, each with its key,
+// display name and description (R-BAS-128), so that the start page names a project as the main installation does and leads a visitor
+// into it, whose list and pages carry its key in their addresses as the main installation's do.
 type projectsBody struct {
+	Items []iface.CatalogueProject `json:"items"`
+}
+
+// namesBody is a list of qualified names: the answer of /ui/data/v1/files.
+type namesBody struct {
 	Items []string `json:"items"`
 }
 
+// repositoriesBody is the answer of /ui/data/v1/repositories: the public repositories of the catalogue with their format and class
+// (R-BAS-129), what the page Set up client of a repository reads to know its clients.
+type repositoriesBody struct {
+	Items []repositoryItem `json:"items"`
+}
+
+type repositoryItem struct {
+	Name   string `json:"name"`
+	Format string `json:"format"`
+	Class  string `json:"class"`
+}
+
 func (h *Handler) projects(w http.ResponseWriter, r *http.Request) {
-	pub, err := h.o.Catalogue.PublicSet()
+	items, err := h.offeredProjects()
 	if err != nil {
 		h.readerError(w, r, err)
 		return
 	}
+	h.json(w, r, projectsBody{Items: items})
+}
+
+// offeredProjects are the projects the start page offers. A project whose public repositories hold no package and no folder the
+// catalogue shows (the project upstream with an empty public remote) is not offered: its page would say only that nothing is
+// published there (R-UI-229, Q-BAS-399, Q-BAS-400).
+func (h *Handler) offeredProjects() ([]iface.CatalogueProject, error) {
+	pub, err := h.o.Catalogue.PublicSet()
+	if err != nil {
+		return nil, err
+	}
 	files, err := h.o.Catalogue.Files()
 	if err != nil {
-		h.readerError(w, r, err)
-		return
+		return nil, err
 	}
 	withFiles := map[string]bool{}
 	for _, name := range files {
 		project, _, _ := strings.Cut(name, "/")
 		withFiles[project] = true
 	}
-	// A project whose public repositories hold no package and no folder the catalogue shows (the project upstream with an empty
-	// public remote) is not offered: its page would say only that nothing is published there (R-UI-229, Q-BAS-399, Q-BAS-400).
-	items := []string{}
+	items := []iface.CatalogueProject{}
 	for _, p := range pub.Projects {
-		if withFiles[p] {
+		if withFiles[p.Key] {
 			items = append(items, p)
 			continue
 		}
-		page, err := h.o.Catalogue.Search(catalogue.Query{Project: p, Limit: 1})
+		page, err := h.o.Catalogue.Search(catalogue.Query{Project: p.Key, Limit: 1})
 		if err != nil {
-			h.readerError(w, r, err)
-			return
+			return nil, err
 		}
 		if len(page.Items) > 0 {
 			items = append(items, p)
 		}
 	}
-	h.json(w, r, projectsBody{Items: items})
+	return items, nil
 }
 
 // files answers /ui/data/v1/files: the public repositories whose folders and files the catalogue holds, by their qualified names
@@ -83,7 +110,22 @@ func (h *Handler) files(w http.ResponseWriter, r *http.Request) {
 		h.readerError(w, r, err)
 		return
 	}
-	h.json(w, r, projectsBody{Items: items})
+	h.json(w, r, namesBody{Items: items})
+}
+
+// repositories answers /ui/data/v1/repositories: the public set's repositories with their format and class (R-BAS-129), in its
+// order. Whether a repository's wiki is public is the catalogue's own fact and stays out.
+func (h *Handler) repositories(w http.ResponseWriter, r *http.Request) {
+	pub, err := h.o.Catalogue.PublicSet()
+	if err != nil {
+		h.readerError(w, r, err)
+		return
+	}
+	items := make([]repositoryItem, 0, len(pub.Repositories))
+	for _, x := range pub.Repositories {
+		items = append(items, repositoryItem{Name: x.Name, Format: x.Format, Class: x.Class})
+	}
+	h.json(w, r, repositoriesBody{Items: items})
 }
 
 // data answers an address below /ui/data/v1/ (R-BAS-118): the state, the legal pages, the projects, the repositories with files,
@@ -111,6 +153,9 @@ func (h *Handler) data(w http.ResponseWriter, r *http.Request, ready bool) {
 		return
 	case pathFiles:
 		h.files(w, r)
+		return
+	case pathRepositories:
+		h.repositories(w, r)
 		return
 	case pathLookup:
 		h.lookup(w, r)
@@ -186,18 +231,27 @@ func (h *Handler) readerError(w http.ResponseWriter, r *http.Request, err error)
 }
 
 // stateBody is the answer of /ui/data/v1/state (W-35's B.2b): the time of the state served, the age after which the pages say it
-// is old, whether it is, and the switch docs.
+// is old, whether it is, the switch docs, and the installation's default form of a time the application writes every time in
+// (R-BAS-128).
 type stateBody struct {
 	ConfirmedAt       time.Time `json:"confirmedAt"`
 	StaleAfterSeconds int64     `json:"staleAfterSeconds"`
 	Stale             bool      `json:"stale"`
 	Docs              bool      `json:"docs"`
+	TimeFormat        string    `json:"timeFormat"`
 }
 
 func (h *Handler) state(w http.ResponseWriter, r *http.Request) {
 	st := h.o.Catalogue.State()
+	format := iface.FactoryTimeFormat
+	if h.o.TimeFormat != nil {
+		if f := h.o.TimeFormat(); f != "" {
+			format = f
+		}
+	}
 	h.json(w, r, stateBody{
 		ConfirmedAt: st.ConfirmedAt.UTC(), StaleAfterSeconds: int64(st.StaleAfter / time.Second), Stale: st.Stale, Docs: st.Docs,
+		TimeFormat: format,
 	})
 }
 

@@ -107,6 +107,9 @@ type Options struct {
 	Flood func(ctx context.Context) settings.Rate
 	// Quiet marks a request that is not logged one by one (a blocked address, R-BAS-037); nil does nothing.
 	Quiet func(ctx context.Context)
+	// TimeFormat is the installation's default form of a time of the configuration the replica applies (R-BAS-128), which the state
+	// answers for the application's times; nil answers the factory form.
+	TimeFormat func() string
 	// Assets replaces the embedded application ([Bundle]); tests set it.
 	Assets fs.FS
 	// Log receives what fails inside; nil discards.

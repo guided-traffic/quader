@@ -116,7 +116,7 @@ describe('The Bastion application (R-UI-228)', () => {
 
     // What the catalogue holds no document for answers as a read the caller may not make, without a request.
     await expect(reads.dependents(ID)).rejects.toBeInstanceOf(ApiError);
-    await expect(TestBed.inject(VulnerabilityReads).packageReport(ID)).rejects.toMatchObject({ status: 404 });
+    await expect(TestBed.inject(VulnerabilityReads).advisory('npm', 'GHSA-1')).rejects.toMatchObject({ status: 404 });
     expect(await TestBed.inject(SignatureReads).releases('acme/npm')).toEqual([]);
     expect(seg("a+b!'()*~")).toBe('a%2Bb%21%27%28%29%2A~');
   });

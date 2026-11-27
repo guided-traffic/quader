@@ -1,4 +1,4 @@
-interface version 9
+interface version 10
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
@@ -14,6 +14,7 @@ const CatalogueFileSetup CatalogueKind = "fileSetup"
 const CatalogueFolder CatalogueKind = "folder"
 const CatalogueIndex CatalogueKind = "index"
 const CataloguePackage CatalogueKind = "package"
+const CataloguePackageVulnerabilities CatalogueKind = "packageVulnerabilities"
 const CatalogueReadme CatalogueKind = "readme"
 const CatalogueSetup CatalogueKind = "setup"
 const CatalogueSignatureObject CatalogueKind = "signatureObject"
@@ -54,6 +55,7 @@ const ErrorShapeGalaxy ErrorShape = "galaxy"
 const ErrorShapeNPM ErrorShape = "npm"
 const ErrorShapeProblem ErrorShape = "problem"
 const ErrorShapeText ErrorShape = "text"
+const FactoryTimeFormat = "dmy-weekday"
 const FeedCatalogue FeedKind = "catalogue"
 const FeedContent FeedKind = "content"
 const FeedGrants FeedKind = "grants"
@@ -139,6 +141,7 @@ func (CatalogueChanges) Validate(after int64) error
 func (CataloguePath) Documentation() bool
 func (CataloguePath) String() string
 func (CataloguePublic) MarshalJSON() ([]byte, error)
+func (CataloguePublic) ProjectKeys() []string
 func (CheckPackages) MarshalJSON() ([]byte, error)
 func (CheckRequest) PackagesProblem(maxPairs int) *PackageProblem
 func (Class) Valid() bool
@@ -206,6 +209,7 @@ func RegistryTokenExpiry(s string) (time.Time, bool)
 func RegistryTokenGrant(s string) (RegistryGrant, bool)
 func RegistryTokenWellFormed(s string) bool
 func StripMarking(h http.Header)
+func TimeFormats() []string
 func ValidPackage(name string) bool
 func ValidRuleID(s string) bool
 func WriteCatalogueFrame(w io.Writer, f CatalogueFrame, gz []byte) error
@@ -262,8 +266,12 @@ type CataloguePath: field SHA256 string
 type CataloguePath: field SetupPackage string
 type CataloguePath: field SetupVersion string
 type CataloguePath: field Version string
+type CatalogueProject struct
+type CatalogueProject: field Description string `json:"description"`
+type CatalogueProject: field DisplayName string `json:"displayName"`
+type CatalogueProject: field Key string `json:"key"`
 type CataloguePublic struct
-type CataloguePublic: field Projects []string `json:"projects"`
+type CataloguePublic: field Projects []CatalogueProject `json:"projects"`
 type CataloguePublic: field Repositories []CatalogueRepository `json:"repositories"`
 type CatalogueRepository struct
 type CatalogueRepository: field Class string `json:"class"`
@@ -289,12 +297,15 @@ type CheckRequest: field Packages CheckPackages `json:"packages"`
 type CheckRequest: field Repositories []string `json:"repositories"`
 type Class string
 type Configuration struct
+type Configuration: field Display Display `json:"display"`
 type Configuration: field Limits Limits `json:"limits"`
 type Configuration: field Revision int64 `json:"revision"`
 type Configuration: field Switches Switches `json:"switches"`
 type Cursor struct
 type Cursor: field At time.Time
 type Cursor: field ID string
+type Display struct
+type Display: field TimeFormat string `json:"timeFormat"`
 type DownloadEvent struct
 type DownloadEvent: field At time.Time `json:"at"`
 type DownloadEvent: field ClientAddress string `json:"clientAddress"`

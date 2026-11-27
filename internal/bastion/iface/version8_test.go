@@ -48,6 +48,7 @@ func configuration() iface.Configuration {
 			Throughput:       iface.Throughput{AnonymousShare: 0.25, BytesPerHour: iface.ThroughputHours{Catalogue: figure(1 << 30)}},
 			AnonymousCeiling: iface.Ceiling{RequestsPerSecond: figure(100), Burst: figure(1000), RequestsPerHour: figure(100000)},
 		},
+		Display: iface.Display{TimeFormat: "iso"},
 	}
 }
 
@@ -65,6 +66,7 @@ func TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold(t *testing.T) {
 	for _, want := range []string{
 		`"switches":{"handover":true,"gui":true,"docs":false}`, `"requestsPerHour":null`, `"bytesPerSecond":null`,
 		`"addressRules":[{"prefix":"198.51.100.0/24","rule":"0193a0c6-signed"}]`, `"queueTimeoutMillis":2000`,
+		`"display":{"timeFormat":"iso"}`,
 	} {
 		if !strings.Contains(string(b), want) {
 			t.Errorf("the handshake %s lacks %s", b, want)
@@ -105,6 +107,8 @@ func TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold(t *testing.T) {
 		"a block longer than its longest":      func(c *iface.Configuration) { c.Limits.Flood.Blocking.DurationSeconds = 90000 },
 		"no slot":                              func(c *iface.Configuration) { c.Limits.Slots.MaxConcurrent = 0 },
 		"a negative wait":                      func(c *iface.Configuration) { c.Limits.Slots.QueueTimeoutMillis = -1 },
+		"no form of a time":                    func(c *iface.Configuration) { c.Display.TimeFormat = "" },
+		"an unknown form of a time":            func(c *iface.Configuration) { c.Display.TimeFormat = "yyyy" },
 	} {
 		bad := configuration()
 		edit(&bad)
@@ -229,6 +233,7 @@ func TestR_BAS_103_TheCataloguePathGrammarRoundTrips(t *testing.T) {
 		"index/12":                                               {Kind: iface.CatalogueIndex, Index: 12},
 		"packages/0193a0c4-77":                                   {Kind: iface.CataloguePackage, Package: "0193a0c4-77"},
 		"packages/p1/versions":                                   {Kind: iface.CatalogueVersions, Package: "p1"},
+		"packages/p1/vulnerabilities":                            {Kind: iface.CataloguePackageVulnerabilities, Package: "p1"},
 		"packages/p1/versions/1.0.0%2Bbuild.1":                   {Kind: iface.CatalogueVersion, Package: "p1", Version: "1.0.0+build.1"},
 		"packages/p1/versions/1%3A2.3-4/readme":                  {Kind: iface.CatalogueReadme, Package: "p1", Version: "1:2.3-4"},
 		"packages/p1/versions/v1/vulnerabilities":                {Kind: iface.CatalogueVulnerabilities, Package: "p1", Version: "v1"},
@@ -264,7 +269,8 @@ func TestR_BAS_103_TheCataloguePathGrammarRoundTrips(t *testing.T) {
 		"packages/%41", "packages/1.0.0+x", "packages/a%2", "packages/a%00", "signatures/objects/" + strings.Repeat("AB", 32),
 		"signatures/objects/abc", "signing/other.pem", "setup/web/npm-all", "setup/web/npm-all/npm/pkg", "/index/0", "index/0/",
 		"state/x", "files/web/raw", "files/web/raw/file", "files/web/raw/setup/curl", "files/web/raw/folder/a/../b",
-		"files/web/raw/file/a%2Fb", "files/web/raw/file/a//b", "files/web/raw/other/a",
+		"files/web/raw/file/a%2Fb", "files/web/raw/file/a//b", "files/web/raw/other/a", "packages/p1/vulnerabilities/x",
+		"packages/p1/signatures",
 	} {
 		if p, err := iface.ParseCataloguePath(bad); err == nil {
 			t.Errorf("%q is read as %+v", bad, p)

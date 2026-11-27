@@ -39,6 +39,12 @@ func TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes(t *testing.T) {
 			"projects/web/packages/oci/portal/web@sha256:abc",
 		},
 		{"legal/imprint", "", Address{Kind: Legal, LegalPage: "imprint"}, "legal/imprint"},
+		{
+			"projects/web/repositories/raw%20files/setup", "client=wget",
+			Address{Kind: Setup, Project: "web", Repository: "raw files"},
+			"projects/web/repositories/raw%20files/setup",
+		},
+		{"projects/web/repositories/raw/setup/x", "", Address{Project: "web"}, ""},
 		{"legal/other", "", Address{}, ""},
 		{"projects/web/packages/npm", "", Address{Project: "web"}, ""},
 		{"projects/web/packages/npm/ui@1/-/versions", "", Address{Project: "web", Format: "npm"}, ""},

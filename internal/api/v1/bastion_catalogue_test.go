@@ -181,7 +181,7 @@ func TestR_BAS_101_TheCatalogueRoutesServeTheKeptDocuments(t *testing.T) {
 	if err := store.Write(ctx, partnersID, "", put, nil, &catalogue.Unit{}); err != nil {
 		t.Fatal(err)
 	}
-	pub := iface.CataloguePublic{Projects: []string{"acme"}, Repositories: []iface.CatalogueRepository{{Name: "acme/npm-local", Format: "npm", Class: "local"}}}
+	pub := iface.CataloguePublic{Projects: []iface.CatalogueProject{{Key: "acme", DisplayName: "Acme"}}, Repositories: []iface.CatalogueRepository{{Name: "acme/npm-local", Format: "npm", Class: "local"}}}
 	if err := store.Finish(ctx, partnersID, nil, "https://packages.example.com", pub, true); err != nil {
 		t.Fatal(err)
 	}

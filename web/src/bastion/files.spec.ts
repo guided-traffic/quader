@@ -6,7 +6,6 @@ import { Item } from '../app/api/file-reads';
 import { FileReads } from '../app/api/file-reads';
 import { ClientSetupReads } from '../app/api/package-reads';
 import { ApiError } from '../app/api/problem';
-import { SETUP_PAGES } from '../app/views/setup-pages';
 import { bastionDataInterceptor } from './data/http';
 import { provideBastionReads } from './data/reads';
 import { FilesPage } from './pages/files-page';
@@ -98,8 +97,6 @@ describe("A generic repository's files at the Bastion (R-UI-229)", () => {
     http.expectOne('/ui/data/v1/files/platform/downloads/setup/curl/tools/agent%201.9.tar.gz').flush({ client: 'curl', snippets: [] });
     expect(await commands).toEqual({ client: 'curl', snippets: [] });
     await expect(setupReads.get('platform/downloads', { client: 'curl', path: 'tools/' })).rejects.toBeInstanceOf(ApiError);
-    // The Bastion has no page Set up client (Q-UI-1456).
-    expect(TestBed.inject(SETUP_PAGES)).toBe(false);
   });
 
   it("R-UI-229 a file's page shows its path with Download through the Bastion, its facts and checksums, and no act, no statistics and no Signatures", async () => {
@@ -176,6 +173,7 @@ describe("A generic repository's files at the Bastion (R-UI-229)", () => {
     fixture.detectChanges();
     http.expectOne('/ui/data/v1/files').flush({ items: ['platform/downloads', 'other/files'] });
     http.expectOne((r) => r.url === '/ui/data/v1/packages').flush({ items: [], nextCursor: null });
+    http.expectOne('/ui/data/v1/projects').flush({ items: [{ key: 'platform', displayName: 'Platform', description: '' }] });
     await settled(fixture);
     const root = fixture.nativeElement as HTMLElement;
     const links = [...root.querySelectorAll('nav.file-repositories a')];
