@@ -1534,6 +1534,17 @@ records the recorder that tells such a stall apart).
   set-up's placeholder `myapp:1.0`, and a version's command through any public repository but its first answers 404. Overlap
   decided: the display names worded by key (well-known repositories, formats, clients) are W-40 P7's; W-39 P4 keeps the stored
   descriptions of tokens and groups. Waits for free builders.
+  **Landed on 2026-11-27, 13:48 with W39-P2 (the card's rows, warnings and closed sections): W40-P3, P1, P4a.** P3: a Bastion's
+  set-up of a public image repository has no `docker login`, `podman login` or `helm registry login` any more and starts at
+  Install (Q-OCI-277); P1: the catalogue's indexes per project and repository, an image's list by content, the set-ups of every
+  holder, the package set-up for the pull by digest, the switch **Hide repositories** (migration 00157), interface version 12
+  (R-BAS-130, R-BAS-131, Q-BAS-500 to 506); P4a: a repository's lists are views of both applications, and a visitor without a
+  session reads an opened row's grades (Q-UI-1630, Q-UI-1631). Gates on the stack: the landing gates, chart lint and test,
+  `ui-states`, the whole render set (731 passed, 18 failed: the 15 of the 07:42 entry and `admin-bastion-limits` twice, all
+  fixed by batch K higher in the stack, and `admin-permissions`, which W39-P1 broke on main and batch B-1127j fixes), `bastion`,
+  `bastionreg`. Looked at: the Bastion card (W39-P2) and the Bastion's OCI set-up (Install alone). Found while looking: the
+  set-up's picture at the Bastion still shows Quader's wall (a shared view batch M did not search); W40-P5 takes it. Still to
+  land from the stack: W40-P2, P4b, W39-P5, W41-A, B1, C0, batch K.
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
@@ -1560,6 +1571,13 @@ records the recorder that tells such a stall apart).
   shows fifteen lines, each justified, against W39-P2's sixteen. Decided at landing: B2 lands together with C2 and D1, so the
   owner can grant on the screen the moment his Bastion starts serving only what is granted (D25: nothing until a project is
   allowed and its repositories chosen, `upstream/clamav` included).
+
+- **Read on 2026-11-27, 13:17: the owner's installation on v0.165.0** (releases of the day: v0.163.2 at 09:28 with B-1127f,
+  the start-up crash; v0.164.0 at 11:10 with the Bastion card's web interface section and the Bastion's tower; v0.165.0 at 12:19
+  with the vulnerability scanning page). Main installation and Bastion on 0.165.0, migration to schema 156, every pod ready, no
+  error in the last hour of api, packages, worker and the two Bastion replicas; the Bastion's web interface answers 200.
+  Two of the morning's date bombs found on the stack (the audit log's and the backups' unit tests, fixed dates of 2026-10-27/28
+  that read "last month" from today on) were fixed on main just before the read (`81cf2edb2`).
 
 - **Read on 2026-11-27, 07:37: the owner's installation on v0.163.0** (the release of 06:39's push, the night's last batch B-1127e included: the malware mark and its details
   everywhere, the controller's screens, the grade's details, the Bastion's marks, the storage page's history, the Bastion's last fixes;
