@@ -188,7 +188,7 @@ func TestR_GENERIC_016_TheClientSetupOfCurl(t *testing.T) {
 	}
 	const (
 		install  = "quader_curl --fail --location --output <name> \"https://quader.example.com/files/it/files/<path>\"\n"
-		checksum = "printf '%s  %s\\n' <sha256> <name> | sha256sum -c\n"
+		checksum = "printf '%s  %s\\n' <sha256> <name> | sha256sum -c -\n"
 		publish  = "quader_curl --fail --upload-file <file> \"https://quader.example.com/files/it/files/<path>\"\n"
 	)
 	for _, c := range []struct {

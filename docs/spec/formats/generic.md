@@ -306,7 +306,7 @@ format with curl, and with wget and PowerShell since R-GENERIC-017 (Q-GENERIC-10
 |---|---|---|
 | `curl.configure.function` | Configure | The shell function `quader_curl` below |
 | `curl.install` | Install | `quader_curl --fail --location --output <name> "<registry URL><path>"` |
-| `curl.install.checksum` | Install | `printf '%s  %s\n' <sha256> <name> \| sha256sum -c` (R-GENERIC-017) |
+| `curl.install.checksum` | Install | `printf '%s  %s\n' <sha256> <name> \| sha256sum -c -` (R-GENERIC-017) |
 | `curl.publish` | Publish | `quader_curl --fail --upload-file <file> "<registry URL><path>"`, only for a caller with `deploy` |
 
 ```shell
@@ -356,8 +356,9 @@ theirs, and the server writes each of them (R-API-030).
 
 - **Three clients, one way to sign in** (Q-GENERIC-10). The format's clients are `curl`, `wget` and `powershell`
   (`Invoke-WebRequest`). Each has a configure snippet that keeps the token off every command line: curl's function `quader_curl`
-  (Q-GENERIC-9), wget's function `quader_wget`, which hands wget its configuration on standard input
-  (`wget --no-verbose --config=/dev/stdin "$@"` with the header `Authorization: Bearer ${QUADER_TOKEN}` as the here-document), and
+  (Q-GENERIC-9), wget's function `quader_wget`, which writes the header `Authorization: Bearer ${QUADER_TOKEN}` with a here-document
+  into a file of `mktemp` (mode `0600`), runs `wget --no-verbose --config="$config" "$@"` and removes the file when its subshell ends, by
+  a trap on `EXIT` ([Q-GENERIC-13](#q-generic-13--wget-reads-its-configuration-from-a-file-of-its-own-that-the-function-removes)), and
   PowerShell's variable `$QuaderHeaders`, filled in the session from `$env:QUADER_TOKEN`. The line that holds the token's reference is the
   one `credentials=none` drops.
 
@@ -365,7 +366,7 @@ theirs, and the server writes each of them (R-API-030).
   |---|---|---|
   | `wget.configure.function` | Configure | The function `quader_wget` |
   | `wget.install` | Install | `quader_wget --output-document <name> "<registry URL><path>"` |
-  | `wget.install.checksum` | Install | `printf '%s  %s\n' <sha256> <name> \| sha256sum -c` |
+  | `wget.install.checksum` | Install | `printf '%s  %s\n' <sha256> <name> \| sha256sum -c -` |
   | `wget.publish` | Publish | `quader_wget --method PUT --body-file <file> --output-document - "<registry URL><path>"` |
   | `powershell.configure.headers` | Configure | `$QuaderHeaders = @{}` and `$QuaderHeaders.Authorization = "Bearer $env:QUADER_TOKEN"` |
   | `powershell.install` | Install | `Invoke-WebRequest -Uri "<registry URL><path>" -OutFile <name> -Headers $QuaderHeaders` |
@@ -745,7 +746,7 @@ only downloads (Q-GENERIC-8, option b), so every client must also upload. GNU wg
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) curl, wget and PowerShell, each with a configure snippet that keeps the token off every command line: curl's and wget's shell function hand the client the header as configuration on standard input, PowerShell keeps it in a variable of the session (chosen) | Three tabs, one pattern | A minimal image with wget alone and a Windows machine get a command that works; the token is in no process list and no shell trace for any of them; `credentials=none` drops the one line in each | The function or the variable must be defined in the session that runs the command; wget needs `--config` and `/dev/stdin` |
+| (a) curl, wget and PowerShell, each with a configure snippet that keeps the token off every command line: curl's and wget's shell function hand the client the header as configuration on standard input, PowerShell keeps it in a variable of the session (chosen) | Three tabs, one pattern | A minimal image with wget alone and a Windows machine get a command that works; the token is in no process list and no shell trace for any of them; `credentials=none` drops the one line in each | The function or the variable must be defined in the session that runs the command; wget needs `--config` and, since Q-GENERIC-13, a file of its own for the call |
 | (b) wget and PowerShell with the header as an argument (`--header`, `-Headers @{…}` inline) | One line per command | Nothing to define first | wget's argument is in the process list; inconsistent with Q-GENERIC-9 |
 | (c) wget with a `.netrc` entry | wget reads it itself | Standard | A file with the token in plain text, which the owner ruled out |
 | (d) curl only, as before | No change | One set of facts | The owner's rule asks for a file's commands; a Windows user and a wget-only image have none |
@@ -801,6 +802,37 @@ form bodies on purpose.
 
 **Applied in the spec:** R-GENERIC-017; `mediaType` of [handler.go](../../../internal/api/rawfiles/handler.go).
 
+### Q-GENERIC-13 · wget reads its configuration from a file of its own that the function removes
+
+Status: **Decided by the development agent** on 2026-11-27 — selected from the options below; the owner reviews it at the walkthrough.
+It amends Q-GENERIC-10 for wget.
+
+Context: the function of Q-GENERIC-10 handed wget its configuration as `--config=/dev/stdin` with a here-document. Run once against a
+local echo server on 2026-11-27, it failed everywhere but in zsh on Linux: GNU wget 1.21.2, 1.21.4 and 1.25.0 on Linux and 1.25.0 on
+macOS answered "Exiting due to error in /dev/stdin" (exit `2`, nothing downloaded) under bash and dash, whose here-document is a pipe;
+wget 1.25.0 on macOS under zsh and sh printed "File /dev/stdin changed since the last check. Security check failed." and downloaded
+without its configuration, so no token was sent. Only zsh on Linux, whose here-document is a file, sent the header. wget has no other
+way to take a header than an argument (`--header`, `-e`) or a configuration file (`--config`, `WGETRC`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The function writes the header with a here-document into a file of `mktemp` (mode `0600`), passes `--config="$config"` and removes the file by a trap on `EXIT` of its subshell (chosen) | `quader_wget() ( … )` | Works with every shell and every wget measured (wget 1.21.2 to 1.25.0, sh, bash, dash, zsh, macOS and Linux); the token is no argument and in no shell trace (the here-document is not traced); the file goes when wget ends, also on an error and on Ctrl-C (measured in bash, zsh, dash and sh on macOS) | A file holds the token while wget runs, readable by its owner and root; a `kill -9` of the shell leaves it in `$TMPDIR` |
+| (b) The header as an argument (`--header`) | One line | Nothing to define | The process list and a shell trace show the token, as Q-GENERIC-9 ruled out for curl |
+| (c) `/dev/fd/3` or a process substitution in place of `/dev/stdin` | Another descriptor | No file | The same check of wget 1.25 and the same pipe of bash and dash; a process substitution is no POSIX shell's |
+| (d) A configuration file the reader keeps (`~/.wgetrc` with the header, `WGETRC`) | wget reads it itself | No function | A file with the token in plain text that stays, which the owner ruled out for curl's `.netrc` (Q-GENERIC-9) |
+
+**Choice:** (a). The anonymous variant keeps the function's shape with an empty configuration, as curl's does: the same function serves
+a reader who signs in later, and the configuration still replaces the reader's own `.wgetrc` for these calls (a CA certificate a reader
+keeps there is not read; `--ca-certificate` passes one to `quader_wget`). The same run found the check of curl and wget failing on macOS:
+its `sha256sum` printed its usage for `-c` without a file, so the check names standard input, `sha256sum -c -`, which GNU coreutils,
+BusyBox and macOS read alike (measured on Debian 13, Alpine 3.22 and macOS 27).
+
+**Rationale:** the only form that works with the clients as they are and keeps the token off every argument; the file lives as long as
+the call and only its owner can read it. The development agent would revisit this when wget reads a header from the environment or
+from standard input again.
+
+**Applied in the spec:** R-GENERIC-017; the guide of wget's Configure step; [client-setup.md](../../manual/user/client-setup.md).
+
 ## What this does not cover
 
 ### H-131 · Generic content is served as stored, to whoever can read it
@@ -820,9 +852,12 @@ Component: the snippet `powershell.install` (R-GENERIC-017). Subject: a file who
 elsewhere; the check uses `-LiteralPath` and is not affected. Live for such names on Windows PowerShell 5.1; whether PowerShell 7 reads
 `-OutFile` literally was not verified. No name is run as code: the value is a single-quoted literal.
 
-### H-2193 · The wget and PowerShell snippets are proven by their quoting, not by the clients
+### H-2193 · The PowerShell snippets are proven by their quoting, wget's by one run
 
 Component: the snippets of wget and PowerShell (R-GENERIC-017). The unit tests run curl's and wget's lines through a POSIX shell with
-the clients replaced by functions that print their arguments, and check PowerShell's quoting as text; no test runs GNU wget or
-PowerShell against Quader (`--config=/dev/stdin`, `--method PUT`, the form type of a `PUT`, `Invoke-WebRequest -InFile`). No e2e leg
-is added for them (CLAUDE.md, "a format adds a constant"); what they would show is listed here until a measurement runs them once.
+the clients replaced by functions that print their arguments (and wget's configuration file, its mode and that it is gone afterwards,
+Q-GENERIC-13), and check PowerShell's quoting as text. GNU wget was run once on 2026-11-27, a measurement and no test: wget 1.25.0 on
+macOS against a local Quader (an upload with a token, a download and its check with a token and anonymously, curl's the same), and
+wget 1.21.2, 1.21.4 and 1.25.0 on Linux under sh, bash, dash and zsh against an echo server; that run found Q-GENERIC-13's failure. No
+test runs PowerShell (`Invoke-WebRequest -InFile`, the form type of a `PUT`), and wget's run is not repeated. No e2e leg is added for
+them (CLAUDE.md, "a format adds a constant").

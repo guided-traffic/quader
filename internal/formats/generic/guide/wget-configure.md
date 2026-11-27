@@ -1,6 +1,6 @@
 Paste the snippet into the shell, or into the CI script, that runs wget; the snippets are written for a POSIX shell such as sh, bash or zsh. It defines the shell function `quader_wget`, which runs wget with the options and the address you give it{{if not .Anonymous}} and adds the header `Authorization: Bearer` with the token from the environment variable `{{.TokenEnvVar}}`.
 
-The function reads the variable each time it runs and hands the header to wget as its configuration file, read from standard input (`--config=/dev/stdin`). The token therefore appears neither on wget's command line, where other users of the machine could read it in the process list, nor in a shell trace (`set -x`), and no file holds it. The configuration replaces your own `.wgetrc` for these calls{{end}}.
+The function reads the variable each time it runs and writes the header into a configuration file of its own, which `mktemp` creates readable by you alone and which the function removes when wget ends, also after an error or Ctrl-C (`--config`; wget refuses a configuration read from standard input). The token therefore appears neither on wget's command line, where other users of the machine could read it in the process list, nor in a shell trace (`set -x`), and the file exists only while wget runs. The configuration replaces your own `.wgetrc` for these calls{{end}}.
 {{if .Anonymous}}
 You are not signed in, so the function sends no credential. It works for repositories that are open to anonymous readers.
 {{end}}

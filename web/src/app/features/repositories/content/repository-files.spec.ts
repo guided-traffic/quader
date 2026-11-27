@@ -77,7 +77,7 @@ describe('The files of a repository', () => {
     const shown = [...panel.querySelectorAll<HTMLInputElement>('[role="tabpanel"]:not([inert]) quader-address-field input')].map((i) => i.value);
     expect(shown).toEqual([
       'quader_curl --fail --location --output readme.txt "https://quader.example.net/files/web/generic-local/readme.txt"',
-      `printf '%s  %s\\n' ${'a'.repeat(64)} readme.txt | sha256sum -c`,
+      `printf '%s  %s\\n' ${'a'.repeat(64)} readme.txt | sha256sum -c -`,
     ]);
     expect(panel.querySelector('a.setup-link')?.getAttribute('href')).toBe('/projects/web/repositories/generic-local/setup?client=curl');
     await expectAccessible(panel);

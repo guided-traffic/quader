@@ -102,6 +102,15 @@ describe('Snippet words', () => {
     expect(snippetText('docker.configure.shell')?.caption).toBe('Sign in once on each machine.');
     expect(snippetText('docker.configure.kubernetes')?.signedIn).toBe(true);
   });
+
+  it('R-UI-123 R-GENERIC-017 an anonymous reader of a file is told that the configuration sends no credential, not that it keeps a token off the command line', () => {
+    for (const id of ['curl.configure.function', 'wget.configure.function', 'powershell.configure.headers']) {
+      const anonymous = snippetText(id, { anonymous: true })?.caption ?? '';
+      expect(anonymous).toContain('this repository can be read without signing in.');
+      expect(anonymous).not.toContain('token');
+      expect(snippetText(id)?.caption).toContain('The token stays');
+    }
+  });
 });
 
 describe('Ansible Galaxy client setup', () => {

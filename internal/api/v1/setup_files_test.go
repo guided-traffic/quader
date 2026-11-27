@@ -88,7 +88,7 @@ func TestR_GENERIC_017_AHostileNameIsOneArgumentOfEveryClient(t *testing.T) {
 			if id == "wget.install.checksum" {
 				sn = wget[id]
 			}
-			if got := runShell(t, sn.Content); !slices.Equal(got, []string{"-c", sha + "  " + saved + "\n"}) {
+			if got := runShell(t, sn.Content); !slices.Equal(got, []string{"-c", "-", sha + "  " + saved + "\n"}) {
 				t.Errorf("%s %q: %q", id, name, got)
 			}
 		}
@@ -133,14 +133,12 @@ func TestR_GENERIC_017_AFoldersUploadCommands(t *testing.T) {
 	}
 }
 
-// TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine (Q-GENERIC-10): the configure snippets of wget and PowerShell
-// hold the token's reference in the one line that is dropped for credentials=none, written in the client's syntax for env and as
-// the placeholder for the browser; wget reads it as configuration on standard input, PowerShell keeps it in a variable of the
+// TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine (Q-GENERIC-10, Q-GENERIC-13): the configure snippets of wget and
+// PowerShell hold the token's reference in the one line that is dropped for credentials=none, written in the client's syntax for env
+// and as the placeholder for the browser; wget reads it from a configuration file of its own, PowerShell keeps it in a variable of the
 // session, and neither puts it on a command line.
 func TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine(t *testing.T) {
-	wget := func(header string) string {
-		return "quader_wget() {\n  wget --no-verbose --config=/dev/stdin \"$@\" <<EOF\n" + header + "EOF\n}\n"
-	}
+	wget := wgetFunction
 	ps := func(line string) string { return "$QuaderHeaders = @{}\n" + line }
 	for credentials, want := range map[string]map[string]string{
 		"env": {
@@ -169,6 +167,61 @@ func TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine(t *testing
 			if wantIDs := []string{client + ".configure." + map[string]string{"wget": "function", "powershell": "headers"}[client], client + ".install", client + ".install.checksum", client + ".publish"}; !slices.Equal(ids, wantIDs) {
 				t.Errorf("%s: %v", client, ids)
 			}
+		}
+	}
+}
+
+// wgetFunction is wget's configure snippet with the header line given ("" for credentials=none).
+func wgetFunction(header string) string {
+	return "quader_wget() (\n  config=$(mktemp) || exit\n  trap 'rm -f \"$config\"' EXIT\n  cat > \"$config\" <<EOF\n" + header +
+		"EOF\n  wget --no-verbose --config=\"$config\" \"$@\"\n)\n"
+}
+
+// wgetMock stands for wget in TestR_GENERIC_017_WgetReadsTheHeaderFromAFileOfItsOwnThatTheCallRemoves: it prints the kind and the mode
+// of the file --config names (never a device such as /dev/stdin, whose here-document wget refuses), its content, writes its name to
+// $WHERE, and fails as wget does for the address "fail".
+const wgetMock = `wget() {
+  for a; do case $a in --config=*) c=${a#--config=} ;; esac; done
+  case $c in /dev/* | /proc/*) echo "a device: $c" ;; esac
+  if [ -f "$c" ] && [ ! -L "$c" ]; then echo "regular $(ls -l "$c" | cut -c1-10)"; else echo "not a file: $c"; fi
+  cat "$c"
+  echo "$c" > "$WHERE"
+  case $* in *fail*) return 8 ;; esac
+}
+`
+
+// TestR_GENERIC_017_WgetReadsTheHeaderFromAFileOfItsOwnThatTheCallRemoves (Q-GENERIC-13): run by a real POSIX shell with wget replaced
+// by a function, the configure snippet hands wget a regular file of mode 0600, not standard input, that holds the header with the
+// token's value; the file is gone when the call returns, also when wget fails, and wget's status is the function's; a shell trace
+// (set -x) of the call never shows the token's value.
+func TestR_GENERIC_017_WgetReadsTheHeaderFromAFileOfItsOwnThatTheCallRemoves(t *testing.T) {
+	w := get(setupServer(t, "https://quader.example.com", true), "/api/v1/projects/it/repositories/files/client-setup?client=wget&credentials=env")
+	var out gen.ClientSetup
+	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || w.Code != 200 {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+	var function string
+	for _, sn := range out.Snippets {
+		if sn.Id == "wget.configure.function" {
+			function = sn.Content
+		}
+	}
+	for address, status := range map[string]string{"https://quader.example.com/files/it/files/a.bin": "0", "fail": "8"} {
+		dir := t.TempDir()
+		script := wgetMock + function + "set -x\nquader_wget --output-document - " + address + "\necho \"status $?\"\nset +x\n" +
+			`[ -e "$(cat "$WHERE")" ] && echo "left: $(cat "$WHERE")"` + "\nexit 0\n"
+		cmd := exec.Command("sh", "-c", script)
+		cmd.Env = append(cmd.Environ(), "MY_TOKEN=tok-value-1", "WHERE="+dir+"/where") // the server's variable
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &stdout, &stderr
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("sh: %v %s", err, stderr.String())
+		}
+		if got, want := stdout.String(), "regular -rw-------\nheader = Authorization: Bearer tok-value-1\nstatus "+status+"\n"; got != want {
+			t.Errorf("%s:\n%s\nwant\n%s", address, got, want)
+		}
+		if strings.Contains(stderr.String(), "tok-value-1") {
+			t.Errorf("%s: the shell trace shows the token:\n%s", address, stderr.String())
 		}
 	}
 }

@@ -11583,7 +11583,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-GENERIC
 
-12 questions on [spec/formats/generic.md](spec/formats/generic.md).
+13 questions on [spec/formats/generic.md](spec/formats/generic.md).
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11599,6 +11599,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-GENERIC-10](spec/formats/generic.md#q-generic-10--curl-wget-and-powershell-are-the-clients-of-a-file-each-keeping-the-token-off-the-command-line) | curl, wget and PowerShell are the clients of a file, each keeping the token off the command line | Decided by the development agent on 2026-11-26 | (a) curl, wget and PowerShell, each with a configure snippet that keeps the token off every command line: curl's and wget's shell function hand the client the header as configuration on standard input, PowerShell keeps it in a variable of the session | — |
 | [Q-GENERIC-11](spec/formats/generic.md#q-generic-11--a-file-deployed-without-a-type-gets-one-from-its-name-from-a-closed-list-of-text-at-the-deploy) | A file deployed without a type gets one from its name, from a closed list of text, at the deploy | Decided by the development agent on 2026-11-26 | (a) At the deploy, from a closed list of text types by the extension; a deployed type wins | — |
 | [Q-GENERIC-12](spec/formats/generic.md#q-generic-12--the-type-of-a-forms-body-is-no-files-type) | The type of a form's body is no file's type | Decided by the development agent on 2026-11-26 | (a) A deploy that carries the form's type records none, and the guess of Q-GENERIC-11 applies | — |
+| [Q-GENERIC-13](spec/formats/generic.md#q-generic-13--wget-reads-its-configuration-from-a-file-of-its-own-that-the-function-removes) | wget reads its configuration from a file of its own that the function removes | Decided by the development agent on 2026-11-27 | (a) The function writes the header with a here-document into a file of `mktemp` (mode `0600`), passes `--config="$config"` and removes the file by a trap on `EXIT` of its subshell | — |
 
 ### Q-HA
 
@@ -14072,7 +14073,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1310](spec/api-and-ui.md#q-ui-1310--the-inventory-of-2026-11-26-what-still-differed-between-the-formats-and-what-g3-closed) | The inventory of 2026-11-26: what still differed between the formats, and what G3 closed | Decided by the development agent on 2026-11-26 | close every row (R-UI-221, R-UI-222). | — |
 | [Q-UI-1311](spec/api-and-ui.md#q-ui-1311--every-formats-dependencies-are-one-block-a-group-per-kind-in-the-formats-words) | Every format's dependencies are one block, a group per kind in the format's words | — | — | — |
 | [Q-UI-1312](spec/api-and-ui.md#q-ui-1312--keywords-and-tags-are-one-block-of-chips-that-open-the-package-list) | Keywords and tags are one block of chips that open the package list | — | (a) The panel's first line: **Download address** with its copy button, then the clients | — |
-| [Q-UI-1313](spec/api-and-ui.md#q-ui-1313--a-versions-links-are-one-row-under-its-facts-in-every-format) | A version's links are one row under its facts in every format | — | (a) Under the download, **Check the download**: `printf '%s  %s\n' <sha256> <name> \| sha256sum -c` for curl and wget, `(Get-FileHash …).Hash -eq '<sha256>'` for PowerShell, as an image's tab has **By digest** | — |
+| [Q-UI-1313](spec/api-and-ui.md#q-ui-1313--a-versions-links-are-one-row-under-its-facts-in-every-format) | A version's links are one row under its facts in every format | — | (a) Under the download, **Check the download**: `printf '%s  %s\n' <sha256> <name> \| sha256sum -c -` for curl and wget, `(Get-FileHash …).Hash -eq '<sha256>'` for PowerShell, as an image's tab has **By digest** | — |
 | [Q-UI-1314](spec/api-and-ui.md#q-ui-1314--an-images-date-is-pushed-or-fetched-on-every-screen) | An image's date is Pushed or Fetched on every screen | — | (a) A word where the product has one ("Markdown", "ZIP archive"), the media type in code beside it; the type alone for any other, and for `application/octet-stream` | — |
 | [Q-UI-1315](spec/api-and-ui.md#q-ui-1315--an-install-script-is-said-under-the-facts-where-a-person-decides) | An install script is said under the facts, where a person decides | — | (a) **Upload files** keeps its dialog as the main act; a chevron joined to it, **Upload with a client**, opens the panel of the upload into this folder in each client, `<file>` the reader's | — |
 | [Q-UI-1316](spec/api-and-ui.md#q-ui-1316--a-size-is-said-in-the-unit-a-person-reads-wherever-it-stands) | A size is said in the unit a person reads, wherever it stands | Decided by the development agent on 2026-11-26 | (a) The product's size form (binary units, one decimal) for Debian's Installed-Size and npm's unpacked size | — |

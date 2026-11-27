@@ -40278,25 +40278,49 @@
         <source>With Central Package Management</source>
       </segment>
     </unit>
+    <unit id="setup.caption.curl-function-anonymous">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:240</note>
+      </notes>
+      <segment>
+        <source>Paste into the shell or the CI script that runs curl. The function sends no credential: this repository can be read without signing in.</source>
+      </segment>
+    </unit>
     <unit id="setup.caption.curl-function">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:237</note>
+        <note category="location">src/app/features/setup/clients.ts:241</note>
       </notes>
       <segment>
         <source>Paste into the shell or the CI script that runs curl. The token stays off curl&apos;s command line.</source>
       </segment>
     </unit>
+    <unit id="setup.caption.wget-function-anonymous">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:246</note>
+      </notes>
+      <segment>
+        <source>Paste into the shell or the CI script that runs wget. The function sends no credential: this repository can be read without signing in.</source>
+      </segment>
+    </unit>
     <unit id="setup.caption.wget-function">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:239</note>
+        <note category="location">src/app/features/setup/clients.ts:247</note>
       </notes>
       <segment>
         <source>Paste into the shell or the CI script that runs wget. The token stays off wget&apos;s command line.</source>
       </segment>
     </unit>
+    <unit id="setup.caption.powershell-headers-anonymous">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:252</note>
+      </notes>
+      <segment>
+        <source>Run in the PowerShell session or script that downloads. No credential is sent: this repository can be read without signing in.</source>
+      </segment>
+    </unit>
     <unit id="setup.caption.powershell-headers">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:241</note>
+        <note category="location">src/app/features/setup/clients.ts:253</note>
       </notes>
       <segment>
         <source>Run in the PowerShell session or script that downloads. The token stays in the session, off every command line.</source>
@@ -40304,7 +40328,7 @@
     </unit>
     <unit id="setup.caption.file-checksum">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:245</note>
+        <note category="location">src/app/features/setup/clients.ts:258</note>
       </notes>
       <segment>
         <source>Checks the download against the SHA-256 on the file&apos;s page.</source>
@@ -40312,7 +40336,7 @@
     </unit>
     <unit id="setup.caption.curl-publish">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:252</note>
+        <note category="location">src/app/features/setup/clients.ts:265</note>
       </notes>
       <segment>
         <source>Replacing a file also needs the overwrite permission.</source>
@@ -40320,7 +40344,7 @@
     </unit>
     <unit id="setup.caption.oci-login-anonymous">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:259</note>
+        <note category="location">src/app/features/setup/clients.ts:272</note>
       </notes>
       <segment>
         <source>Not needed to pull: this repository can be read without signing in.</source>
@@ -40328,7 +40352,7 @@
     </unit>
     <unit id="setup.caption.oci-login">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:260</note>
+        <note category="location">src/app/features/setup/clients.ts:273</note>
       </notes>
       <segment>
         <source>Sign in once on each machine.</source>
@@ -40336,7 +40360,7 @@
     </unit>
     <unit id="setup.caption.oci-pull-secret">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:264</note>
+        <note category="location">src/app/features/setup/clients.ts:277</note>
       </notes>
       <segment>
         <source>Creates an image pull secret. Name it under `imagePullSecrets` of your pods.</source>
@@ -40344,7 +40368,7 @@
     </unit>
     <unit id="setup.fold.kubernetes">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:265</note>
+        <note category="location">src/app/features/setup/clients.ts:278</note>
       </notes>
       <segment>
         <source>For a Kubernetes cluster</source>
@@ -40352,7 +40376,7 @@
     </unit>
     <unit id="setup.caption.oci-push">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:270</note>
+        <note category="location">src/app/features/setup/clients.ts:283</note>
       </notes>
       <segment>
         <source>Name a local image below this repository, then push it.</source>
@@ -40360,7 +40384,7 @@
     </unit>
     <unit id="setup.caption.helm-push">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:272</note>
+        <note category="location">src/app/features/setup/clients.ts:285</note>
       </notes>
       <segment>
         <source>Package the chart, then push it below this repository.</source>
@@ -40368,7 +40392,7 @@
     </unit>
     <unit id="setup.caption.oci-buildx">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:274</note>
+        <note category="location">src/app/features/setup/clients.ts:287</note>
       </notes>
       <segment>
         <source>Or build for two platforms and push in one go.</source>
@@ -40376,7 +40400,7 @@
     </unit>
     <unit id="setup.caption.apt-configure">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:277</note>
+        <note category="location">src/app/features/setup/clients.ts:290</note>
       </notes>
       <segment>
         <source>Installs the signing key and adds the repository as a verified source. Run it again after a key rotation.</source>
@@ -40384,7 +40408,7 @@
     </unit>
     <unit id="setup.caption.apt-upstream">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:281</note>
+        <note category="location">src/app/features/setup/clients.ts:294</note>
       </notes>
       <segment>
         <source>Verifies against the archive&apos;s own keyring instead of a key of Quader&apos;s.</source>
@@ -40392,7 +40416,7 @@
     </unit>
     <unit id="setup.fold.apt-upstream">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:282</note>
+        <note category="location">src/app/features/setup/clients.ts:295</note>
       </notes>
       <segment>
         <source>Remote without upstream keys</source>
@@ -40400,7 +40424,7 @@
     </unit>
     <unit id="setup.caption.apt-list">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:286</note>
+        <note category="location">src/app/features/setup/clients.ts:299</note>
       </notes>
       <segment>
         <source>Install the key file as above first.</source>
@@ -40408,7 +40432,7 @@
     </unit>
     <unit id="setup.fold.apt-list">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:286</note>
+        <note category="location">src/app/features/setup/clients.ts:299</note>
       </notes>
       <segment>
         <source>As a one-line .list file</source>
@@ -40416,7 +40440,7 @@
     </unit>
     <unit id="setup.caption.apt-publish">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:288</note>
+        <note category="location">src/app/features/setup/clients.ts:301</note>
       </notes>
       <segment>
         <source>The package is in the index within moments.</source>
@@ -40424,7 +40448,7 @@
     </unit>
     <unit id="setup.caption.ansible-cfg">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:290</note>
+        <note category="location">src/app/features/setup/clients.ts:303</note>
       </notes>
       <segment>
         <source>Save next to your playbooks, or as `~/.ansible.cfg`.</source>
@@ -40432,7 +40456,7 @@
     </unit>
     <unit id="setup.caption.ansible-token-env">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:292</note>
+        <note category="location">src/app/features/setup/clients.ts:305</note>
       </notes>
       <segment>
         <source>`ansible.cfg` does not expand variables, so the token comes from this one.</source>
@@ -40440,7 +40464,7 @@
     </unit>
     <unit id="setup.fold.cmd">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:296</note>
+        <note category="location">src/app/features/setup/clients.ts:309</note>
       </notes>
       <segment>
         <source>In cmd</source>
@@ -40448,7 +40472,7 @@
     </unit>
     <unit id="setup.caption.ansible-netrc">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:299</note>
+        <note category="location">src/app/features/setup/clients.ts:312</note>
       </notes>
       <segment>
         <source>A role download falls back to `~/.netrc`. One line serves every repository on this host.</source>
@@ -40456,7 +40480,7 @@
     </unit>
     <unit id="setup.fold.roles">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:300</note>
+        <note category="location">src/app/features/setup/clients.ts:313</note>
       </notes>
       <segment>
         <source>To install roles</source>
@@ -40464,7 +40488,7 @@
     </unit>
     <unit id="setup.caption.ansible-requirements">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:305</note>
+        <note category="location">src/app/features/setup/clients.ts:318</note>
       </notes>
       <segment>
         <source>Install it with `ansible-galaxy collection install -r requirements.yml`.</source>
@@ -40472,8 +40496,8 @@
     </unit>
     <unit id="setup.fold.requirements">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:306</note>
-        <note category="location">src/app/features/setup/clients.ts:316</note>
+        <note category="location">src/app/features/setup/clients.ts:319</note>
+        <note category="location">src/app/features/setup/clients.ts:329</note>
       </notes>
       <segment>
         <source>With a requirements.yml</source>
@@ -40481,7 +40505,7 @@
     </unit>
     <unit id="setup.caption.freshclam-conf">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:309</note>
+        <note category="location">src/app/features/setup/clients.ts:322</note>
       </notes>
       <segment>
         <source>Put this line into `freshclam.conf` of each ClamAV installation. `PrivateMirror` replaces ClamAV&apos;s own network.</source>
@@ -40489,7 +40513,7 @@
     </unit>
     <unit id="setup.caption.freshclam-run">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:311</note>
+        <note category="location">src/app/features/setup/clients.ts:324</note>
       </notes>
       <segment>
         <source>Run it once: it fetches each database whole, then reports each as up to date.</source>
@@ -40497,7 +40521,7 @@
     </unit>
     <unit id="setup.caption.ansible-role-requirements">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:315</note>
+        <note category="location">src/app/features/setup/clients.ts:328</note>
       </notes>
       <segment>
         <source>Install it with `ansible-galaxy role install -r requirements.yml`.</source>
@@ -40505,7 +40529,7 @@
     </unit>
     <unit id="setup.caption.ansible-publish-server">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:319</note>
+        <note category="location">src/app/features/setup/clients.ts:332</note>
       </notes>
       <segment>
         <source>Publishes an archive built with `ansible-galaxy collection build` to the server of `ansible.cfg`, with the token in its variable.</source>
@@ -40513,7 +40537,7 @@
     </unit>
     <unit id="setup.caption.verify-npm-signatures">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:321</note>
+        <note category="location">src/app/features/setup/clients.ts:334</note>
       </notes>
       <segment>
         <source>Run it in your project: checks the registry signatures of every installed package, this installation&apos;s of your own packages included.</source>
@@ -40521,7 +40545,7 @@
     </unit>
     <unit id="setup.caption.verify-attestation">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:325</note>
+        <note category="location">src/app/features/setup/clients.ts:338</note>
       </notes>
       <segment>
         <source>Checks with cosign, offline, that this installation received the artifact and what its checks found. Replace the marked values.</source>

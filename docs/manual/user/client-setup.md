@@ -228,7 +228,7 @@ quader_curl --fail --location --output app-1.2.0.tar.gz "https://quader.example.
 quader_curl --fail --upload-file app-1.2.0.tar.gz "https://quader.example.com/files/web/generic-local/tools/app-1.2.0.tar.gz"
 ```
 
-wget gets the same from a function `quader_wget`, which hands wget its configuration on standard input (`--config=/dev/stdin`), and PowerShell from a variable of the session, `$QuaderHeaders`, filled from `$env:QUADER_TOKEN` and passed as `-Headers`. Each client's **Install** step has a second snippet that checks a download against its SHA-256. The page of a file offers these commands with the file's address and name filled in, behind **Download** ([Browsing and transferring files](files.md#download-with-a-client)).
+wget gets the same from a function `quader_wget`, which writes the header into a configuration file only you can read and removes it when wget ends (`--config`; wget refuses a configuration read from standard input), and PowerShell from a variable of the session, `$QuaderHeaders`, filled from `$env:QUADER_TOKEN` and passed as `-Headers`. Each client's **Install** step has a second snippet that checks a download against its SHA-256. The page of a file offers these commands with the file's address and name filled in, behind **Download** ([Browsing and transferring files](files.md#download-with-a-client)).
 
 Downloading needs read, uploading to a free path deploy, replacing a file with other bytes overwrite as well, deleting delete. Add `--header "If-None-Match: *"` to an upload that must never replace a file: it then answers `412` when the path exists. [Browsing and transferring files](files.md) describes paths, digests and folders; the curl guide shows resuming, conditional downloads and uploads with a digest.
 

@@ -7860,8 +7860,10 @@ Acceptance criteria:
 
 - Unit tests: `web/npm-remote` has Configure and Install; an anonymous visitor gets `credentials=none`, no token line and no More
   options; an anonymous visitor of `web/oci-local` reads "Not needed to pull: this repository can be read without signing in." and
-  no fold **For a Kubernetes cluster**; `web/npm-readonly` shows the reason to a holder of `repositories:read-config` and no Publish
-  step to a reader.
+  no fold **For a Kubernetes cluster**; an anonymous reader of a generic repository's Configure step reads that the function (curl,
+  wget) or the session (PowerShell) sends no credential because the repository can be read without signing in, not that it keeps a
+  token off the command line (`clients.spec.ts`, added 2026-11-27); `web/npm-readonly` shows the reason to a holder of
+  `repositories:read-config` and no Publish step to a reader.
 
 ### R-UI-124 · Guides: the formats as tiles, a format's repositories, the guide of a class
 Priority: **MVP** · Covers: quader-only
@@ -28884,7 +28886,7 @@ by them. **Applied in the spec:** R-UI-221, R-API-029.
 
 ### Q-UI-1313 · A version's links are one row under its facts in every format
 
-| (a) Under the download, **Check the download**: `printf '%s  %s\n' <sha256> <name> \| sha256sum -c` for curl and wget, `(Get-FileHash …).Hash -eq '<sha256>'` for PowerShell, as an image's tab has **By digest** (chosen) | Two lines per tab | The digest is used where it is needed, by the client's own shell; one field each fits a panel at 390 px, scrolling inside its field like every long command | A third request per client |
+| (a) Under the download, **Check the download**: `printf '%s  %s\n' <sha256> <name> \| sha256sum -c -` for curl and wget, `(Get-FileHash …).Hash -eq '<sha256>'` for PowerShell, as an image's tab has **By digest** (chosen) | Two lines per tab | The digest is used where it is needed, by the client's own shell; one field each fits a panel at 390 px, scrolling inside its field like every long command | A third request per client |
 | (b) The SHA-256 to copy, as before | The fact only | Short | The reader writes the check |
 | (c) Download and check in one command (`&&`) | One line | One copy | A line that differs per shell grows past the panel; a failed download and a failed check read alike |
 

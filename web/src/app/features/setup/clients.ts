@@ -233,12 +233,25 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
     case 'dotnet.install.sdk-file-based-app':
     case 'visual-studio.install.sdk':
       return text(null);
+    // An anonymous reader's snippet holds no token (credentials=none), so its sentence says what the function does without one.
     case 'curl.configure.function':
-      return text($localize`:@@setup.caption.curl-function:Paste into the shell or the CI script that runs curl. The token stays off curl's command line.`);
+      return text(
+        reader.anonymous
+          ? $localize`:@@setup.caption.curl-function-anonymous:Paste into the shell or the CI script that runs curl. The function sends no credential: this repository can be read without signing in.`
+          : $localize`:@@setup.caption.curl-function:Paste into the shell or the CI script that runs curl. The token stays off curl's command line.`,
+      );
     case 'wget.configure.function':
-      return text($localize`:@@setup.caption.wget-function:Paste into the shell or the CI script that runs wget. The token stays off wget's command line.`);
+      return text(
+        reader.anonymous
+          ? $localize`:@@setup.caption.wget-function-anonymous:Paste into the shell or the CI script that runs wget. The function sends no credential: this repository can be read without signing in.`
+          : $localize`:@@setup.caption.wget-function:Paste into the shell or the CI script that runs wget. The token stays off wget's command line.`,
+      );
     case 'powershell.configure.headers':
-      return text($localize`:@@setup.caption.powershell-headers:Run in the PowerShell session or script that downloads. The token stays in the session, off every command line.`);
+      return text(
+        reader.anonymous
+          ? $localize`:@@setup.caption.powershell-headers-anonymous:Run in the PowerShell session or script that downloads. No credential is sent: this repository can be read without signing in.`
+          : $localize`:@@setup.caption.powershell-headers:Run in the PowerShell session or script that downloads. The token stays in the session, off every command line.`,
+      );
     case 'curl.install.checksum':
     case 'wget.install.checksum':
     case 'powershell.install.checksum':

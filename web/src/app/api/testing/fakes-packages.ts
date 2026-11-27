@@ -1516,7 +1516,7 @@ function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: bool
     language: client === 'powershell' ? 'powershell' : 'shell',
     content,
   });
-  const check = `printf '%s  %s\\n' ${sha} ${name} | sha256sum -c\n`;
+  const check = `printf '%s  %s\\n' ${sha} ${name} | sha256sum -c -\n`;
   const sets: Record<string, RawSnippet[]> = {
     curl: [
       shell('curl.configure.function', 'configure', `quader_curl() {\n  curl --silent --show-error --config - "$@" <<EOF\n${token === null ? '' : `header = "Authorization: Bearer ${token}"\n`}EOF\n}\n`),
@@ -1525,7 +1525,11 @@ function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: bool
       shell('curl.publish', 'publish', `quader_curl --fail --upload-file <file> ${address}\n`),
     ],
     wget: [
-      shell('wget.configure.function', 'configure', `quader_wget() {\n  wget --no-verbose --config=/dev/stdin "$@" <<EOF\n${token === null ? '' : `header = Authorization: Bearer ${token}\n`}EOF\n}\n`),
+      shell(
+        'wget.configure.function',
+        'configure',
+        `quader_wget() (\n  config=$(mktemp) || exit\n  trap 'rm -f "$config"' EXIT\n  cat > "$config" <<EOF\n${token === null ? '' : `header = Authorization: Bearer ${token}\n`}EOF\n  wget --no-verbose --config="$config" "$@"\n)\n`,
+      ),
       shell('wget.install', 'install', `quader_wget --output-document ${name} ${address}\n`),
       shell('wget.install.checksum', 'install', check),
       shell('wget.publish', 'publish', `quader_wget --method PUT --body-file <file> --output-document - ${address}\n`),

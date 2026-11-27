@@ -21,20 +21,23 @@ const WgetFunction = "quader_wget"
 const PowerShellHeaders = "$QuaderHeaders"
 
 // checksum is the line of a POSIX shell that checks a download against its SHA-256 (R-GENERIC-017): printf writes the line
-// sha256sum reads, each value its own quoted word.
-const checksum = `printf '%s  %s\n' ` + formats.SetupSHA256Ref + ` ` + formats.SetupFileNameRef + ` | sha256sum -c` + "\n"
+// sha256sum reads, each value its own quoted word. The "-" names standard input: GNU's and BusyBox's sha256sum read it without, the
+// one of macOS only prints its usage (Q-GENERIC-13).
+const checksum = `printf '%s  %s\n' ` + formats.SetupSHA256Ref + ` ` + formats.SetupFileNameRef + ` | sha256sum -c -` + "\n"
 
 // address is a file's address in a template: the repository's registry URL and the path, double-quoted. The API puts the
 // path in percent-encoded with nothing but unreserved characters, so nothing in the quotes is read by a shell (R-GENERIC-017).
 const address = `"{{.RegistryURL}}` + formats.SetupPathRef + `"`
 
 // SetupTemplates are the client setup snippets of R-GENERIC-016 and R-GENERIC-017 for curl and wget in a POSIX shell and for
-// PowerShell's Invoke-WebRequest. Each keeps the token off the command line the same way (Q-GENERIC-9, Q-GENERIC-10): curl and
-// wget through a shell function that hands the client the header as configuration on standard input, so the token never becomes
-// an argument, visible in the process list and in a shell trace; PowerShell through a variable of the session that holds the
-// header, which no other process sees. The header is the one line that holds the token's reference, so credentials=none drops it
-// and leaves a configuration that sends no credential. Install has two snippets per client: the download of a file under its name,
-// and the line that checks it against its SHA-256. Deleting has no tab of its own (Q-API-160); the guide names it.
+// PowerShell's Invoke-WebRequest. Each keeps the token off the command line (Q-GENERIC-9, Q-GENERIC-10): curl through a shell
+// function that hands it the header as configuration on standard input; wget through a shell function that writes the header into
+// a configuration file of its own, readable by its owner alone, which it removes when wget ends (Q-GENERIC-13: wget refuses or
+// skips a configuration read from standard input); PowerShell through a variable of the session that holds the header, which no
+// other process sees. In neither shell function is the token an argument, visible in the process list or in a shell trace. The
+// header is the one line that holds the token's reference, so credentials=none drops it and leaves a configuration that sends no
+// credential. Install has two snippets per client: the download of a file under its name, and the line that checks it against its
+// SHA-256. Deleting has no tab of its own (Q-API-160); the guide names it.
 func (Format) SetupTemplates() []formats.SetupTemplate {
 	const curlFunction = CurlFunction + `() {
   curl --silent --show-error --config - "$@" <<EOF
@@ -42,11 +45,16 @@ header = "Authorization: Bearer ${QUADER_TOKEN}"
 EOF
 }
 `
-	const wgetFunction = WgetFunction + `() {
-  wget --no-verbose --config=/dev/stdin "$@" <<EOF
+	// The body is a subshell, so the trap and the variable end with the call; mktemp creates the file with mode 0600, and the
+	// here-document, which a shell trace does not print, fills it.
+	const wgetFunction = WgetFunction + `() (
+  config=$(mktemp) || exit
+  trap 'rm -f "$config"' EXIT
+  cat > "$config" <<EOF
 header = Authorization: Bearer ${QUADER_TOKEN}
 EOF
-}
+  wget --no-verbose --config="$config" "$@"
+)
 `
 	const headers = PowerShellHeaders + ` = @{}
 ` + PowerShellHeaders + `.Authorization = "Bearer $env:QUADER_TOKEN"

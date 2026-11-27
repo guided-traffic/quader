@@ -108,7 +108,7 @@ In a generic repository, **Download with a client** (the arrow joined to **Downl
 
 - **Download address**, the file's address below the files path, with a copy button;
 - a tab each for **curl**, **wget** and **PowerShell**, and **Set up client**, which leads to the client's setup with the snippet that signs it in;
-- the chosen client's command, which downloads the file under its name, and under **Check the download** the line that checks the copy against the file's SHA-256: `sha256sum -c` prints `OK`, PowerShell's `Get-FileHash` comparison prints `True`.
+- the chosen client's command, which downloads the file under its name, and under **Check the download** the line that checks the copy against the file's SHA-256: `sha256sum -c -` prints `OK`, PowerShell's `Get-FileHash` comparison prints `True`.
 
 The commands use the function `quader_curl` or `quader_wget`, or PowerShell's variable `$QuaderHeaders`, which the client's setup snippet defines; run that once in the shell or the session first. Quader writes the address and the name into each command quoted for its shell, so a name with spaces, quotes or a leading dash is one argument.
 

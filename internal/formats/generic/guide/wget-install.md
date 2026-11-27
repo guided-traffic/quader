@@ -2,7 +2,7 @@ The snippet downloads a file into the current directory under the name `--output
 
 ### Checking a download
 
-Every answer that carries a file names its SHA-256 as the `ETag`, in hexadecimal and quoted. The second snippet checks a download against it: `sha256sum -c` reads the digest and the name, and prints `OK` or fails with `FAILED` (`shasum -a 256 -c` on macOS). These digests are Quader's own record of the stored bytes; to know that the bytes are the ones their publisher meant, compare them with a digest the publisher gave you.
+Every answer that carries a file names its SHA-256 as the `ETag`, in hexadecimal and quoted. The second snippet checks a download against it: `sha256sum -c -` reads the digest and the name, and prints `OK` or fails with `FAILED` (`shasum -a 256 -c` on macOS). These digests are Quader's own record of the stored bytes; to know that the bytes are the ones their publisher meant, compare them with a digest the publisher gave you.
 
 Quader checks a file against its digest while it serves the whole file. When the stored object fails that check, the transfer breaks off before its end, so a complete download is never a corrupted one; download again.
 
