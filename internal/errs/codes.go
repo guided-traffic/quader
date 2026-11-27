@@ -509,6 +509,10 @@ const (
 // project for the Bastion first.
 const CodeBastionNotAllowed = "bastion_not_allowed"
 
+// CodeRepositoryNotDistributed answers client-setup with bastion=<name> for a repository the Bastion does not distribute (409,
+// bastion.md R-BAS-007, authorization.md R-AUTHZ-043): through it every read of the repository would be refused.
+const CodeRepositoryNotDistributed = "repository_not_distributed"
+
 // <<< M13 bastion
 //
 // >>> M1 repository
@@ -1090,6 +1094,7 @@ var registry = []CodeInfo{
 	{CodeAddressBlocked, RateLimited, "Address blocked", "The address was blocked for sending too many refused requests; retry after the Retry-After."},
 	{CodeNotReady, Unavailable, "Not ready", "A Bastion's web interface has nothing to show yet: the replica started without a kept state and has not read one. Retry after the Retry-After (R-BAS-117)."},
 	{CodeBastionNotAllowed, Invalid, "Bastion not allowed", "The Bastion named in the repository's member bastions does not allow the repository's project; an administrator allows the project for that Bastion first (R-BAS-134)."},
+	{CodeRepositoryNotDistributed, Conflict, "Repository not distributed", "The Bastion named for the client setup does not distribute the repository, so it would refuse every read of it; the project's Owner chooses the Bastion in the repository's settings first (R-BAS-007, R-BAS-134)."},
 	// <<< M13 bastion
 	//
 	// >>> M1 repository

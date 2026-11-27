@@ -329,6 +329,22 @@ func (e *basEnv) registerBastion(t testing.TB, s *basSite) {
 	basWriteToken(t, s)
 }
 
+// distribute makes the Bastions of the sites distribute the repositories (bastion.md R-BAS-134): each registration allows the run's
+// project and each repository names every one of them, as an administrator and the project's Owner do through the API. A Bastion
+// serves nothing else (authorization.md R-AUTHZ-043).
+func (e *basEnv) distribute(t testing.TB, sites []*basSite, keys ...string) {
+	t.Helper()
+	names := make([]string, 0, len(sites))
+	for _, s := range sites {
+		e.adm.do(http.MethodPut, "/api/v1/bastions/"+s.reg+"/projects/"+e2eProject, nil).want(t, "allow the project for "+s.reg, 204)
+		names = append(names, s.reg)
+	}
+	for _, k := range keys {
+		e.adm.do(http.MethodPatch, repoAPI(k), map[string]any{"bastions": names},
+			"Content-Type", "application/merge-patch+json", "If-Match", "*").want(t, "distribute "+k, 200)
+	}
+}
+
 func (e *basEnv) revokeAllTokens(t testing.TB, reg string) {
 	t.Helper()
 	var b struct {
@@ -518,6 +534,7 @@ func (e *basEnv) buildContent(t testing.TB) {
 	} {
 		e.adm.do(http.MethodPost, reposRoute, body).want(t, fmt.Sprintf("create %v", body["key"]), 201, 409)
 	}
+	e.distribute(t, e.sites(), basNPMRepo, basNuGetRepo)
 	for _, sa := range []string{basPubSA, basFullSA, basPartSA} {
 		ensureSA(t, e.adm, sa)
 	}

@@ -487,7 +487,9 @@ Priority: **MVP** · Covers: quader-only
   `bastion=<name>`: the snippets are rendered on the base URL the Bastion reported at its last handshake, provided it is an
   entry of `server.additional_base_urls` (else `409 bastion_base_url_unknown`, also while it has reported none; a name that is no
   registration answers `404`; [Q-BAS-97](#q-bas-97--the-reported-address-is-matched-against-the-listed-addresses-and-the-setup-needs-no-base-url-of-its-own)),
-  and carry no publish snippets, since the Bastion is read-only. The guide of each format (R-UI-049) and the setup page of
+  and carry no publish snippets, since the Bastion is read-only. *Amended on 2026-11-27 (W-41's B2):* a registration that does not
+  distribute the repository (R-BAS-134) answers `409 repository_not_distributed` before its address is looked at, since it refuses every
+  read of the repository ([authorization.md](authorization.md) R-AUTHZ-043). The guide of each format (R-UI-049) and the setup page of
   R-UI-016 offer the Bastion as a target when a registration has reported a base URL
   ([Q-BAS-96](#q-bas-96--a-bastion-is-a-target-of-the-setup-page-and-of-the-guides-read-only-and-by-link-for-everyone)).
   For npm, the configure snippet sets `replace-registry-host=always`, so that a lockfile written against another host resolves
@@ -508,6 +510,9 @@ Acceptance criteria:
 - `client-setup?client=npm&bastion=partners` on `web/npm-all` returns a registry URL
   `https://packages.example.com/api/npm/web/npm-all/`, `replace-registry-host=always`, and no `publish` tab
   (`TestR_BAS_007_ClientSetupRendersOnTheBaseURLTheBastionReported`, and through the stack
+  `TestR_BAS_007_ClientSetupForABastionThroughTheStack`).
+- A registration that does not distribute the repository answers `409 repository_not_distributed`
+  (`TestR_BAS_007_ARepositoryTheBastionDoesNotDistributeAnswers409`, and through the stack the subtest of
   `TestR_BAS_007_ClientSetupForABastionThroughTheStack`).
 
 ## The Bastion interface of the main installation
@@ -548,8 +553,11 @@ installation's ingress or its Service.
   decides, is the caller's own subject, the one the same request at the main installation's own door has: an internal caller
   reads by the level `internal` through a Bastion, a user flagged external does not, and the anonymous caller reads what is
   `public` ([authorization.md](authorization.md) R-AUTHZ-030,
-  [Q-BAS-148](#q-bas-148--a-request-through-a-bastion-is-decided-as-any-other)). The subject carries no mark of the channel
-  ([authorization.md](authorization.md) Q-AUTHZ-321).
+  [Q-BAS-148](#q-bas-148--a-request-through-a-bastion-is-decided-as-any-other)), within what the Bastion distributes: the subject
+  carries the registration (`Subject.Bastion`), whose distribution is a ceiling of every decision on it, as an endpoint's exposure is
+  ([authorization.md](authorization.md) R-AUTHZ-043, [Q-AUTHZ-342](authorization.md#q-authz-342--a-bastions-distribution-is-a-ceiling-in-the-decision-point-carried-by-the-subject),
+  superseding Q-AUTHZ-321). A repository the Bastion does not distribute answers as one that does not exist: `404` to a credential,
+  `401` without one.
 - `Quader-Bastion-Authorization` is redacted like `Authorization` in every log, span and support bundle (R-OPS-013), and the
   main installation never echoes a `Quader-Bastion-*` request header.
 - The operations are in the OpenAPI document under the tag `bastion`, marked `x-quader-bastion-interface: <n>` and declared
@@ -626,8 +634,11 @@ The Bastion interface has a version of its own, separate from the release number
   [Q-BAS-506](#q-bas-506--the-project-view-raises-the-interface-to-version-12-and-the-bastions-state-record-to-form-3), built on
   2026-11-27 by W-40's P1, released in v0.166.0); 13, the disable of a Bastion: the configuration's `disabled`, the status's
   `operation` and the problem `bastion_disabled` (R-BAS-133, built on 2026-11-27 by W-41's A1, first folded into 12 while it was
-  unreleased and raised to 13 at landing, since 12 had been released before it). The version is `iface.InterfaceVersion`;
-  the comment beside it names the same list.
+  unreleased and raised to 13 at landing, since 12 had been released before it), and a change of meaning without a change of form:
+  the check answers `none`, with the status of a missing repository, for a repository the registration does not distribute, and the
+  handshake's `anonymousReads` is the registration's (R-BAS-134, [authorization.md](authorization.md) R-AUTHZ-043,
+  [Q-BAS-522](#q-bas-522--the-handshakes-anonymousreads-is-the-registrations), built on 2026-11-27 by W-41's B2; the surface file is
+  unchanged). The version is `iface.InterfaceVersion`; the comment beside it names the same list.
 
 Acceptance criteria:
 
@@ -675,10 +686,12 @@ E9a (the chart's `bastion.edge_limit`), and the catalogue's since W-35's P7 (202
   requires it to equal its own `server.base_url`; otherwise it logs `bastion base URL not honoured by the main installation`,
   sets `quader_bastion_base_url_mismatch 1` and treats the main installation as unreachable, so that no client ever receives a
   document with the main installation's URLs from the Bastion.
-- `anonymousReads` is true when the main installation serves any read without a credential: its default endpoint admits such
-  requests (`endpoints.default.auth.anonymous`) and the artifacts of at least one repository are `public`
-  ([authorization.md](authorization.md) R-AUTHZ-033); it is `publicContent` of R-AUTH-009, read from the grant index of the
-  answering replica ([Q-BAS-150](#q-bas-150--the-handshake-reports-whether-the-main-installation-serves-anonymous-reads-at-all)). `recordDownloads`
+- `anonymousReads` is true when the main installation serves any read without a credential through this registration: its default
+  endpoint admits such requests (`endpoints.default.auth.anonymous`) and the artifacts of at least one repository the registration
+  distributes are `public` ([authorization.md](authorization.md) R-AUTHZ-033, R-AUTHZ-043), read from the grant index of the answering
+  replica ([Q-BAS-150](#q-bas-150--the-handshake-reports-whether-the-main-installation-serves-anonymous-reads-at-all), amended by
+  [Q-BAS-522](#q-bas-522--the-handshakes-anonymousreads-is-the-registrations)): a Bastion that distributes nothing public answers an
+  anonymous caller `401` itself (R-BAS-019) and asks the main installation nothing for it. `recordDownloads`
   is `audit.record_downloads` (R-BAS-039). `feed.cursor` is the feed position at the time of the answer (R-BAS-015).
 - The main installation records the last contact of the registration (time, client address, `release` from `User-Agent`,
   interface version, `responseBaseUrl`, replica) at most once a minute per replica, and writes `bastion.contact` (asynchronous)
@@ -696,6 +709,9 @@ Acceptance criteria:
   `Quader-Bastion-Catalogue-Kept` answers `400`.
 - `GET /api/v1/bastions/partners` shows the replica names and the release of every Bastion replica within one
   `handshake_interval`.
+- `TestR_BAS_010_TheHandshakeAnswersWhatTheBastionNeeds` (integration area `bastioniface`): a public repository the registration does
+  not distribute leaves `anonymousReads` false, distributed it turns true; `TestR_BAS_010_AnonymousReadsIsTheRegistrations`
+  (`internal/authz`, microseconds) holds the index's fact per registration.
 
 ### R-BAS-011 · Credential and read check
 Priority: **MVP** · Covers: RMT-040
@@ -735,7 +751,8 @@ content is cached and no fetch is needed (R-BAS-022, R-BAS-023).
   for a read of the repository (`401` for an anonymous caller, otherwise `404` or `403` by R-AUTHZ-016 and R-AUTHZ-017). An
   unknown name, a project the caller cannot see included, answers `none` with the status of a missing repository for that
   caller, so the check reveals no more than the caller's own request would; a name without a project is refused with
-  `400 malformed_request`.
+  `400 malformed_request`. The caller is decided within what the registration distributes ([authorization.md](authorization.md)
+  R-AUTHZ-043): a repository it does not distribute answers `none` with the status of a missing repository, whoever the caller is.
 - The check writes no `authz.denied` events: it asks about repositories, not about a request a client made; the request that
   follows a `none` is the Bastion's own refusal (R-BAS-029), and its audit is the request log of the Bastion.
 - An answer has no lifetime of its own: the Bastion keeps it for its period (R-BAS-020), never beyond `expiresAt`.
@@ -779,8 +796,12 @@ The read shape of a subject on an addressed repository is computed by the decisi
   exposure `all`), and for a remote repository additionally the populate right of R-AUTHZ-008. For a virtual repository: the
   gate `read` on the repository itself (R-AUTHZ-009 rule 1) and `full` on every member, recursively.
 - `none`: the subject may read nothing through the repository: no gate, `ReadNone` on every member, an anonymous subject on a
-  repository whose artifacts are not `public`, an unknown repository or project.
+  repository whose artifacts are not `public`, an unknown repository or project, a repository the Bastion does not distribute.
 - `partial`: every other case.
+- *Amended on 2026-11-27 (W-41's B2, [authorization.md](authorization.md) R-AUTHZ-043,
+  [Q-AUTHZ-341](authorization.md#q-authz-341--a-member-a-bastion-does-not-distribute-takes-no-part-in-the-resolution-through-it)):*
+  through a Bastion a member of a virtual repository that the Bastion does not distribute takes no part, as a member the resolver skips:
+  it neither shows nor narrows the shape, and the virtual repository is `full` when every member the Bastion distributes is.
 
 The shape is the answer to the owner's "the main installation confirmed a full read of the repository" (Q-BAS-18): a `full`
 answer lets the Bastion share a marked document with that caller and serve it every cached artifact of the repository without
@@ -6283,6 +6304,10 @@ The priority is the one of R-BAS-100, the other requirement of W-35's web interf
 | `POST /api/v1/bastion/catalogue/documents` `{"paths": [...]}` | several documents in one answer of frames, `application/vnd.quader.catalogue-batch` ([Q-BAS-347](#q-bas-347--the-batch-read-answers-frames-of-a-json-line-and-the-compressed-bytes)) | `iface.CatalogueBatch`, `iface.CatalogueFrame` |
 | `GET /api/v1/bastion/catalogue/public` | the public set: the projects (key, display name, description; R-BAS-128) and the repositories (name, format, class, description, whether the wiki is public; R-BAS-130) the catalogue shows | `iface.CataloguePublic` |
 
+- **The public set** is, since W-41's B2 (2026-11-27, [Q-BAS-523](#q-bas-523--the-catalogue-shows-the-public-repositories-its-bastion-distributes)),
+  the public repositories the registration distributes, in the projects it allows (R-BAS-134), with the projects that hold one of
+  them: what an anonymous visitor reads through that Bastion ([authorization.md](authorization.md) R-AUTHZ-043). **Hide repositories**
+  (R-BAS-131) narrows what the pages show of it as before.
 - **The change list.** Every entry names a document path (R-BAS-103), its `sha256` and `size`, or `deleted`, and a `seq` above the cursor and
   above the entry before it; `cursor` is the last `seq` answered, `more` says the limit cut the answer, and `reset` that the cursor is no
   longer valid (the catalogue was rebuilt, a restore reset it): the Bastion reads the list again from 0 and keeps serving what it holds
@@ -6437,7 +6462,11 @@ The priority is the one of R-BAS-101 to R-BAS-103.
   and the decision point, as the anonymous caller of the default endpoint, outside the edge chain: no limit, no request log, no usage record
   (the renderer of `internal/app/wire_bastion_catalogue.go`, [Q-BAS-355](#q-bas-355--the-builder-is-the-workers-job-and-reads-the-management-api-through-a-router-of-its-own)).
   What an anonymous visitor reads through the default endpoint is what the catalogue shows, and nothing else: every public repository of
-  every class, public remotes included, the open findings of P3's anonymous answer.
+  every class, public remotes included, the open findings of P3's anonymous answer. *Amended on 2026-11-27 (W-41's B2,
+  [Q-BAS-523](#q-bas-523--the-catalogue-shows-the-public-repositories-its-bastion-distributes)):* every read of a registration's run is
+  a read through that registration: the renderer's anonymous subject carries it, so the decision point bounds the public set, every
+  index, list and set-up by what the registration distributes ([authorization.md](authorization.md) R-AUTHZ-043), and the builder
+  holds no rule of its own for it. A change of the distribution starts a run (the change area `bastion_distribution`, R-BAS-105).
 - **The default endpoint refuses anonymous requests.** The renderer's chain has no authentication stage, so the builder applies the
   default endpoint's `auth.anonymous` itself, as the handshake's `anonymousReads` does (R-BAS-019): while it is `false` (explicitly, or
   because the listener requires a client certificate, R-EP-010) an anonymous visitor reads nothing there, and the builder builds nothing
@@ -7837,7 +7866,18 @@ while it is chosen there ([Q-BAS-520](#q-bas-520--every-level-needs-the-choice-n
   from an administrator as their other open members (R-REPO-069).
 - **The database holds the rule.** A choice exists only while its Bastion allows the repository's project: a row written around the API
   is refused (SQLSTATE `AI011`), a project taken off a list takes its choices with it, and a repository that moves to another project
-  loses its choices (R-REPO-060), each in the statement's transaction.
+  loses its choices (R-REPO-060), each in the statement's transaction. An administrator who takes the project off between the Owner's
+  check and the write makes the trigger refuse it: the Owner gets the same `422 bastion_not_allowed` at the entry, never a `500`.
+- **The ceiling** ([authorization.md](authorization.md) R-AUTHZ-043). Every request through a Bastion is decided within what it
+  distributes: a forward, the check, the catalogue's renderer. A repository it does not distribute answers as one that does not exist,
+  `404` to a credential and `401` without one, whoever the caller is, an administrator and `content:bypass` included; a member of a
+  virtual repository it does not distribute takes no part in the resolution through it; lists, counts and shapes hold only what it
+  distributes. The handshake's `anonymousReads` is the registration's (R-BAS-010, [Q-BAS-522](#q-bas-522--the-handshakes-anonymousreads-is-the-registrations)),
+  the catalogue shows the public repositories it distributes ([Q-BAS-523](#q-bas-523--the-catalogue-shows-the-public-repositories-its-bastion-distributes)),
+  and `client-setup?bastion=<name>` answers `409 repository_not_distributed` for a repository it does not distribute (R-BAS-007).
+  **What a Bastion serves after the release that brings the ceiling:** nothing, until an administrator allows a project and its Owner
+  chooses the repository; an installation that has granted nothing answers every package request through its Bastions `404` with a token
+  and `401` without one, and their web interfaces show an empty start (pre-alpha: no migration path).
 - **Events, journal, feed** ([Q-BAS-521](#q-bas-521--a-narrowing-of-the-distribution-is-journaled-and-tells-every-bastion-at-once)).
   `bastion.project.allowed`, `bastion.project.removed` (with the repositories whose choice went), `repository.bastion.added`,
   `repository.bastion.removed` (cause `owner` or `move`). The two removals are journaled, `{bastionId, projectId}` and
@@ -7851,14 +7891,18 @@ the statements of [bastion_distribution.sql](../../internal/meta/postgres/querie
 the feed's mapping of [feed.go](../../internal/bastionmain/feed.go), the member of [bastions.go](../../internal/repository/bastions.go),
 the move's part of [move.go](../../internal/project/move.go), [bastion_projects_api.go](../../internal/api/v1/bastion_projects_api.go)
 and the OpenAPI document, the events of [events_bastion_distribution.go](../../internal/audit/events_bastion_distribution.go).
+*Built on 2026-11-27 (W-41's B2):* the ceiling in the decision point ([distribution.go](../../internal/authz/distribution.go),
+[authorization.md](authorization.md) R-AUTHZ-043), the subject's Bastion from a forward, the check and the catalogue's renderer
+([subject.go](../../internal/api/edge/subject.go), [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go),
+[wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go)), the handshake's `anonymousReads` per registration, the client
+setup's `409 repository_not_distributed`, the authorization's epoch raised by every change of the distribution, and `AI011` answered as
+`422 bastion_not_allowed`.
 *Built on 2026-11-27 (W-41's C2):* the administrator's list on the screen, the card's section **Projects** and the Bastion's page
 **Projects of <name>** ([api-and-ui.md](api-and-ui.md) R-UI-240,
 [Q-UI-1637](api-and-ui.md#q-ui-1637--a-bastions-projects-are-a-closed-section-of-its-card-of-ten-rows-and-a-page-of-all),
 [bastion-projects.ts](../../web/src/app/features/bastions/bastion-projects.ts)).
 *Built on 2026-11-27 (W-41's D1):* the repository's group **Bastions** in its section **Visibility** and the distribution mark beside every
 level ([api-and-ui.md](api-and-ui.md) R-UI-271), the member on a well-known repository's item.
-*Not built:* the ceiling (W-41's B2, [authorization.md](authorization.md)): nothing decides a request through a Bastion on the
-distribution yet, so a Bastion serves what it served before.
 
 Acceptance criteria:
 
@@ -7867,7 +7911,8 @@ Acceptance criteria:
   without its IDs, the two widenings not); `TestR_BAS_134_TheFeedTellsTheBastionsOfADistributionChange` (settings for a widening, grants and
   settings for a narrowing); `TestR_BAS_015_EveryJournaledEventIsClassified` covers the new events.
 - Unit ([bastions_test.go](../../internal/repository/bastions_test.go)): `TestR_BAS_134_TheMemberBastions` (a name or the read's object,
-  an unknown member refused, the set of names compared, `[]` for none, the name reserved).
+  an unknown member refused, the set of names compared, `[]` for none, the name reserved);
+  `TestR_BAS_134_AChoiceTheDatabaseRefusesIsTheOwnersError` (`AI011` is the `422` at the entry, any other error passes unchanged).
 - Unit ([bastion_projects_test.go](../../internal/api/v1/bastion_projects_test.go)): `TestR_BAS_134_WhoChangesWhatABastionMayDistribute`
   (the list's writes refused with `endpoints:read`; the declarations of the six operations); `TestR_BAS_134_TheAddressesAreTheListedOnes`.
 - Integration (area `bastionreg`, [distribution_test.go](../../test/integration/bastionreg/distribution_test.go), about 5 s, a handful of
@@ -11095,7 +11140,10 @@ through the Bastion, "natürlich"; the Bastion is a channel, and a subject's rig
 went with it ([authorization.md](authorization.md) Q-AUTHZ-321). The answers a Bastion keeps follow the same rule: a check answers
 `full` or `partial` for an internal caller on an `internal` repository as for a caller with a grant (R-BAS-012), and flagging a user
 external drops what the Bastion keeps for it (`user.external_changed`, R-BAS-015). The Bastion's own registration is not internal
-([authorization.md](authorization.md) Q-AUTHZ-320).
+([authorization.md](authorization.md) Q-AUTHZ-320). *Amended on 2026-11-27 (the owner's words of R-BAS-134):* the caller stays the same
+through a Bastion, and what the Bastion distributes bounds it: the subject carries the registration again, as a ceiling and never as a
+change of who the caller is ([authorization.md](authorization.md) R-AUTHZ-043, Q-AUTHZ-342). The leaked internal token of option (b)
+reads through a Bastion only what is distributed there.
 
 **Applied in the spec:** R-BAS-004, R-BAS-008, R-BAS-015; [authorization.md](authorization.md) R-AUTHZ-030; code:
 [visibility.go](../../internal/authz/visibility.go), [subject.go](../../internal/api/edge/subject.go),
@@ -16244,6 +16292,41 @@ Context: R-BAS-134, R-BAS-015, R-HA-054. What a change of the distribution tells
 **Choice:** (a). A move of a repository records `repository.bastion.removed` with the cause `move` for each choice it deletes, journaled
 the same way; a deletion of a repository or a project, or of a registration, cascades. **Applied in the spec:** R-BAS-134; code:
 [distribution_replay.go](../../internal/bastionmain/distribution_replay.go), [feed.go](../../internal/bastionmain/feed.go).
+
+### Q-BAS-522 · The handshake's anonymousReads is the registration's
+
+Status: **Decided by the development agent** on 2026-11-27 (W-41's plan, D18) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-BAS-010, R-BAS-019, R-BAS-134. `anonymousReads` tells a Bastion whether to ask the main installation about an anonymous caller
+at all; with the distribution, what an anonymous caller reads through a Bastion depends on the registration.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) True while the default endpoint admits anonymous requests and at least one public repository is distributed through this registration (chosen) | The registration's own fact, read from the grant index of the answering replica | A Bastion that distributes nothing public answers an anonymous caller `401` itself (R-BAS-019) and costs the main installation no check | One more fact per registration in the index |
+| (b) The installation's, as before | No change | An anonymous request to a Bastion that distributes nothing public always costs a check that answers `none` |
+
+**Choice:** (a). The handshake reads it at every call, and a change of the distribution sends the feed's `settings`, after which every
+Bastion handshakes again (Q-BAS-521), so it follows within the feed's bound. A meaning change of the interface without a change of form,
+folded into the unreleased version 13 (R-BAS-009). **Applied in the spec:** R-BAS-010, R-BAS-009, R-BAS-134; code:
+[distribution.go](../../internal/authz/distribution.go) (`Index.PublicDistributed`), [wire_authz.go](../../internal/app/wire_authz.go).
+
+### Q-BAS-523 · The catalogue shows the public repositories its Bastion distributes
+
+Status: **Decided by the development agent** on 2026-11-27 (W-41's plan, D19) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-BAS-101, R-BAS-104, R-BAS-130, R-BAS-134. The builder renders the anonymous caller's answers (R-BAS-104); with the
+distribution, the anonymous caller of a Bastion reads only what that Bastion distributes.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The renderer's request carries the registration, so its anonymous subject is the one of a forward through that Bastion and the decision point narrows every read of the run (chosen) | The public set, every index, every list and every set-up are narrowed by the same ceiling that holds every forward | No second rule in the builder that could drift from the decision point | The renderer's interface names the registration |
+| (b) A filter in the builder on the repositories of `repository_bastion` | No change of the renderer | A second rule; a virtual repository's members, a package's holders and the lists would each need it |
+
+**Choice:** (a). **Hide repositories** (R-BAS-131) stays as it is. A change of the distribution starts a run (the change area
+`bastion_distribution`, R-BAS-105). **Applied in the spec:** R-BAS-101, R-BAS-104; code:
+[render.go](../../internal/bastionmain/catalogue/render.go), [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go).
 
 ### Q-BAS-525 · Every request past the host and the block list takes one token of its address's request limit
 

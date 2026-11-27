@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/guided-traffic/quader/internal/auth/scope"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
@@ -187,7 +190,39 @@ func newWorld(t *testing.T, o worldOptions) *world {
 	w.front = newFront(t, dir, w.main.Addr("default"))
 
 	w.registerBastion("partners", o.Egress...)
+	w.distribute("partners")
 	return w
+}
+
+// distribute makes the registration distribute every repository that exists (R-BAS-134), as an administrator and the Owners do
+// through the API: each project is allowed and each repository chooses the Bastion. A Bastion distributes nothing until then
+// (R-AUTHZ-043), so every case of the area reads through it what it read before the ceiling; a case about the ceiling takes a
+// repository off (TestR_AUTHZ_043_ABastionServesOnlyWhatItDistributes).
+func (w *world) distribute(name string) {
+	w.t.Helper()
+	since := w.st.Text(`SELECT clock_timestamp()::text`)
+	byProject := map[string][]string{}
+	w.st.Query(`SELECT p.key, r.key FROM repositories r JOIN project p ON p.id = r.project_id WHERE r.lifecycle = 'active' ORDER BY 1, 2`,
+		func(rows pgx.Rows) error {
+			var project, key string
+			if err := rows.Scan(&project, &key); err != nil {
+				return err
+			}
+			byProject[project] = append(byProject[project], key)
+			return nil
+		})
+	for project, keys := range byProject {
+		w.mustAPI("PUT", "/api/v1/bastions/"+name+"/projects/"+project, http.StatusNoContent, nil)
+		for _, key := range keys {
+			w.mustAPI("PATCH", "/api/v1/projects/"+project+"/repositories/"+key, http.StatusOK, map[string]any{"bastions": []string{name}},
+				"If-Match", "*", "Content-Type", "application/merge-patch+json")
+		}
+	}
+	// The distribution stands for one older than any Bastion's history, as setUpOlderThanTheFeed's claims do: the first write of a
+	// repository's document stores its ownership as well (Q-AUTHZ-155), and authz.settings.changed in the lookback is a grants entry a
+	// Bastion that starts receives, which makes every answer it obtains in the next SkewMargin unusable (R-BAS-020 rule 3).
+	w.st.Exec(`DELETE FROM audit_event WHERE occurred_at >= $1::timestamptz
+	            AND action IN ('bastion.project.allowed', 'repository.bastion.added', 'repository.updated', 'authz.settings.changed')`, since)
 }
 
 // seedRepositories creates the npm and NuGet repositories: a local, a remote over the counting upstream and

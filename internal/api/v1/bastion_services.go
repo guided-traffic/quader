@@ -25,9 +25,10 @@ type BastionServices struct {
 	// installation member).
 	Release string
 	BaseURL string
-	// AnonymousReads reports whether an anonymous request reads anything through the default endpoint: some repository's
-	// artifacts are `public` and the endpoint's own rule admits requests without a credential (R-AUTH-037, R-BAS-019).
-	AnonymousReads func(ctx context.Context) bool
+	// AnonymousReads reports whether an anonymous request reads anything through the Bastion registration (its principal ID):
+	// the registration distributes some repository whose artifacts are `public`, and the default endpoint's own rule admits requests
+	// without a credential (R-AUTH-037, R-BAS-010, Q-BAS-522).
+	AnonymousReads func(ctx context.Context, bastionID string) bool
 	// Authenticate is the authentication stage of the default endpoint without the Bastion short-circuit:
 	// the check runs the caller's credential through it exactly as a direct request is (R-AUTH-023,
 	// R-AUTH-038). The request it gets carries the caller's address in its context.

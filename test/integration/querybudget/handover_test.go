@@ -19,7 +19,8 @@ import (
 // from the replica's snapshot, the offer from the recognition, the copies come with the item lookup and signing is local, so a
 // handover costs the item lookup alone, as a stream and a link do. The download is an OCI blob of a recognized forward that offers
 // a handover, with the caller's credential an administrator's (the profile Unlimited sets no figure); the links' minSize is 0 and
-// the connection's public address set before the replica starts, the registration and its switch are made through the API.
+// the connection's public address set before the replica starts, the registration, its switch and the repository's distribution
+// are made through the API.
 func handoverBudget(t *testing.T, e *env) {
 	t.Helper()
 	const repo = "oci-handover"
@@ -39,6 +40,14 @@ func handoverBudget(t *testing.T, e *env) {
 	if a := e.st.Do(r, "PATCH", "/api/v1/bastions/dmz", e.tokAdmin, map[string]any{"switches": map[string]any{"handover": true}},
 		"Content-Type", "application/merge-patch+json", "If-Match", "*"); a.Status != http.StatusOK {
 		t.Fatalf("switch on: %d %s", a.Status, a.Body)
+	}
+	// The Bastion serves the repository only while it distributes it (R-AUTHZ-043, R-BAS-134).
+	if a := e.st.Do(r, "PUT", "/api/v1/bastions/dmz/projects/"+testenv.DefaultProject, e.tokAdmin, nil); a.Status != http.StatusNoContent {
+		t.Fatalf("allow the project: %d %s", a.Status, a.Body)
+	}
+	if a := e.st.Do(r, "PATCH", "/api/v1/projects/"+testenv.DefaultProject+"/repositories/"+repo, e.tokAdmin, map[string]any{"bastions": []string{"dmz"}},
+		"Content-Type", "application/merge-patch+json", "If-Match", "*"); a.Status != http.StatusOK {
+		t.Fatalf("distribute the repository: %d %s", a.Status, a.Body)
 	}
 	layer := []byte("a layer of a few bytes, handed over to a Bastion")
 	sum := sha256.Sum256(layer)

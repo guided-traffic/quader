@@ -1005,6 +1005,12 @@ func Allowed(sub Subject, idx *Index, a Action, c Coordinate) bool {
   a subject without an endpoint (a job, a command) has none.
 - **Reads only** (Q-EP-9). On an endpoint with `exposure: rules`, `Admits` refuses every action
   other than `read`.
+- **Beside it, a Bastion's distribution** ([authorization.md](authorization.md) R-AUTHZ-043). A
+  request that came through a Bastion carries its registration (`Subject.Bastion`), whose
+  distribution is a second ceiling of the same kind, applied in the same place and bound to every
+  subject: the addressed repository and the coordinate's repository must be distributed there, and
+  only `read` passes. A Bastion uses the default endpoint, so on an endpoint in mode `all` the
+  distribution is the only ceiling of such a request.
 - **Answers** ([authorization.md](authorization.md) R-AUTHZ-016):
   - a read-type request that exposure does not admit answers `404`, byte-identical to the `404` for
     a missing resource on the same endpoint; exposure is decided before the existence lookup, so

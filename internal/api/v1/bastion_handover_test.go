@@ -62,7 +62,7 @@ func TestR_BAS_071_TheOperationsOfTheSwitchAndTheHandshake(t *testing.T) {
 	for _, on := range []bool{false, true} {
 		t.Run("R-BAS-071 the handshake says the configuration's switch", func(t *testing.T) {
 			svc := BastionServices{
-				Feed: stillFeed{}, AnonymousReads: func(context.Context) bool { return false },
+				Feed: stillFeed{}, AnonymousReads: func(context.Context, string) bool { return false },
 				Configuration: func(context.Context, bastionmain.Recognition) (iface.Configuration, error) {
 					return newConfiguration(t, 2, iface.Switches{Handover: on}), nil
 				},

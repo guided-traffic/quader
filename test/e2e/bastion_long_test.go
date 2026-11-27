@@ -129,6 +129,7 @@ func TestBastionLong_R_BAS_049_AnonymousMissFlood(t *testing.T) {
 	site := env.bkt
 	const openRepo = "bas-npm-open"
 	createPublicRepo(t, env.adm, map[string]any{"key": openRepo, "class": "local", "format": "npm"})
+	env.distribute(t, env.sites(), openRepo)
 	t.Cleanup(func() { deleteRepository(t, env.adm, openRepo) })
 	known := "bas" + env.run + "-anon-known"
 	ensurePolicy(t, env.adm, basPubSA+"-open", []string{openRepo}, [2]any{"sa:" + basPubSA, []string{"read", "deploy"}})

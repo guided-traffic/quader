@@ -82,7 +82,7 @@ func (s *Server) BastionHandshake(w http.ResponseWriter, r *http.Request, _ gen.
 		Bastion:          iface.HandshakeBastion{Name: rec.Bastion, TokenID: rec.TokenID, TokenExpiresAt: rec.TokenExpiresAt.UTC()},
 		Installation:     iface.HandshakeInstallation{BaseURL: b.BaseURL, Release: b.Release},
 		ResponseBaseURL:  info.BaseURL,
-		AnonymousReads:   b.AnonymousReads(ctx),
+		AnonymousReads:   b.AnonymousReads(ctx, rec.BastionID),
 		RecordDownloads:  b.Downloads != nil && b.Downloads.Records(),
 		Feed:             iface.HandshakeFeed{Cursor: cursor},
 		ServerTime:       time.Now().UTC(),

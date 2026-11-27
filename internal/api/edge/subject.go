@@ -1,9 +1,9 @@
 // Package edge holds the conversions every HTTP entry point of the edge layer
 // shares: the request to the subject authorization decides on and to the actor of
 // an audit event, and the holder of the index a request decides on. It imports
-// httpserver, authz and audit and none of the entry points (internal/api/v1, the
-// raw /files/ routes, the format dispatcher), which all import it; the
-// architecture test keeps it that way.
+// httpserver, authz, audit and bastionmain (the recognition of a forward) and none
+// of the entry points (internal/api/v1, the raw /files/ routes, the format
+// dispatcher), which all import it; the architecture test keeps it that way.
 package edge
 
 import (
@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
@@ -55,6 +56,7 @@ func SubjectOf(ctx context.Context) authz.Subject {
 		AuthMethod: string(p.Credential.Method),
 		MinEpoch:   p.MinEpoch,
 		External:   p.External,
+		Bastion:    bastionOf(ctx),
 	}
 	for _, g := range p.Groups {
 		s.Groups = append(s.Groups, principal.GroupRef{ID: g.ID, Name: g.Name})
@@ -72,4 +74,18 @@ func SubjectOf(ctx context.Context) authz.Subject {
 		s.Endpoint, s.CacheFill = ep.Name(), ep.CacheFill()
 	}
 	return s
+}
+
+// bastionOf is the Bastion registration the request came through, whose distribution is a ceiling of every decision on the subject
+// (R-AUTHZ-043, Q-AUTHZ-342): the one a forward was recognized for (an interface route of the Bastion itself decides no caller), or
+// the one the Bastion's check and a catalogue's renderer store for their callers (httpserver.WithBastion). "" for a request at the
+// main installation's own door.
+func bastionOf(ctx context.Context) string {
+	if id := httpserver.BastionFrom(ctx); id != "" {
+		return id
+	}
+	if rec, ok := bastionmain.RecognitionFrom(ctx); ok && !rec.Route {
+		return rec.BastionID
+	}
+	return ""
 }

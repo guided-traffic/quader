@@ -10481,10 +10481,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-AUTHZ
 
-157 questions on [spec/authorization.md](spec/authorization.md).
+159 questions on [spec/authorization.md](spec/authorization.md).
 
 <details>
-<summary>Q-AUTHZ: 157 questions</summary>
+<summary>Q-AUTHZ: 159 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10643,8 +10643,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-AUTHZ-305](spec/authorization.md#q-authz-305--a-caller-sees-the-project-upstream-through-a-repository-of-it-that-serves) | A caller sees the project `upstream` through a repository of it that serves | Decided by the development agent | (a) Only a repository that serves counts: switched on, not being deleted, not a system repository; read by its level or a grant | — |
 | [Q-AUTHZ-306](spec/authorization.md#q-authz-306--a-repository-of-upstream-that-does-not-serve-is-listed-and-suggested-only-to-the-holders-of-repositoriesread-config) | A repository of `upstream` that does not serve is listed and suggested only to the holders of `repositories:read-config` | Decided by the development agent | (a) The rule of Q-AUTHZ-305 for the repositories too: to a caller without `repositories:read-config`, a repository of the project `upstream` is listed and suggested only while it serves (switched on, not being deleted, no system repository) | — |
 | [Q-AUTHZ-320](spec/authorization.md#q-authz-320--a-bastion-registration-is-not-internal-a-bastion-reads-for-the-caller-it-forwards-for) | A Bastion registration is not internal; a Bastion reads for the caller it forwards for | Decided by the development agent | (a) Not internal; the decision point gives the kind `bastion` an empty principal set and no level but `public` | — |
-| [Q-AUTHZ-321](spec/authorization.md#q-authz-321--the-subject-carries-no-mark-of-a-bastion) | The subject carries no mark of a Bastion | Decided by the development agent | (a) Remove the mark, the context value the check set and the code that read them | — |
+| [Q-AUTHZ-321](spec/authorization.md#q-authz-321--the-subject-carries-no-mark-of-a-bastion) | The subject carries no mark of a Bastion | Superseded by [Q-AUTHZ-342](spec/authorization.md#q-authz-342--a-bastions-distribution-is-a-ceiling-in-the-decision-point-carried-by-the-subject) on 2026-11-27 | (a) Remove the mark, the context value the check set and the code that read them | — |
 | [Q-AUTHZ-340](spec/authorization.md#q-authz-340--the-malware-scanner-reads-one-blob-of-one-repository-that-holds-it) | The malware scanner reads one blob of one repository that holds it | Decided by the development agent | (a) The route decides: the token's repository exists, is local or remote, is not disabled, and holds an item over the token's digest; no level, grant or block counts | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
+| [Q-AUTHZ-341](spec/authorization.md#q-authz-341--a-member-a-bastion-does-not-distribute-takes-no-part-in-the-resolution-through-it) | A member a Bastion does not distribute takes no part in the resolution through it | Decided by the development agent on 2026-11-27 (W-41's plan, D14) | (a) The addressed repository and every member the resolution reads must be distributed; a member that is not takes no part, as a member the caller may not read | — |
+| [Q-AUTHZ-342](spec/authorization.md#q-authz-342--a-bastions-distribution-is-a-ceiling-in-the-decision-point-carried-by-the-subject) | A Bastion's distribution is a ceiling in the decision point, carried by the subject | Decided by the development agent on 2026-11-27 (W-41's plan, D16) | (a) `Subject.Bastion`, set by the one conversion from a recognized forward, by the check for its caller and by the catalogue's renderer; `Decide` applies the distribution beside the exposure, before `content:bypass`, on the addressed and the coordinate's repository; every action but `read` refused; the refusal the answer of a missing repository | — |
 
 </details>
 
@@ -10729,10 +10731,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-436 questions on [spec/bastion.md](spec/bastion.md).
+438 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 436 questions</summary>
+<summary>Q-BAS: 438 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11168,6 +11170,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-519](spec/bastion.md#q-bas-519--an-administrator-allows-projects-per-bastion-and-a-new-bastion-allows-none) | An administrator allows projects per Bastion, and a new Bastion allows none | Decided by the owner on 2026-11-27 | (a) Rows of `bastion_project`; `PUT`/`DELETE /api/v1/bastions/{name}/projects/{project}`, a paged `GET`; `endpoints:write` to change, `endpoints:read` to read, as the registration's other members (Q-BAS-325); a removal deletes the project's choices of that Bastion | — |
 | [Q-BAS-520](spec/bastion.md#q-bas-520--every-level-needs-the-choice-not-only-public) | Every level needs the choice, not only Public | Decided by the development agent on 2026-11-27 (W-41's plan, D15) | (a); no reason against it was found. | — |
 | [Q-BAS-521](spec/bastion.md#q-bas-521--a-narrowing-of-the-distribution-is-journaled-and-tells-every-bastion-at-once) | A narrowing of the distribution is journaled and tells every Bastion at once | Decided by the development agent on 2026-11-27 (W-41's plan, D17) | (a) Four events; the two removals journaled (`{bastionId, projectId}`, `{repositoryId, bastionId}`) and replayed by deleting the rows; the feed maps a widening to `settings` and a narrowing to `grants` and `settings`; the change area `bastion_distribution` starts the catalogue's builder | — |
+| [Q-BAS-522](spec/bastion.md#q-bas-522--the-handshakes-anonymousreads-is-the-registrations) | The handshake's anonymousReads is the registration's | Decided by the development agent on 2026-11-27 (W-41's plan, D18) | (a) True while the default endpoint admits anonymous requests and at least one public repository is distributed through this registration | — |
+| [Q-BAS-523](spec/bastion.md#q-bas-523--the-catalogue-shows-the-public-repositories-its-bastion-distributes) | The catalogue shows the public repositories its Bastion distributes | Decided by the development agent on 2026-11-27 (W-41's plan, D19) | (a) The renderer's request carries the registration, so its anonymous subject is the one of a forward through that Bastion and the decision point narrows every read of the run | — |
 | [Q-BAS-525](spec/bastion.md#q-bas-525--every-request-past-the-host-and-the-block-list-takes-one-token-of-its-addresss-request-limit) | Every request past the host and the block list takes one token of its address's request limit | Decided by the development agent on 2026-11-27 (H-2448 of the security page, which the owner asked to be solved after the authorized attack of that day) | (a) The request limit right after the block list for every request: the path, its credential and the token form are read first (they choose the class), and what they refuse is answered after the limit; the web interface asks the class `gui` for its application and the anonymous class for the rest | — |
 | [Q-BAS-526](spec/bastion.md#q-bas-526--the-web-interfaces-files-and-data-count-as-pages) | The web interface's files and data count as pages | Decided by the development agent on 2026-11-27 (H-2448) | (a), as built before; the measurement is written into the test that holds it (`TestR_BAS_035_APageFloodTakesThePageLimitAndABrowsersFirstLoadStaysInsideIt`). | — |
 | [Q-BAS-527](spec/bastion.md#q-bas-527--a-request-for-a-foreign-host-takes-no-token) | A request for a foreign host takes no token | Decided by the development agent on 2026-11-27 (H-2448) | (a) The host step stays first and takes no token | — |

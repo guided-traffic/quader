@@ -11318,8 +11318,9 @@ type BastionFloodClass struct {
 
 // BastionHandshake The answer of the handshake (R-BAS-010).
 type BastionHandshake struct {
-	// AnonymousReads Some repository's artifacts are `public` and the default endpoint admits requests without a credential, so a Bastion
-	// admits an anonymous request (R-BAS-019); which repositories it then serves is the shape of each (R-BAS-012).
+	// AnonymousReads Some repository this registration distributes has `public` artifacts and the default endpoint admits requests without a
+	// credential, so the Bastion admits an anonymous request (R-BAS-019, Q-BAS-522); which repositories it then serves is the
+	// shape of each (R-BAS-012).
 	AnonymousReads bool `json:"anonymousReads"`
 	Bastion        struct {
 		Name           string             `json:"name"`
@@ -24484,7 +24485,8 @@ type GetClientSetupParams struct {
 	// Bastion The name of a Bastion registration (R-BAS-007). The snippets are rendered on the base URL the Bastion reported at its
 	// last handshake, provided it is an entry of `server.additional_base_urls` (`409 bastion_base_url_unknown` otherwise),
 	// and carry no publish snippets, since a Bastion is read-only; for npm the configure snippet sets
-	// `replace-registry-host=always`. An unknown name answers `404`.
+	// `replace-registry-host=always`. An unknown name answers `404`; a Bastion that does not distribute the repository
+	// (R-BAS-134) answers `409 repository_not_distributed`, since it refuses every read of it (R-AUTHZ-043).
 	Bastion *string `form:"bastion,omitempty" json:"bastion,omitempty"`
 }
 

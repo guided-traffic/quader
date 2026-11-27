@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
@@ -145,7 +146,7 @@ func (s *Service) writeBastions(ctx context.Context, tx meta.Tx, c Caller, r Rep
 			continue
 		}
 		if err := qs.RepositoryBastionAdd(ctx, q.RepositoryBastionAddParams{RepositoryID: r.NumericID(), BastionID: ids[name]}); err != nil {
-			return err
+			return notAllowedRace(err, nd, name)
 		}
 		if err := s.recordBastion(ctx, tx, c, r, audit.EventRepositoryBastionAdded, name, ids[name], "owner"); err != nil {
 			return err
@@ -167,7 +168,12 @@ func (s *Service) recordBastion(ctx context.Context, tx meta.Tx, c Caller, r Rep
 	if err := s.rec.RecordTx(ctx, tx, ev); err != nil {
 		return err
 	}
-	return s.notif.Notify(tx, cluster.AreaBastionDistribution, 1, map[string]string{"bastion": bastionID})
+	if err := s.notif.Notify(tx, cluster.AreaBastionDistribution, 1, map[string]string{"bastion": bastionID}); err != nil {
+		return err
+	}
+	// The grant index follows the authorization's epoch: every replica decides with the change within its bound
+	// (authorization.md R-AUTHZ-043, R-AUTHZ-028).
+	return s.notif.Notify(tx, cluster.AreaAuthz, 1, map[string]string{"type": "bastion_distribution", "id": bastionID})
 }
 
 // ChoiceRemovedEntry is the journal entry of repository.bastion.removed: the repository's ID and the Bastion's principal ID the replay
@@ -231,4 +237,22 @@ func orNone(refs []BastionRef) []BastionRef {
 		return []BastionRef{}
 	}
 	return refs
+}
+
+// stateBastionNotAllowed is the SQLSTATE of the trigger repository_bastion_allowed (00159): a choice whose project the Bastion does
+// not allow.
+const stateBastionNotAllowed = "AI011"
+
+// notAllowedRace turns the trigger's refusal of the choice name into the answer allowedBastions gives: an administrator took the
+// project off the Bastion's list between the check and the write (R-BAS-134), so the Owner gets 422 bastion_not_allowed at the entry
+// and not a 500. Any other error passes unchanged.
+func notAllowedRace(err error, refs []BastionRef, name string) error {
+	if !postgres.IsState(err, stateBastionNotAllowed) {
+		return err
+	}
+	i := slices.IndexFunc(refs, func(r BastionRef) bool { return r.Name == name })
+	return errs.E(errs.Invalid, errs.CodeValidation, "The repository names a Bastion that does not allow its project.", errs.WithFields(errs.FieldError{
+		Pointer: "/bastions/" + strconv.Itoa(max(i, 0)), Code: errs.CodeBastionNotAllowed,
+		Detail: fmt.Sprintf("the Bastion %q does not allow this repository's project; an administrator allows the project for it first", name),
+	}))
 }

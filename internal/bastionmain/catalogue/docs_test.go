@@ -21,7 +21,7 @@ const collectionID = "pkg_acmetools"
 // docsAPI answers the reads of one Ansible collection, acme.tools 1.0.0 in acme/galaxy, whose wiki is wiki.
 type docsAPI struct{ wiki string }
 
-func (f docsAPI) Get(_ context.Context, _, target string) (catalogue.Answer, error) {
+func (f docsAPI) Get(_ context.Context, _, _, target string) (catalogue.Answer, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return catalogue.Answer{}, err

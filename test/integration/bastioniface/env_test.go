@@ -586,9 +586,9 @@ func (e *env) newSite(o siteOpts) *site {
 			Downloads: config.BastionsDownloads{MaxBatch: o.maxBatch, MaxAge: o.maxAge},
 		},
 		Release: "0.14.0", BaseURL: baseURL,
-		AnonymousReads: func(context.Context) bool {
+		AnonymousReads: func(_ context.Context, bastionID string) bool {
 			idx := s.engine.Index()
-			return s.rules.get().Anonymous && idx != nil && idx.PublicContent()
+			return s.rules.get().Anonymous && idx != nil && idx.PublicDistributed(bastionID)
 		},
 		Authenticate: credential,
 		Shapes:       s.shapes,
@@ -808,6 +808,19 @@ func (s *site) sat(sa principal.ServiceAccount, mutate ...func(*token.CreateRequ
 		s.t.Fatalf("Create SAT: %v", err)
 	}
 	return c
+}
+
+// distribute makes every registration allow every project and distribute every repository (bastion.md R-BAS-134) in the database,
+// and has this site's decision point read it (R-AUTHZ-043).
+func (s *site) distribute() {
+	s.t.Helper()
+	s.e.exec(`INSERT INTO bastion_project (bastion_id, project_id, allowed_by) SELECT b.principal_id, p.id, 'it' FROM bastion b, project p
+	          ON CONFLICT DO NOTHING`)
+	s.e.exec(`INSERT INTO repository_bastion (repository_id, bastion_id) SELECT r.id, b.principal_id FROM repositories r, bastion b
+	          ON CONFLICT DO NOTHING`)
+	if err := s.engine.Refresh(context.Background()); err != nil {
+		s.t.Fatal(err)
+	}
 }
 
 // setPublic makes every project and repository public, or private again, in the database and has this site's decision point

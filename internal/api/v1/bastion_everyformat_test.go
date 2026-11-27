@@ -145,7 +145,7 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 		return h
 	}
 	base := BastionServices{
-		Feed: stillFeed{}, AnonymousReads: func(context.Context) bool { return false }, Formats: table,
+		Feed: stillFeed{}, AnonymousReads: func(context.Context, string) bool { return false }, Formats: table,
 		Configuration: func(context.Context, bastionmain.Recognition) (iface.Configuration, error) {
 			return newConfiguration(t, 1, iface.Switches{}), nil
 		},

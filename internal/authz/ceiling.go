@@ -63,7 +63,7 @@ type ExposureFilter interface {
 // Exposed implements [ExposureFilter] on the installed index. A refusal to
 // decide (503, 412) is returned as an error.
 func (e *Engine) Exposed(ctx context.Context, sub Subject, keys []qname.Repo) ([]qname.Repo, error) {
-	if e.o.Ceiling == nil || sub.Endpoint == "" {
+	if (e.o.Ceiling == nil || sub.Endpoint == "") && sub.Bastion == "" {
 		return keys, nil
 	}
 	idx, refused := e.forRequest(ctx, sub)
@@ -75,8 +75,11 @@ func (e *Engine) Exposed(ctx context.Context, sub Subject, keys []qname.Repo) ([
 
 // ExposedOn implements [Decider]: the keys the subject's endpoint exposes for
 // read on the index the request decides on. A subject without an endpoint (a job,
-// a command) has no ceiling and sees every key.
+// a command) has no ceiling and sees every key. A subject that came through a
+// Bastion sees only the keys that Bastion distributes (R-AUTHZ-043), a ceiling
+// that binds a holder of repositories:read-config as the exposure does.
 func (e *Engine) ExposedOn(idx *Index, sub Subject, keys []qname.Repo) []qname.Repo {
+	keys = idx.distributedKeys(sub, keys)
 	cl := e.o.Ceiling
 	if cl == nil || sub.Endpoint == "" {
 		return keys

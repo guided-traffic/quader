@@ -47,6 +47,7 @@ func startOCIBastion(t *testing.T, fx *ociFixture, s *basSite) func() {
 	_, err := kbTry("get", "deployment", s.release)
 	existed := err == nil
 	env.registerBastion(t, s)
+	env.distribute(t, []*basSite{s}, ociLocalKey, ociOpenKey)
 	done := make(chan error, 1)
 	go func() {
 		out, err := basScriptTry("install", s.variant)

@@ -1,5 +1,5 @@
 import { Page, expect } from '@playwright/test';
-import { Api, expectStatus, psql } from './seed';
+import { Api, expectStatus, mainProject, psql } from './seed';
 
 /**
  * The Bastions screen's direct reads from the object store (bastion.md R-BAS-071), answered in the browser: the render profile has no
@@ -265,6 +265,41 @@ ON CONFLICT (bastion_id, replica) DO UPDATE SET contact_at = now(), base_url = E
 UPDATE api_token t SET last_used_at = now(), last_used_addr = '192.0.2.41'
   FROM principal p WHERE t.principal_id = p.id AND p.kind = 'bastion' AND p.name = '${seededBastion.name}';`);
   await seedBastionConfiguration(admin);
+}
+
+/**
+ * What the Bastions of the profile distribute (bastion.md R-BAS-134, authorization.md R-AUTHZ-043): a Bastion serves nothing until an
+ * administrator allows a project and its Owner chooses the repository. The profile's own Bastion `ui-dev` (deploy/ui-dev/bastion.sh)
+ * distributes every public repository of the installation, the project upstream's included, so its web interface keeps the catalogue its
+ * renders show; the seed's registration `dmz-berlin` distributes the npm repository whose **Set up client** offers it as the place to
+ * install from (`setup-npm-bastion`). A registration that does not exist (a run with UI_BASTION=0 has no `ui-dev`) is left out. Every
+ * write is idempotent: a second run changes nothing.
+ */
+export async function seedDistribution(admin: Api): Promise<void> {
+  const chosen = new Map<string, Set<string>>(); // "<project>/<key>" → the Bastions that distribute it
+  const choose = (repository: string, bastion: string): void => {
+    chosen.set(repository, (chosen.get(repository) ?? new Set<string>()).add(bastion));
+  };
+  if ((await admin.get('/api/v1/bastions/ui-dev')).status() === 200) {
+    for (let cursor = ''; ; ) {
+      const page = await admin.get(`/api/v1/repositories?visibility=public&limit=200${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+      await expectStatus(page, [200], 'the public repositories');
+      const body = (await page.json()) as { items: { project: string; key: string }[]; nextCursor: string | null };
+      for (const r of body.items) choose(`${r.project}/${r.key}`, 'ui-dev');
+      if (!body.nextCursor) break;
+      cursor = body.nextCursor;
+    }
+  }
+  choose(`${mainProject}/npm`, seededBastion.name);
+  for (const [repository, bastions] of chosen) {
+    const [project, key] = repository.split('/');
+    for (const bastion of bastions) {
+      const allowed = await admin.put(`/api/v1/bastions/${bastion}/projects/${project}`, {});
+      await expectStatus(allowed, [204], `allow the project ${project} for the Bastion ${bastion}`);
+    }
+    const set = await admin.patch(`/api/v1/projects/${project}/repositories/${key}`, { bastions: [...bastions].sort() }, { 'If-Match': '*' });
+    await expectStatus(set, [200], `the Bastions of ${repository}`);
+  }
 }
 
 /**

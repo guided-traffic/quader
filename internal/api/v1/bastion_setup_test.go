@@ -20,10 +20,23 @@ func (r reportedURLs) ReportedBaseURL(_ context.Context, name string) (string, b
 	return v, ok, nil
 }
 
+// Distributes: every registration of the map distributes every repository, but the one named undistributing.
+func (r reportedURLs) Distributes(_ context.Context, name string, _ int64) (bool, error) {
+	_, ok := r[name]
+	return ok && name != undistributing, nil
+}
+
+// undistributing is a registration of a test that distributes no repository.
+const undistributing = "elsewhere"
+
 type failingURLs struct{}
 
 func (failingURLs) ReportedBaseURL(context.Context, string) (string, bool, error) {
 	return "", false, errors.New("database down")
+}
+
+func (failingURLs) Distributes(context.Context, string, int64) (bool, error) {
+	return false, errors.New("database down")
 }
 
 func bastionServer(t *testing.T, reported BastionBaseURLs, additional ...string) http.Handler {
@@ -139,6 +152,21 @@ func TestR_BAS_007_AnAddressThatIsNotListedAnswers409(t *testing.T) {
 	if out.RegistryUrl != "https://packages.example.com/api/npm/it/npm-all/" {
 		t.Errorf("the registry URL is the listed entry's form: %s", out.RegistryUrl)
 	}
+}
+
+// TestR_BAS_007_ARepositoryTheBastionDoesNotDistributeAnswers409: a set-up through a Bastion is offered only for a repository it
+// distributes (R-BAS-134), since it refuses every read of any other (R-AUTHZ-043); the refusal comes before the Bastion's address is
+// looked at.
+func TestR_BAS_007_ARepositoryTheBastionDoesNotDistributeAnswers409(t *testing.T) {
+	h := bastionServer(t, reportedURLs{"partners": "https://packages.example.com", undistributing: ""}, "https://packages.example.com")
+	w := get(h, "/api/v1/projects/it/repositories/npm-all/client-setup?client=npm&bastion="+undistributing)
+	if w.Code != 409 {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+	if p := setupProblem(t, w.Body.Bytes()); p.Code != errs.CodeRepositoryNotDistributed {
+		t.Errorf("code %q", p.Code)
+	}
+	setupFrom(t, h, "/api/v1/projects/it/repositories/npm-all/client-setup?client=npm&bastion=partners")
 }
 
 // TestR_BAS_007_AnUnknownBastionIsNotFound: a name that is no registration, or no name at all,

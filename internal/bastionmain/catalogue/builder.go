@@ -266,7 +266,7 @@ func (b *Builder) build(ctx context.Context, reg Registration, rep *Report) erro
 			return err
 		}
 	}
-	r := &run{b: b, reg: reg, rd: reader{r: b.o.Renderer, base: reg.BaseURL}, rep: rep}
+	r := &run{b: b, reg: reg, rd: reader{r: b.o.Renderer, bastion: reg.ID, base: reg.BaseURL}, rep: rep}
 	r.rw = Rewrite{Base: reg.BaseURL, Main: b.o.Main, PublicRegistries: map[string]bool{}}
 	var fl struct {
 		Formats []format `json:"formats"`

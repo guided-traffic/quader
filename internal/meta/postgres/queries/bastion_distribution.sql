@@ -124,3 +124,17 @@ SELECT rb.bastion_id::text AS bastion_id, p.name
   FROM repository_bastion rb JOIN principal p ON p.id = rb.bastion_id
  WHERE rb.repository_id = sqlc.arg(repository_id)::bigint
  ORDER BY p.name;
+
+-- name: AuthzBuildDistribution :many
+-- What every Bastion distributes, for the grant index (authorization.md R-AUTHZ-043): one row per repository and Bastion. A row
+-- exists only while the Bastion allows the repository's project (00159), so every row is effective.
+SELECT rb.repository_id, rb.bastion_id::text AS bastion_id
+  FROM repository_bastion rb
+ ORDER BY rb.repository_id, rb.bastion_id;
+
+-- name: BastionDistributesRepository :one
+-- Whether the Bastion registration by name distributes the repository: what client-setup with bastion=<name> requires (R-BAS-007).
+SELECT EXISTS (
+    SELECT 1 FROM repository_bastion rb JOIN principal p ON p.id = rb.bastion_id
+     WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text AND rb.repository_id = sqlc.arg(repository_id)::bigint
+)::boolean AS distributes;

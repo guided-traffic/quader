@@ -235,6 +235,10 @@ func (e *Engine) reachVirtual(c *reachCtx, v *repoInfo) ReachResult {
 		for _, mk := range r.members {
 			m := idx.repo(mk)
 			switch {
+			case m != nil && !m.distributedThrough(sub.Bastion):
+				// A member the subject's Bastion does not distribute takes no part in the resolution through it: it neither shows nor
+				// narrows the shape (R-AUTHZ-043, Q-AUTHZ-341), as the resolver skips it (MemberUsable).
+				continue
 			case m == nil:
 				all = false
 			case m.Class == repository.Virtual:

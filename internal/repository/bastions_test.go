@@ -2,9 +2,15 @@ package repository
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_BAS_134_TheMemberBastions: a write names a Bastion as a string or as the object a read returned, whose addresses and disabled
@@ -39,5 +45,22 @@ func TestR_BAS_134_TheMemberBastions(t *testing.T) {
 	}
 	if !IsReservedMember("bastions") {
 		t.Fatal("a format could be named bastions")
+	}
+}
+
+// TestR_BAS_134_AChoiceTheDatabaseRefusesIsTheOwnersError: an administrator who takes the project off a Bastion's list between the
+// service's check and the write makes the trigger refuse the row (AI011); the Owner gets the 422 bastion_not_allowed at the entry the
+// check gives, not a 500. Any other error of the write passes unchanged.
+func TestR_BAS_134_AChoiceTheDatabaseRefusesIsTheOwnersError(t *testing.T) {
+	refs := []BastionRef{{Name: "artifacts"}, {Name: "partners"}}
+	err := notAllowedRace(fmt.Errorf("insert: %w", &pgconn.PgError{Code: "AI011"}), refs, "partners")
+	e, ok := errs.As(err)
+	if !ok || e.Kind != errs.Invalid || e.Code != errs.CodeValidation || len(e.Fields) != 1 ||
+		e.Fields[0].Pointer != "/bastions/1" || e.Fields[0].Code != errs.CodeBastionNotAllowed {
+		t.Fatalf("%#v", err)
+	}
+	other := &pgconn.PgError{Code: "23505"}
+	if got := notAllowedRace(other, refs, "partners"); !errors.Is(got, other) {
+		t.Fatalf("another error became %v", got)
 	}
 }

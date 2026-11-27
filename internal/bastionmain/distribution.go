@@ -82,7 +82,7 @@ func (r *Registrations) AllowProject(ctx context.Context, c principal.Caller, na
 		if err != nil || len(rows) == 0 {
 			return err
 		}
-		if err := r.notifyArea(tx, cluster.AreaBastionDistribution, t.bastionID); err != nil {
+		if err := r.notifyDistribution(tx, t.bastionID); err != nil {
 			return err
 		}
 		return r.o.Recorder.RecordTx(ctx, tx, audit.Event{
@@ -116,7 +116,7 @@ func (r *Registrations) RemoveProject(ctx context.Context, c principal.Caller, n
 		if len(removed) == 0 {
 			return errs.E(errs.NotFound, errs.CodeNotFound, "The Bastion "+t.bastion+" does not allow the project "+t.project+".")
 		}
-		if err := r.notifyArea(tx, cluster.AreaBastionDistribution, t.bastionID); err != nil {
+		if err := r.notifyDistribution(tx, t.bastionID); err != nil {
 			return err
 		}
 		keys := make([]string, 0, len(choices))
@@ -210,4 +210,17 @@ func actorRef(a audit.Actor) string {
 // names.
 func projectRemovedEntry(bastionID, projectID, bastion, project string) json.RawMessage {
 	return mustJSON(map[string]string{"bastionId": bastionID, "projectId": projectID, "name": bastion, "project": project})
+}
+
+// notifyDistribution announces a change of what the Bastion distributes: the change area bastion_distribution, after which the
+// catalogue's builder runs (R-BAS-105), and the authorization's, whose epoch the grant index follows, so that every replica decides
+// with the change within the epoch's bound (authorization.md R-AUTHZ-028, R-AUTHZ-043).
+func (r *Registrations) notifyDistribution(tx meta.Tx, bastionID string) error {
+	if err := r.notifyArea(tx, cluster.AreaBastionDistribution, bastionID); err != nil {
+		return err
+	}
+	if r.o.Notifier == nil {
+		return nil
+	}
+	return r.o.Notifier.Notify(tx, cluster.AreaAuthz, 1, map[string]string{"type": "bastion_distribution", "id": bastionID})
 }

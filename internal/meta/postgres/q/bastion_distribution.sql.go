@@ -11,6 +11,59 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const authzBuildDistribution = `-- name: AuthzBuildDistribution :many
+SELECT rb.repository_id, rb.bastion_id::text AS bastion_id
+  FROM repository_bastion rb
+ ORDER BY rb.repository_id, rb.bastion_id
+`
+
+type AuthzBuildDistributionRow struct {
+	RepositoryID int64
+	BastionID    string
+}
+
+// What every Bastion distributes, for the grant index (authorization.md R-AUTHZ-043): one row per repository and Bastion. A row
+// exists only while the Bastion allows the repository's project (00159), so every row is effective.
+func (q *Queries) AuthzBuildDistribution(ctx context.Context) ([]AuthzBuildDistributionRow, error) {
+	rows, err := q.db.Query(ctx, authzBuildDistribution)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AuthzBuildDistributionRow{}
+	for rows.Next() {
+		var i AuthzBuildDistributionRow
+		if err := rows.Scan(&i.RepositoryID, &i.BastionID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionDistributesRepository = `-- name: BastionDistributesRepository :one
+SELECT EXISTS (
+    SELECT 1 FROM repository_bastion rb JOIN principal p ON p.id = rb.bastion_id
+     WHERE p.kind = 'bastion' AND p.name = $1::text AND rb.repository_id = $2::bigint
+)::boolean AS distributes
+`
+
+type BastionDistributesRepositoryParams struct {
+	Name         string
+	RepositoryID int64
+}
+
+// Whether the Bastion registration by name distributes the repository: what client-setup with bastion=<name> requires (R-BAS-007).
+func (q *Queries) BastionDistributesRepository(ctx context.Context, arg BastionDistributesRepositoryParams) (bool, error) {
+	row := q.db.QueryRow(ctx, bastionDistributesRepository, arg.Name, arg.RepositoryID)
+	var distributes bool
+	err := row.Scan(&distributes)
+	return distributes, err
+}
+
 const bastionDistributionProjectShare = `-- name: BastionDistributionProjectShare :many
 SELECT id::text AS id, key, display_name FROM project WHERE key = $1::text FOR SHARE
 `

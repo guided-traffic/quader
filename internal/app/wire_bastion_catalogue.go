@@ -262,13 +262,18 @@ const catalogueLoopback = "127.0.0.1"
 // chainRenderer reads through the renderer's chain.
 type chainRenderer struct{ h http.Handler }
 
-// Get implements catalogue.Renderer.
-func (c chainRenderer) Get(ctx context.Context, base, target string) (catalogue.Answer, error) {
+// Get implements catalogue.Renderer. The request carries the registration, so that every decision of the render is bounded by what
+// it distributes (authorization.md R-AUTHZ-043, bastion.md Q-BAS-523): the anonymous subject of the render is the one of a forward
+// through that Bastion.
+func (c chainRenderer) Get(ctx context.Context, bastion, base, target string) (catalogue.Answer, error) {
 	u, err := url.Parse(base)
 	if err != nil || u.Host == "" {
 		return catalogue.Answer{}, fmt.Errorf("the public catalogue: the base URL %q", base)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+	if bastion == "" {
+		return catalogue.Answer{}, errors.New("the public catalogue: a render without its Bastion")
+	}
+	req, err := http.NewRequestWithContext(httpserver.WithBastion(ctx, bastion), http.MethodGet, target, nil)
 	if err != nil {
 		return catalogue.Answer{}, err
 	}
@@ -310,12 +315,12 @@ type lateRenderer struct {
 }
 
 // Get implements catalogue.Renderer.
-func (l lateRenderer) Get(ctx context.Context, base, target string) (catalogue.Answer, error) {
+func (l lateRenderer) Get(ctx context.Context, bastion, base, target string) (catalogue.Answer, error) {
 	r, err := l.f()
 	if err != nil {
 		return catalogue.Answer{}, err
 	}
-	return r.Get(ctx, base, target)
+	return r.Get(ctx, bastion, base, target)
 }
 
 // catalogueTrigger starts the job a debounce after a change that may change a catalogue (R-BAS-105): a package's metadata, a

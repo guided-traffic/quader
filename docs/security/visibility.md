@@ -244,7 +244,10 @@ A CI mapping makes every job it matches internal:
 - On a GitLab older than 18.4, a fork's pipeline that matches a mapping without a pin on the parent gets such a token as well.
 
 What bounds it: the token's scope (a technical token issued with a scope naming its repositories reads by `internal` only there); the
-endpoint binding of a token and the exposure rules of an endpoint; a CI token's lifetime; revocation. A CI job cannot narrow its token
+endpoint binding of a token and the exposure rules of an endpoint; a CI token's lifetime; revocation. Through a Bastion, since W-41's B2,
+what the Bastion distributes ([spec/authorization.md](../spec/authorization.md) R-AUTHZ-043): a leaked token reads there only the
+repositories an administrator allowed and an Owner chose for that Bastion, not every `internal` one; at the main installation's own door
+it still does. A CI job cannot narrow its token
 to an `internal` repository that no grant of its mappings names: the exchange refuses such a scope item (`scope_not_granted`,
 R-CI-007), so a job that wants a narrow token reads by an unnarrowed one or by a grant. What makes it real: a leaked technical or CI
 token, or a fork pipeline under a mapping with the `read_only` opt-in, on an installation that keeps content `internal` that such a

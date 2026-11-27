@@ -9,8 +9,7 @@ import (
 )
 
 // bastionBaseURLs reads the base URL a Bastion registration reported at its most recent
-// handshake, for client-setup with bastion=<name> (R-BAS-007). It runs two statements of the
-// Bastion files, BastionGet (does the registration exist) and BastionLastBaseURL, in one read.
+// handshake, and whether it distributes a repository, for client-setup with bastion=<name> (R-BAS-007).
 type bastionBaseURLs struct{ db *postgres.DB }
 
 var _ v1.BastionBaseURLs = bastionBaseURLs{}
@@ -39,4 +38,15 @@ func (b bastionBaseURLs) ReportedBaseURL(ctx context.Context, name string) (stri
 		return nil
 	})
 	return base, registered, err
+}
+
+// Distributes implements v1.BastionBaseURLs: whether the registration distributes the repository (R-BAS-134).
+func (b bastionBaseURLs) Distributes(ctx context.Context, name string, repositoryID int64) (bool, error) {
+	var ok bool
+	err := b.db.Read(ctx, func(d q.DBTX) error {
+		var err error
+		ok, err = q.New(d).BastionDistributesRepository(ctx, q.BastionDistributesRepositoryParams{Name: name, RepositoryID: repositoryID})
+		return err
+	})
+	return ok, err
 }

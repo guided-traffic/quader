@@ -146,6 +146,11 @@ type Subject struct {
 	// SystemRepo is the repository the credential of a system subject names (Kind system, system.go): the one entry of a
 	// scan token's grant (R-OCI-037). Set by edge.SubjectOf only; zero for every other subject.
 	SystemRepo qname.Repo
+	// Bastion is the principal ID of the Bastion registration the request came through: a forward the recognition stage recognized,
+	// the caller of a Bastion's check, the renderer of a Bastion's catalogue (R-AUTHZ-043, Q-AUTHZ-342). It selects the distribution
+	// ceiling of every decision on this subject, as Endpoint selects the exposure, so it travels with the decision on any context.
+	// Set by edge.SubjectOf only; empty for every request at the main installation's own door.
+	Bastion string
 	// CertSerial is the serial of the certificate subject's client certificate (Kind certificate, formats/clamav.md R-CLAMAV-010), which
 	// its audit events name (Q-CLAMAV-12). Set by edge.SubjectOf only; empty for every other subject.
 	CertSerial string

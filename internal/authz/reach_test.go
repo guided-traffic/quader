@@ -129,7 +129,9 @@ type leaf struct {
 	nested []string
 }
 
-func leavesOf(idx *Index, key string, via []string, depth int) []leaf {
+// leavesOf are the leaves a read through key resolves to. Through a Bastion (bastion) a member it does not distribute takes no part,
+// as the resolver skips it (R-AUTHZ-043, Q-AUTHZ-341).
+func leavesOf(idx *Index, bastion, key string, via []string, depth int) []leaf {
 	r := idx.repo(qr(key))
 	if r == nil || depth > maxReachDepth {
 		return nil
@@ -139,11 +141,14 @@ func leavesOf(idx *Index, key string, via []string, depth int) []leaf {
 	}
 	var out []leaf
 	for _, m := range r.members {
+		if !idx.distributes(bastion, m) {
+			continue
+		}
 		next := via
 		if mr := idx.repo(m); mr != nil && mr.Class == repository.Virtual {
 			next = append(append([]string(nil), via...), m.Key)
 		}
-		out = append(out, leavesOf(idx, m.Key, next, depth+1)...)
+		out = append(out, leavesOf(idx, bastion, m.Key, next, depth+1)...)
 	}
 	return out
 }
@@ -154,14 +159,24 @@ func leavesOf(idx *Index, key string, via []string, depth int) []leaf {
 // holds the row, with the virtual repository as the addressed one (R-AUTHZ-009, Q-EP-11). A partial reach asserts
 // nothing, so its reads are not asked, and each scan stops at the first read that refutes its reach.
 func TestR_BAS_012_ShapeAgreesWithTheDecisionPoint(t *testing.T) {
+	e := newTestEngine(t, reachFixture(), func(o *Options) { o.Ceiling = reachCeiling() })
+	shapeAgrees(t, e, reachSubjects(), nil)
+}
+
+// shapeAgrees is the sweep of TestR_BAS_012_ShapeAgreesWithTheDecisionPoint over the subjects, each on every endpoint of the reach
+// fixture; through, when set, turns a subject into the one the sweep decides (a forward through a Bastion, R-AUTHZ-043).
+func shapeAgrees(t *testing.T, e *Engine, subjects map[string]Subject, through func(Subject) Subject) {
+	t.Helper()
 	keys := reachKeys
 	pkgs := []string{"@a/x", "@acme/sdk", "x", "plain"}
 	versions := []string{"", "1.0.0", "3.0.0-beta"}
 	var counts [3]int
-	e := newTestEngine(t, reachFixture(), func(o *Options) { o.Ceiling = reachCeiling() })
-	for name, base := range reachSubjects() {
+	for name, base := range subjects {
 		for _, ep := range reachEndpoints {
 			sub := onEP(base, ep)
+			if through != nil {
+				sub = through(sub)
+			}
 			idx, err := e.Begin(t.Context(), sub, qrs(keys)...)
 			if err != nil {
 				t.Fatal(err)
@@ -220,7 +235,7 @@ func allowedRead(t *testing.T, e *Engine, idx *Index, sub Subject, key string, p
 		if addressed != "" && e.DecideOn(ctx, idx, sub, Coordinate{Repository: qr(key), Kind: kind, Actions: []Action{Read}}).Outcome != Allow {
 			continue
 		}
-		for _, lf := range leavesOf(idx, key, nil, 0) {
+		for _, lf := range leavesOf(idx, sub.Bastion, key, nil, 0) {
 			nestedOK := true
 			for _, n := range lf.nested {
 				nc := Coordinate{Repository: qr(n), Kind: kind, Actions: []Action{Read}, Addressed: qr(addressed)}
@@ -372,7 +387,7 @@ func packageReads(pkg string, versions []string) []versionPath {
 func refusedPackageRead(t *testing.T, e *Engine, idx *Index, sub Subject, key, pkg string, versions []string) string {
 	t.Helper()
 	ctx := t.Context()
-	leaves := leavesOf(idx, key, nil, 0)
+	leaves := leavesOf(idx, sub.Bastion, key, nil, 0)
 	if len(leaves) == 0 {
 		return "no member holds the package"
 	}

@@ -35,7 +35,9 @@ type fakeAPI struct {
 	mu    sync.Mutex
 	now   string
 	bases map[string]bool
-	reads map[string]int
+	// bastions are the registrations the reads were asked through (R-AUTHZ-043, Q-BAS-523).
+	bastions map[string]bool
+	reads    map[string]int
 	// gone removes the package from the index.
 	gone bool
 	// latest is the package's latest version, which a publish moves.
@@ -45,13 +47,13 @@ type fakeAPI struct {
 }
 
 func newFake() *fakeAPI {
-	return &fakeAPI{now: "2026-11-26T10:00:00Z", bases: map[string]bool{}, reads: map[string]int{}, latest: "1.0.0", daily: 28201}
+	return &fakeAPI{now: "2026-11-26T10:00:00Z", bases: map[string]bool{}, bastions: map[string]bool{}, reads: map[string]int{}, latest: "1.0.0", daily: 28201}
 }
 
-func (f *fakeAPI) Get(_ context.Context, base, target string) (catalogue.Answer, error) {
+func (f *fakeAPI) Get(_ context.Context, bastion, base, target string) (catalogue.Answer, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.bases[base] = true
+	f.bases[base], f.bastions[bastion] = true, true
 	u, err := url.Parse(target)
 	if err != nil {
 		return catalogue.Answer{}, err
@@ -168,7 +170,7 @@ func run(t *testing.T, b *catalogue.Builder, regs ...catalogue.Registration) cat
 }
 
 // TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase: a registration's build reads the management API on the
-// Bastion's base URL alone and keeps every document of section C for an npm package and a generic file: the index, the package, its
+// Bastion's base URL alone, every read through the registration, whose distribution bounds it (Q-BAS-523), and keeps every document of section C for an npm package and a generic file: the index, the package, its
 // versions, the version with its README, open findings, signatures, set-up and state, the repository's set-up, the generic folder,
 // file and set-up, the signature object the signatures name, and the catalogue's state.
 func TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase(t *testing.T) {
@@ -180,6 +182,9 @@ func TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase(t *testing.T)
 	}
 	if len(api.bases) != 1 || !api.bases[bastionURL] {
 		t.Fatalf("the renderer was asked on %v, want the Bastion's base URL alone", api.bases)
+	}
+	if len(api.bastions) != 1 || !api.bastions[regID] {
+		t.Fatalf("the renderer was asked through %v, want the registration alone", api.bastions)
 	}
 	docs := store.Raw(regID)
 	v := "packages/" + pkgID + "/versions/1.0.0"

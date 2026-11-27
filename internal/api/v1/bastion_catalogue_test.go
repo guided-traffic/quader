@@ -37,7 +37,7 @@ func catalogueSetup(t *testing.T, sw iface.Switches) setup {
 func catalogueSetupWith(t *testing.T, sw iface.Switches, store catalogue.Reader) setup {
 	t.Helper()
 	svc := BastionServices{
-		Feed: stillFeed{}, AnonymousReads: func(context.Context) bool { return false }, Catalogue: store,
+		Feed: stillFeed{}, AnonymousReads: func(context.Context, string) bool { return false }, Catalogue: store,
 		Configuration: func(context.Context, bastionmain.Recognition) (iface.Configuration, error) {
 			return newConfiguration(t, 3, sw), nil
 		},

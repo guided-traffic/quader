@@ -18,11 +18,13 @@ type Answer struct {
 	Body        []byte
 }
 
-// Renderer reads the management API as the anonymous caller of the default endpoint, through its own router and handlers with
-// the declarations of R-API-058 but outside the edge chain (no limit, no request log, no usage record), with base as the response
-// base URL (R-BAS-104). The composition root implements it.
+// Renderer reads the management API as the anonymous caller of the default endpoint through the Bastion registration bastion (its
+// principal ID), through its own router and handlers with the declarations of R-API-058 but outside the edge chain (no limit, no
+// request log, no usage record), with base as the response base URL (R-BAS-104). Every read is decided within what that Bastion
+// distributes (authorization.md R-AUTHZ-043, Q-BAS-523), so the builder needs no rule of its own for it. The composition root
+// implements it.
 type Renderer interface {
-	Get(ctx context.Context, base, target string) (Answer, error)
+	Get(ctx context.Context, bastion, base, target string) (Answer, error)
 }
 
 // errRender is a read that did not answer what the builder needs: a status other than 200 and 404, or a body that does not read.
@@ -36,16 +38,16 @@ func (e errRender) Error() string {
 	return fmt.Sprintf("catalogue: GET %s answered %d %s", e.target, e.status, e.detail)
 }
 
-// reader is one registration's view of the renderer.
+// reader is one registration's view of the renderer: its principal ID and its base URL.
 type reader struct {
-	r    Renderer
-	base string
+	r             Renderer
+	bastion, base string
 }
 
 // get reads target and answers its body; found is false for a 404 (and the 401 of a part the anonymous caller does not read, the
 // wiki of a repository whose wiki is not public).
 func (rd reader) get(ctx context.Context, target string) (Answer, bool, error) {
-	a, err := rd.r.Get(ctx, rd.base, target)
+	a, err := rd.r.Get(ctx, rd.bastion, rd.base, target)
 	if err != nil {
 		return Answer{}, false, err
 	}

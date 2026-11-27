@@ -19,10 +19,15 @@ import (
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
 
 // registration writes a Bastion principal and, when baseURL is not empty, the contact of one
-// replica that reported it.
-func registration(st *testenv.Stack, name, baseURL string) {
+// replica that reported it; with distributes, the registration allows every project and distributes
+// every repository that exists (R-BAS-134).
+func registration(st *testenv.Stack, name, baseURL string, distributes bool) {
 	id := st.Text("INSERT INTO principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', $1) RETURNING id::text", name)
 	st.Exec("INSERT INTO bastion (principal_id, description) VALUES ($1::uuid, $2)", id, name)
+	if distributes {
+		st.Exec("INSERT INTO bastion_project (bastion_id, project_id, allowed_by) SELECT $1::uuid, id, 'it' FROM project", id)
+		st.Exec("INSERT INTO repository_bastion (repository_id, bastion_id) SELECT id, $1::uuid FROM repositories", id)
+	}
 	if baseURL != "" {
 		st.Exec("INSERT INTO bastion_contact (bastion_id, replica, contact_at, release, interface_version, base_url) "+
 			"VALUES ($1::uuid, 'pod-a', now() - interval '5 minutes', '0.15.0', 1, $2)", id, baseURL)
@@ -34,16 +39,18 @@ func registration(st *testenv.Stack, name, baseURL string) {
 // TestR_BAS_007_ClientSetupForABastionThroughTheStack: the acceptance case of R-BAS-007 against a
 // real replica, a real database and the real chain: the registry URL is the base URL the Bastion
 // reported at its most recent contact, npm's configure snippet sets replace-registry-host=always,
-// and the answer has no publish snippet although the caller may deploy.
+// and the answer has no publish snippet although the caller may deploy; a Bastion that does not
+// distribute the repository is refused.
 func TestR_BAS_007_ClientSetupForABastionThroughTheStack(t *testing.T) {
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "bastionsetup"})
 	alice := st.User("alice")
 	st.Repository("npm-local", "local", "npm", `{"local":{"packageOwnership":"off"}}`)
 	st.Policy("writers", []string{"read", "deploy"}, []string{"npm-local"}, alice)
 	tok := st.Token(alice, scope.Default())
-	registration(st, "partners", "https://packages.example.com")
-	registration(st, "fresh", "")
-	registration(st, "stray", "https://stray.example.com")
+	registration(st, "partners", "https://packages.example.com", true)
+	registration(st, "fresh", "", true)
+	registration(st, "stray", "https://stray.example.com", true)
+	registration(st, "elsewhere", "https://packages.example.com", false)
 	r := st.Start(t, testenv.ReplicaOptions{
 		Name: "web1",
 		Env:  []string{`QUADER_SERVER_ADDITIONAL_BASE_URLS=["https://packages.example.com"]`},
@@ -89,6 +96,11 @@ func TestR_BAS_007_ClientSetupForABastionThroughTheStack(t *testing.T) {
 			if a.Status != 409 || a.Code(t) != "bastion_base_url_unknown" {
 				t.Errorf("%s: %d %s", name, a.Status, a.Body)
 			}
+		}
+	})
+	t.Run("a repository the Bastion does not distribute answers 409", func(t *testing.T) {
+		if a := st.Do(r, "GET", path+"&bastion=elsewhere", tok, nil); a.Status != 409 || a.Code(t) != "repository_not_distributed" {
+			t.Errorf("%d %s", a.Status, a.Body)
 		}
 	})
 	t.Run("a name that is no registration answers 404", func(t *testing.T) {

@@ -192,7 +192,8 @@ func (e *Engine) ReadScopeOn(_ context.Context, idx *Index, sub Subject, address
 	st := e.newEvalState(idx, sub)
 	rs.st = st
 	for _, k := range keys {
-		if !idx.addressedReaches(addressed, k) {
+		if !idx.addressedReaches(addressed, k) || (!addressed.IsZero() && !idx.distributes(sub.Bastion, addressed)) {
+			// Through a Bastion the addressed repository must be distributed as well (R-AUTHZ-043): none of its members reads then.
 			rs.shapes[k] = ReadNone
 			rs.byPath[k] = false
 			continue
@@ -246,7 +247,8 @@ func (e *Engine) readShape(st *evalState, sub Subject, r *repoInfo, allEndpoint 
 // theirs. A grant, a role, the repository's account and content:bypass read both parts alike; only the level that reads is the
 // part's own (leveledBy), so the wiki's shape is ReadAll exactly where every package's wiki read is allowed.
 func (e *Engine) readShapeOf(st *evalState, sub Subject, r *repoInfo, allEndpoint bool, part Part) ReadShape {
-	if r == nil || r.Class == repository.Virtual {
+	if r == nil || r.Class == repository.Virtual || !r.distributedThrough(sub.Bastion) {
+		// A repository the subject's Bastion does not distribute reads nothing through it (R-AUTHZ-043).
 		return ReadNone
 	}
 	if isCertificate(sub) {

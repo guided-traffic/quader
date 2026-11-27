@@ -22,7 +22,7 @@ import { authFile, edge, outDir, stateDir } from './paths';
 import { seedMalwareContent, seedMalwareVerdicts } from './malware';
 import { seedSignatures, seedSignatureSettings } from './signatures';
 import { resetImageScans, seedScannerReplicas } from './scanners';
-import { seedBastion } from './bastions';
+import { seedBastion, seedDistribution } from './bastions';
 import { awaitBastionCatalogue } from './bastion-gui';
 import { removeCachedSources, seedCachedVersions } from './cached';
 import { seedDebDocs } from './debdocs';
@@ -54,6 +54,8 @@ export default async function setup(): Promise<void> {
   await seedUpstreamRegistries(admin);
   await seedRegistryPresets(admin);
   await seedBastion(admin);
+  // After the repositories and the registrations: a Bastion serves only what it distributes (R-AUTHZ-043).
+  await seedDistribution(admin);
 
   const browser = await chromium.launch();
   try {

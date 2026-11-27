@@ -65,11 +65,14 @@ type PackageServices struct {
 	AdditionalBaseURLs []string
 }
 
-// BastionBaseURLs reads the base URL of a Bastion registration (R-BAS-007).
+// BastionBaseURLs reads the base URL of a Bastion registration and what it distributes (R-BAS-007).
 type BastionBaseURLs interface {
 	// ReportedBaseURL returns the base URL the registration reported at its most recent
 	// contact, "" while none has; registered is false for a name that is no registration.
 	ReportedBaseURL(ctx context.Context, name string) (baseURL string, registered bool, err error)
+	// Distributes reports whether the registration distributes the repository (R-BAS-134), whose reads through it are refused
+	// otherwise (R-AUTHZ-043).
+	Distributes(ctx context.Context, name string, repositoryID int64) (bool, error)
 }
 
 func (s *Server) packageServices() (PackageServices, error) {
@@ -1040,7 +1043,7 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 	var registry, registryKey string
 	bastion := p.Bastion != nil
 	if bastion {
-		base, err := bastionBase(ctx, ps, *p.Bastion)
+		base, err := bastionBase(ctx, ps, *p.Bastion, repo.NumericID())
 		if err != nil {
 			return gen.ClientSetup{}, err
 		}
@@ -1194,9 +1197,11 @@ var bastionName = regexp.MustCompile(`^[a-z][a-z0-9-]{0,19}$`)
 
 // bastionBase is the base URL the snippets for a Bastion are rendered on: what the registration
 // reported at its last handshake, provided it is an entry of server.additional_base_urls
-// (R-BAS-007, Q-BAS-97). A name that is no registration answers 404; a registration that has
-// reported nothing, or an address the installation does not list, 409 bastion_base_url_unknown.
-func bastionBase(ctx context.Context, ps PackageServices, name string) (string, error) {
+// (R-BAS-007, Q-BAS-97). A name that is no registration answers 404; a registration that does not
+// distribute the repository (its ID) 409 repository_not_distributed, since it would refuse every read
+// of it (R-AUTHZ-043); a registration that has reported nothing, or an address the installation does
+// not list, 409 bastion_base_url_unknown.
+func bastionBase(ctx context.Context, ps PackageServices, name string, repositoryID int64) (string, error) {
 	if ps.Bastions == nil {
 		return "", unavailable("The client setup for a Bastion")
 	}
@@ -1210,6 +1215,13 @@ func bastionBase(ctx context.Context, ps PackageServices, name string) (string, 
 	}
 	if !registered {
 		return "", notFound
+	}
+	distributes, err := ps.Bastions.Distributes(ctx, name, repositoryID)
+	if err != nil {
+		return "", errs.Wrap(err, "api.bastionBase")
+	}
+	if !distributes {
+		return "", errs.E(errs.Conflict, errs.CodeRepositoryNotDistributed, "The Bastion "+name+" does not distribute this repository.")
 	}
 	if reported == "" {
 		return "", errs.E(errs.Conflict, errs.CodeBastionBaseURLUnknown, "The Bastion has not reported a base URL yet.")

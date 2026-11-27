@@ -21,6 +21,7 @@ const (
 	keyPrincipal
 	keyShapes
 	keyPrincipalNote
+	keyBastion
 )
 
 // RequestInfo is what the chain resolves once per request (R-ARCH-005 step 5).
@@ -111,6 +112,19 @@ func WithResolved(ctx context.Context, info RequestInfo) context.Context {
 // WithPrincipal stores the caller; the authentication stage and tests use it.
 func WithPrincipal(ctx context.Context, p Principal) context.Context {
 	return context.WithValue(ctx, keyPrincipal, p)
+}
+
+// WithBastion returns ctx carrying the principal ID of the Bastion registration whose distribution bounds every decision of the
+// request (authorization.md R-AUTHZ-043): the recognition stage stores it for a forward, the Bastion's check for its caller, and the
+// renderer of a Bastion's catalogue for its whole render. edge.SubjectOf reads it into the subject; nothing else does.
+func WithBastion(ctx context.Context, bastionID string) context.Context {
+	return context.WithValue(ctx, keyBastion, bastionID)
+}
+
+// BastionFrom returns the Bastion registration WithBastion stored, "" when none: the request is the main installation's own.
+func BastionFrom(ctx context.Context) string {
+	id, _ := ctx.Value(keyBastion).(string)
+	return id
 }
 
 // WithPrincipalNote returns ctx carrying f, which the authentication stage calls with the caller it accepted

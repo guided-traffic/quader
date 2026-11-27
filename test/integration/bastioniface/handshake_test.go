@@ -27,7 +27,8 @@ func handshake(t *testing.T, s *site, bst string, extra ...string) (iface.Handsh
 }
 
 // TestR_BAS_010_TheHandshakeAnswersWhatTheBastionNeeds: the members of the answer, with the effective anonymous
-// switch following the runtime setting and the download switch following audit.record_downloads.
+// switch following the runtime setting and what the registration distributes (Q-BAS-522), and the download switch following
+// audit.record_downloads.
 func TestR_BAS_010_TheHandshakeAnswersWhatTheBastionNeeds(t *testing.T) {
 	e := newEnv(t)
 	s := e.newSite(siteOpts{endpointAnonymous: true, recordDownloads: true})
@@ -63,6 +64,11 @@ func TestR_BAS_010_TheHandshakeAnswersWhatTheBastionNeeds(t *testing.T) {
 
 	e.repository("it/npm-local", "local") // the level is on a repository: a project alone opens nothing
 	s.setPublic(true)
+	// A public repository the registration does not distribute opens nothing through it (R-AUTHZ-043, Q-BAS-522).
+	if h, _ := handshake(t, s, bst); h.AnonymousReads {
+		t.Error("the handshake reports anonymous reads for a registration that distributes nothing")
+	}
+	s.distribute()
 	waitFor(t, "the level reaches the handshake", 10*time.Second, func() bool { h, _ := handshake(t, s, bst); return h.AnonymousReads })
 	// The endpoint's own rule narrows what is public: anonymous requests of an endpoint that admits none are refused
 	// whatever the levels say (R-AUTH-037, R-EP-010).

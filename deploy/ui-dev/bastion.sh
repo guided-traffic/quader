@@ -11,7 +11,9 @@
 # The registration goes through the management API as the break-glass account at every start: the registration ui-dev (kept when it
 # exists), the switches gui and docs on, a token when <state>/bastion/token is missing. Once the replica's handshake has reported its
 # base URL, the public catalogue's builder is started once (POST /api/v1/system/tasks/bastion-catalogue/run); its triggers and the
-# profile's schedule (config.sh) follow every change after that.
+# profile's schedule (config.sh) follow every change after that. A Bastion serves only what it distributes (authorization.md R-AUTHZ-043):
+# the script allows no project and chooses no repository; the renders' setup does after its seed (seedDistribution of
+# web/e2e/renders/bastions.ts), and until then the Bastion's web interface shows an empty start.
 #
 #   UI_BASTION_BUILD=0   keeps the application and the binary of the last start (a start in seconds)
 set -euo pipefail

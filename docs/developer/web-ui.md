@@ -901,6 +901,13 @@ instance its checkout claims. What one start does:
 4. starts the public catalogue's builder once, after the handshake has reported the base URL, which `server.additional_base_urls` of
    the instance lists (`config.sh`); its triggers follow every publish after that.
 
+A Bastion serves only what it distributes ([authorization.md](../spec/authorization.md) R-AUTHZ-043), and the script registers no
+distribution: the renders' setup does, after the seed's repositories exist (`seedDistribution` of
+[bastions.ts](../../web/e2e/renders/bastions.ts)): `ui-dev` allows every project with a public repository and distributes every public
+repository, the project `upstream`'s included, so its catalogue holds what its renders show; the seed's registration `dmz-berlin`
+distributes `web-frontend/npm`, whose **Set up client** offers it (`setup-npm-bastion`). A Bastion started by hand on an instance the
+renders never seeded shows an empty start until its projects are allowed and its repositories chosen.
+
 Nothing of it reaches an image, a chart or a release's configuration: the script, the configuration it writes and the second binary are
 the profile's. `make ui-renders` starts the Bastion with the backend unless it runs (`UI_BASTION=0` starts none), and its setup waits
 until the Bastion has mirrored a builder's run after the seed (`awaitBastionCatalogue` of

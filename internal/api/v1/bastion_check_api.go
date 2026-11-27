@@ -79,9 +79,10 @@ func (s *Server) BastionCheck(w http.ResponseWriter, r *http.Request, _ gen.Bast
 		writeInterface(w, r, http.StatusOK, ans)
 		return
 	}
-	// The caller of a check is decided as a caller of a forward is, and as the same caller at the main installation's own door:
-	// the channel plays no part (R-BAS-011, R-AUTHZ-030).
-	cctx := httpserver.WithPrincipal(ctx, p)
+	// The caller of a check is decided as a caller of a forward is: as the same caller at the main installation's own door
+	// (R-BAS-011, R-AUTHZ-030), within what the Bastion distributes (R-AUTHZ-043).
+	rec, _ := bastionmain.RecognitionFrom(ctx)
+	cctx := httpserver.WithBastion(httpserver.WithPrincipal(ctx, p), rec.BastionID)
 	names := make([]qname.Repo, len(req.Repositories))
 	for i, text := range req.Repositories {
 		names[i], _ = qname.ParseRepo(text) // checkRequest has validated the text

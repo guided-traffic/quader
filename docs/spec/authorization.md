@@ -297,10 +297,11 @@ caller, and writing needs a permission of its own. The level `internal` admits e
 | A Bastion registration (`bastion:<name>`) | no: it reads nothing on its own credential ([Q-AUTHZ-320](#q-authz-320--a-bastion-registration-is-not-internal-a-bastion-reads-for-the-caller-it-forwards-for)) |
 | The certificate subject (R-AUTHZ-002) | no: its fixed rule reads `internal` content only of the repositories that admit certificate readers ([formats/clamav.md](formats/clamav.md) R-CLAMAV-010) |
 
-- **The channel plays no part.** A request a Bastion forwards, and the caller a Bastion check decides, is decided on the
-  caller's own subject, as the same request at the main installation's own door ([bastion.md](bastion.md) R-BAS-008,
-  [Q-BAS-148](bastion.md#q-bas-148--a-request-through-a-bastion-is-decided-as-any-other)). The subject carries no mark of the
-  channel ([Q-AUTHZ-321](#q-authz-321--the-subject-carries-no-mark-of-a-bastion)).
+- **The channel plays no part in who reads.** A request a Bastion forwards, and the caller a Bastion check decides, is decided on
+  the caller's own subject, as the same request at the main installation's own door ([bastion.md](bastion.md) R-BAS-008,
+  [Q-BAS-148](bastion.md#q-bas-148--a-request-through-a-bastion-is-decided-as-any-other)): internal through a Bastion exactly when
+  internal at the door. The subject carries the Bastion only as the ceiling of what it distributes (R-AUTHZ-043,
+  [Q-AUTHZ-342](#q-authz-342--a-bastions-distribution-is-a-ceiling-in-the-decision-point-carried-by-the-subject)).
 - **The external flag is a user's.** It is the only thing that keeps an authenticated subject from `internal`; a service account,
   a CI mapping and a Bastion registration carry none (R-AUTH-044). A service account's rights are what it is granted, and it reads
   what `internal` opens like every signed-in caller; nothing makes one service account external and another internal.
@@ -1754,6 +1755,7 @@ func MayPopulate(sub Subject, idx *Index, m Repo, mc Coordinate) bool {
   own replica.
 - `reasonFor` returns `deny.exposure` when the endpoint's exposure refuses a read,
   `deny.endpoint_read_only` when it refuses a write ([endpoints.md](endpoints.md) R-EP-013),
+  `deny.distribution` when a Bastion's distribution refuses an action (R-AUTHZ-043),
   `deny.scope` when a grant would allow the action but a ceiling does not,
   `deny.triggering-user` when only the triggering-user bound refuses, and `deny.no-grant`
   otherwise. "Grant" includes the actions of a project role (R-AUTHZ-026).
@@ -3477,8 +3479,9 @@ administered by the installation's administrators, not by a team.
   that user's token, technical subjects included: a CI token and a service-account token read an `internal` well-known member
   (R-AUTHZ-030). A service account carries no external flag; the flag is a user's (R-AUTH-044) and reaches that user's own tokens. A user flagged external who holds a role on the team's project reads the virtual
   repository's local members and skips an `internal` member of `upstream` silently, as step 4 of R-REPO-019 skips every unreadable
-  member. A request through a Bastion is decided as the same request at the main installation's own door: the channel plays no part
-  (R-AUTHZ-030, [bastion.md](bastion.md) Q-BAS-148), and the exposure of the endpoint decides what is served (R-EP-013). A `private` member is read through it only by whom a global policy or a capability admits.
+  member. A request through a Bastion is decided as the same request at the main installation's own door (R-AUTHZ-030,
+  [bastion.md](bastion.md) Q-BAS-148), within what the Bastion distributes (R-AUTHZ-043), and the exposure of the endpoint decides what
+  is served (R-EP-013). A `private` member is read through it only by whom a global policy or a capability admits.
   The questions that walk a virtual repository's members treat such a member as any member: a token whose scope names the virtual
   repository by its exact name reads it through the virtual repository on its level or grants (the lift of
   [Q-AUTHZ-163](#q-authz-163--a-scope-on-a-virtual-repository-covers-its-members-when-they-are-read-through-it), R-AUTHZ-013), an anonymous
@@ -3546,6 +3549,68 @@ Acceptance criteria (integration area `upstream`, about 2 s):
   `internal/authz` alone, before the virtual engine runs). In the integration area `upstream`, against the stub npm
   upstream (about 2 s), a CI token, with and without the scope `read:web/npm-all`, and a service-account token read `lodash` through
   `npm-all` by the member's level (rows 1 and 8), and an external user's token does not (row 3).
+
+### R-AUTHZ-043 · A Bastion's distribution is a ceiling of every decision through it
+Priority: **P1** · Covers: quader-only
+
+What a Bastion may distribute is granted twice ([bastion.md](bastion.md) R-BAS-134): an administrator allows projects per Bastion, and a
+project's Owner chooses per repository the Bastions that distribute it. The decision point enforces it, as it enforces an endpoint's
+exposure ([endpoints.md](endpoints.md) R-EP-013,
+[Q-AUTHZ-342](#q-authz-342--a-bastions-distribution-is-a-ceiling-in-the-decision-point-carried-by-the-subject)).
+
+- **The subject carries the Bastion.** `Subject.Bastion` is the principal ID of the registration a request came through, set by the one
+  conversion (`edge.SubjectOf`) from a recognized forward (not from an interface route of the Bastion itself), by the Bastion's check for
+  the caller it decides, and by the renderer of a Bastion's public catalogue for every read of its run. Nothing reads it from request
+  data. Who the caller is does not change: its grants, roles, levels and its being internal are the same as at the main installation's
+  own door (R-AUTHZ-030).
+- **The ceiling.** For a subject with a Bastion, `Decide` refuses a coordinate unless the Bastion distributes the repository the coordinate
+  decides and the addressed repository, and refuses every action but `read`, first, before the subject's own rules: it binds every subject,
+  administrators, `content:bypass`, the anonymous subject, a system and a certificate subject included, and never grants. The rows it
+  reads are the effective ones (a choice exists only while its Bastion allows the project, migration `00159`), compiled into the grant
+  index from the same snapshot; every change of the distribution raises the authorization's epoch, so every replica decides with it within
+  the epoch's bound (R-AUTHZ-028).
+- **The answer of a missing repository.** The refusal is the one a repository the index does not know gets for the same subject: `404`
+  byte-identical to a missing one for a read with a credential, `401` with the challenge for the anonymous subject, `403` for a write. The
+  reason is `deny.distribution` (R-AUTHZ-029), which no answer carries.
+- **A virtual repository** ([Q-AUTHZ-341](#q-authz-341--a-member-a-bastion-does-not-distribute-takes-no-part-in-the-resolution-through-it)).
+  Through a Bastion a member it does not distribute takes no part in the resolution: `MemberUsable` skips it, as it skips a member the
+  caller may not read, and it neither shows nor narrows the read shape ([bastion.md](bastion.md) R-BAS-012); the anonymous gate of
+  R-AUTHZ-009 rule 6 asks only the members the Bastion distributes. A member added later to a distributed virtual repository leaves
+  through the Bastion only once it is chosen itself.
+- **Lists, counts and shapes.** `ReadableOn` decides each key through the ceiling; `ExposedOn` (what a holder of
+  `repositories:read-config` lists) keeps only the keys the Bastion distributes; a read scope classifies a key it does not distribute,
+  and every key below an addressed repository it does not distribute, `ReadNone`; the reach of the Bastion's check and marking follow
+  (R-BAS-012, R-BAS-080).
+- **What follows outside the decision point.** The handshake's `anonymousReads` is the registration's (`Index.PublicDistributed`,
+  [bastion.md](bastion.md) Q-BAS-522), a Bastion's catalogue shows the public repositories it distributes (Q-BAS-523), and
+  `client-setup?bastion=<name>` answers `409 repository_not_distributed` for a repository the registration does not distribute
+  (R-BAS-007).
+
+*Built on 2026-11-27 (W-41's B2):* [distribution.go](../../internal/authz/distribution.go) (the index's part, the ceiling, the reason),
+[decide.go](../../internal/authz/decide.go), [visible.go](../../internal/authz/visible.go), [reach.go](../../internal/authz/reach.go),
+[ceiling.go](../../internal/authz/ceiling.go), the snapshot's rows of [source.go](../../internal/authz/source.go); the subject's Bastion in
+[subject.go](../../internal/api/edge/subject.go) and `httpserver.WithBastion`; the epoch raised by
+[distribution.go](../../internal/bastionmain/distribution.go), [distribution_replay.go](../../internal/bastionmain/distribution_replay.go)
+and [bastions.go](../../internal/repository/bastions.go).
+
+Acceptance criteria:
+
+- Unit ([distribution_test.go](../../internal/authz/distribution_test.go), about 0.2 s, no data, the reach fixture with what two Bastions
+  distribute): `TestR_AUTHZ_043_ABastionReadsOnlyWhatItDistributes` (an administrator with `content:bypass`, a grant and the anonymous
+  caller on a distributed and an undistributed repository, another Bastion's distribution, a write, the same subject at the door, a member
+  and an addressed repository each undistributed; the refusal and a missing repository answer the same problem);
+  `TestR_AUTHZ_043_AnUndistributedMemberTakesNoPart` (`MemberUsable`, the reach full without the member, the anonymous gate);
+  `TestR_AUTHZ_043_ListsAndCountsAreFiltered` (`ReadableOn`, `ExposedOn`, a read scope with and without an addressed repository);
+  `TestR_AUTHZ_043_ShapeAgreesWithTheDecisionPointThroughABastion` (the sweep of R-BAS-012 with every subject through a Bastion);
+  `TestR_BAS_010_AnonymousReadsIsTheRegistrations`.
+- Unit (`internal/api/edge`, `internal/api/v1`, milliseconds): `TestR_BAS_008_AForwardAndACheckAreDecidedOnTheCallersSubject` (the
+  subject of a forward and of a check is the door's with the registration as its Bastion, an interface route's has none);
+  `TestR_AUTHZ_043_ACheckIsDecidedWithinTheBastionsDistribution`; `TestR_BAS_007_ARepositoryTheBastionDoesNotDistributeAnswers409`.
+- Integration (area `bastion`, [distribution_test.go](../../test/integration/bastion/distribution_test.go), about 5 s, one package
+  document): `TestR_AUTHZ_043_ABastionServesOnlyWhatItDistributes` (a public repository with a reader's grant, taken off the Bastion:
+  `404` to the token and `401` without one through the in-process Bastion within the revocation bound, `200` at the main installation's
+  own door; chosen again, served again). Every other case of the areas `bastion`, `bastioniface`, `bastionsetup` and of the e2e set
+  `bastion` runs with its repositories distributed.
 
 ## Worked examples
 
@@ -7524,7 +7589,10 @@ through it is always some caller's right. The development agent would revisit th
 
 ### Q-AUTHZ-321 · The subject carries no mark of a Bastion
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Superseded by [Q-AUTHZ-342](#q-authz-342--a-bastions-distribution-is-a-ceiling-in-the-decision-point-carried-by-the-subject)**
+on 2026-11-27: the owner's words of R-BAS-134 are the later rule that needs the channel. The subject carries the Bastion again, as the
+ceiling of what it distributes, and still not as a change of who the caller is. Before: **Decided by the development agent** — selected
+from the options below; the owner reviews it at the walkthrough.
 
 Context: the rule of 2026-11-11 needed a mark on the subject (`Subject.ViaBastion`), set by the edge from the recognition of a
 forward and by the check for its caller ([bastion.md](bastion.md) Q-BAS-151). The owner's rule (Q-AUTHZ-268) no longer reads it.
@@ -7560,6 +7628,45 @@ Context: `system:image-scanner`'s rule is decided in the decision point by the r
 | (b) Through the decision point, with a coordinate of the repository and the item's path | The image scanner's way | One place for every decision | The route knows a digest, not a path; it would pick one of the item's paths to ask about |
 
 **Choice:** (a). **Applied in the spec:** R-AUTHZ-002; [malware-scanning.md](malware-scanning.md) R-MAL-006.
+
+### Q-AUTHZ-341 · A member a Bastion does not distribute takes no part in the resolution through it
+
+Status: **Decided by the development agent** on 2026-11-27 (W-41's plan, D14) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-AUTHZ-043, [bastion.md](bastion.md) R-BAS-134. A virtual repository of `platform` may hold members of `upstream` or of another
+project ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-071); an administrator allows `platform` for a Bastion and its
+Owner chooses the virtual repository.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The addressed repository and every member the resolution reads must be distributed; a member that is not takes no part, as a member the caller may not read (chosen) | Every byte that leaves through a Bastion was chosen twice | The administrator's list holds also for `upstream`'s caches; a member added later does not leak | A distributed virtual repository over an undistributed member serves less through the Bastion than at the door |
+| (b) The addressed repository only, as an endpoint's exposure (Q-EP-11) | One check | Allowing `platform` would send `upstream`'s caches out past the administrator's list, and a member added later leaks |
+
+**Choice:** (a). The member neither shows nor narrows the shape: it is skipped, not refused. **Applied in the spec:** R-AUTHZ-043;
+[bastion.md](bastion.md) R-BAS-012; code: [decide.go](../../internal/authz/decide.go) (`publicThroughout`),
+[reach.go](../../internal/authz/reach.go), [distribution.go](../../internal/authz/distribution.go).
+
+### Q-AUTHZ-342 · A Bastion's distribution is a ceiling in the decision point, carried by the subject
+
+Status: **Decided by the development agent** on 2026-11-27 (W-41's plan, D16) — selected from the options below; the owner reviews it at
+the walkthrough. It supersedes [Q-AUTHZ-321](#q-authz-321--the-subject-carries-no-mark-of-a-bastion), whose condition is met: a rule
+that needs the channel, the owner's of 2026-11-27 ([bastion.md](bastion.md) R-BAS-134).
+
+Context: R-AUTHZ-043. The distribution must hold for a forward, the check, the read shapes, lists, member selection, the populate check
+and the public catalogue, for every subject.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Subject.Bastion`, set by the one conversion from a recognized forward, by the check for its caller and by the catalogue's renderer; `Decide` applies the distribution beside the exposure, before `content:bypass`, on the addressed and the coordinate's repository; every action but `read` refused; the refusal the answer of a missing repository (chosen) | The exposure's place, proven: one check covers every question the decision point answers | A member on the subject again, which Q-AUTHZ-321 removed |
+| (b) A filter in the Bastion's recognition stage on the addressed repository | No change of the decision point | Misses a virtual repository's members, the shapes, the lists and the catalogue's reads |
+| (c) A second exposure rule per Bastion | Reuses the rules | A Bastion has no endpoint of its own, and rules per package are not what the owner asked |
+
+**Choice:** (a). The member is a ceiling and nothing else: it changes neither who the caller is nor whether it is internal
+(R-AUTHZ-030). **Applied in the spec:** R-AUTHZ-043, R-AUTHZ-030; [bastion.md](bastion.md) R-BAS-008, R-BAS-011;
+[endpoints.md](endpoints.md) R-EP-013; code: [authz.go](../../internal/authz/authz.go) (`Subject`),
+[subject.go](../../internal/api/edge/subject.go), [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go),
+[wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go).
 
 ## What this does not cover
 

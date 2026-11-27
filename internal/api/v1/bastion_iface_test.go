@@ -42,7 +42,9 @@ func (r *recorded) count() int { r.mu.Lock(); defer r.mu.Unlock(); return r.n }
 type fakeShapes struct {
 	shapes map[string]bastionmain.Shape
 	asked  []string
-	err    error
+	// subject is the subject the shapes were last asked for.
+	subject authz.Subject
+	err     error
 	// pkgs are the package shapes by repository and package (partial for any other), pkgAsked what the decision point was asked.
 	pkgs     map[string]map[string]iface.Read
 	pkgAsked []string
@@ -61,7 +63,8 @@ func (f *fakeShapes) PackageShapes(_ context.Context, _ *authz.Index, _ authz.Su
 	return out, f.pkgErr
 }
 
-func (f *fakeShapes) Shapes(_ context.Context, _ *authz.Index, _ authz.Subject, keys []qname.Repo) (map[qname.Repo]bastionmain.Shape, error) {
+func (f *fakeShapes) Shapes(_ context.Context, _ *authz.Index, sub authz.Subject, keys []qname.Repo) (map[qname.Repo]bastionmain.Shape, error) {
+	f.subject = sub
 	out := map[qname.Repo]bastionmain.Shape{}
 	for _, k := range keys {
 		f.asked = append(f.asked, k.String())
@@ -227,6 +230,17 @@ func TestR_BAS_011_ACheckRunsTheCallersCredentialThroughTheAuthenticationStage(t
 	}
 	if len(r.Header) != 1 {
 		t.Errorf("the stage got headers %v: the Bastion's own must not reach it", r.Header)
+	}
+}
+
+// TestR_AUTHZ_043_ACheckIsDecidedWithinTheBastionsDistribution: the shapes of a check are asked for the caller's subject carrying
+// the registration that asked, so the decision point bounds them by what it distributes; the caller is otherwise the one the
+// authentication stage returned.
+func TestR_AUTHZ_043_ACheckIsDecidedWithinTheBastionsDistribution(t *testing.T) {
+	cs := newCheckSetup(t, checkedCaller(nil))
+	decodeCheck(t, cs.post(iface.PathCheck, `{"credential":"qdr_sat_3kQ9","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`))
+	if got := cs.shapes.subject; got.Bastion != "0192f1c4-0000-7000-8000-0000000000b1" || got.ID != checkedPrincipalID {
+		t.Errorf("the check decided on %+v", got)
 	}
 }
 

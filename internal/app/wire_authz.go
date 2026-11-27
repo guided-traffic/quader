@@ -90,12 +90,6 @@ func (a *App) publicAvailable() bool {
 // some repository are `public` on the grant index and the endpoint admits requests without a credential (R-AUTH-037,
 // R-AUTHZ-003). False on a replica without the authz area.
 func (a *App) publicContent(ctx context.Context) bool {
-	return a.anonymousReads(ctx, false)
-}
-
-// anonymousReads is publicContent for the endpoint of the request, or, with defaultEndpoint, for the default endpoint a
-// Bastion connects to (R-BAS-019).
-func (a *App) anonymousReads(ctx context.Context, defaultEndpoint bool) bool {
 	e := part[authzArea](a.parts).engine
 	if e == nil {
 		return false
@@ -103,11 +97,20 @@ func (a *App) anonymousReads(ctx context.Context, defaultEndpoint bool) bool {
 	if idx := e.Index(); idx == nil || !idx.PublicContent() {
 		return false
 	}
-	if defaultEndpoint {
-		return true
-	}
 	ep := httpserver.EndpointFrom(ctx)
 	return ep != nil && ep.AnonymousAllowed()
+}
+
+// anonymousReadsThrough reports whether the Bastion registration (its principal ID) distributes some repository whose artifacts
+// are public on the grant index: the handshake's anonymousReads of that registration, before the default endpoint's own rule
+// (R-BAS-010, Q-BAS-522). False on a replica without the authz area.
+func (a *App) anonymousReadsThrough(bastionID string) bool {
+	e := part[authzArea](a.parts).engine
+	if e == nil {
+		return false
+	}
+	idx := e.Index()
+	return idx != nil && idx.PublicDistributed(bastionID)
 }
 
 // decider returns the decision point the request paths decide through, nil on a

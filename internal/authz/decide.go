@@ -404,16 +404,17 @@ func (e *Engine) levelAdmits(st *evalState, lv Level, r *repoInfo, repoLevel boo
 }
 
 // publicThroughout reports whether the repository and every member below it, recursively, have public artifacts (R-AUTHZ-009 rule 6).
-func (idx *Index) publicThroughout(r *repoInfo, depth int) bool {
+// Through a Bastion (bastion) a member it does not distribute takes no part (R-AUTHZ-043, Q-AUTHZ-341).
+func (idx *Index) publicThroughout(r *repoInfo, bastion string, depth int) bool {
 	if depth > 16 || r.artifacts != LevelPublic {
 		return false
 	}
 	for _, key := range r.members {
 		m := idx.repo(key)
-		if m == nil {
+		if m == nil || !m.distributedThrough(bastion) {
 			continue
 		}
-		if m.artifacts != LevelPublic || (m.Class == repository.Virtual && !idx.publicThroughout(m, depth+1)) {
+		if m.artifacts != LevelPublic || (m.Class == repository.Virtual && !idx.publicThroughout(m, bastion, depth+1)) {
 			return false
 		}
 	}
@@ -492,6 +493,10 @@ func (e *Engine) evaluateWith(idx *Index, sub Subject, st *evalState, c Coordina
 		// The wiki is read only (R-AUTHZ-034); anything else is a programming error and is refused.
 		return deny(DenyVisible, ReasonWiki, first)
 	}
+	if d, refused := e.distributionRefuses(idx, sub, c, actions, epoch); refused {
+		// A Bastion's distribution binds every subject that came through it, before any rule of the subject (R-AUTHZ-043).
+		return d
+	}
 	if isSystem(sub) {
 		// A system subject is decided by its fixed rule and nothing else: no exposure, level, scope or grant (system.go).
 		return e.decideSystem(idx, sub, c, actions, epoch)
@@ -509,7 +514,7 @@ func (e *Engine) evaluateWith(idx *Index, sub Subject, st *evalState, c Coordina
 		// lookup keeps the answer identical to a repository the caller may not see.
 		return e.refusal(sub, c, nil, ReasonNoGrant, first, epoch)
 	}
-	if sub.Anonymous && r.Class == repository.Virtual && !idx.publicThroughout(r, 0) {
+	if sub.Anonymous && r.Class == repository.Virtual && !idx.publicThroughout(r, sub.Bastion, 0) {
 		// R-AUTHZ-009 rule 6: the anonymous subject reads through a virtual repository only when it and every member, recursively,
 		// have public artifacts.
 		if r.artifacts != LevelPublic {

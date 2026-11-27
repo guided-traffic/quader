@@ -49,7 +49,7 @@ func replayProjectRemoved(ctx context.Context, tx meta.Tx, env journal.Env, o jo
 	if len(removed) == 0 {
 		return o.Result(journal.AlreadyInEffect, subject), nil
 	}
-	if err := env.Notify(tx, cluster.AreaBastionDistribution, 1, map[string]string{"bastion": e.BastionID}); err != nil {
+	if err := notifyDistributionReplay(tx, env, e.BastionID); err != nil {
 		return journal.Result{}, err
 	}
 	return o.Result(journal.Applied, subject), nil
@@ -77,8 +77,17 @@ func replayChoiceRemoved(ctx context.Context, tx meta.Tx, env journal.Env, o jou
 	if len(removed) == 0 {
 		return o.Result(journal.AlreadyInEffect, subject), nil
 	}
-	if err := env.Notify(tx, cluster.AreaBastionDistribution, 1, map[string]string{"bastion": e.BastionID}); err != nil {
+	if err := notifyDistributionReplay(tx, env, e.BastionID); err != nil {
 		return journal.Result{}, err
 	}
 	return o.Result(journal.Applied, subject), nil
+}
+
+// notifyDistributionReplay announces a replayed narrowing as the service announces one (Registrations.notifyDistribution): the change
+// area bastion_distribution and the authorization's, whose epoch the grant index follows (authorization.md R-AUTHZ-043).
+func notifyDistributionReplay(tx meta.Tx, env journal.Env, bastionID string) error {
+	if err := env.Notify(tx, cluster.AreaBastionDistribution, 1, map[string]string{"bastion": bastionID}); err != nil {
+		return err
+	}
+	return env.Notify(tx, cluster.AreaAuthz, 1, map[string]string{"type": "bastion_distribution", "id": bastionID})
 }

@@ -70,6 +70,10 @@ type Snapshot struct {
 	DeployTargets  []q.AuthzBuildDeployTargetsRow
 
 	// <<< M2 virtual
+
+	// Distribution are the rows of repository_bastion in the same snapshot: the Bastions each repository is distributed through
+	// (R-AUTHZ-043, bastion.md R-BAS-134).
+	Distribution []q.AuthzBuildDistributionRow
 }
 
 // repoInfo is a repository as the index knows it.
@@ -101,6 +105,9 @@ type repoInfo struct {
 	proj      *projectInfo
 	projectID string
 	project   string
+	// bastions are the principal IDs of the Bastion registrations the repository is distributed through (R-AUTHZ-043), sorted;
+	// nil for a repository distributed through none.
+	bastions []string
 }
 
 // projectInfo is a project as the index knows it: its members by principal ID, users and
@@ -188,6 +195,9 @@ type Index struct {
 	policies int
 	// publicContent: the artifacts of some repository are public (PublicContent).
 	publicContent bool
+	// publicThrough holds the principal IDs of the Bastion registrations that distribute some repository whose artifacts are public
+	// (PublicDistributed).
+	publicThrough map[string]bool
 }
 
 // PublicContent reports whether the artifacts of some repository are `public`: the fact behind `publicContent` of
@@ -286,6 +296,7 @@ func BuildIndex(s *Snapshot, reg *catalog.Registry, log *slog.Logger) *Index {
 	b.addRepositories(s.Repositories, s.VirtualMembers, s.DeployTargets)
 	b.x.ciActive = activeCIMappings(s.CIMappings)
 	b.x.exposure = buildExposure(s.Exposure, b.byID, b.reg, log)
+	b.addDistribution(s.Distribution)
 	b.addAccountGrants(s.AccountGrants)
 	for _, r := range s.Bindings {
 		if r.PrincipalProject != "" {

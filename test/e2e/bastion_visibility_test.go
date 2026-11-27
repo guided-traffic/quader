@@ -17,6 +17,7 @@ func TestBastion_R_BAS_008_ReadsByInternalAsTheMainInstallationDoes(t *testing.T
 	pubRepo, intRepo := "bas-npm-pub-"+env.run, "bas-npm-int-"+env.run
 	createRepoAt(t, env.adm, map[string]any{"key": pubRepo, "class": "local", "format": "npm"}, map[string]any{"artifacts": "public", "wiki": "public"})
 	createRepoAt(t, env.adm, map[string]any{"key": intRepo, "class": "local", "format": "npm"}, map[string]any{"artifacts": "internal", "wiki": "internal"})
+	env.distribute(t, env.sites(), pubRepo, intRepo)
 	t.Cleanup(func() {
 		deleteRepository(t, env.adm, pubRepo)
 		deleteRepository(t, env.adm, intRepo)

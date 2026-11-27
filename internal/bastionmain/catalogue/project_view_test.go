@@ -25,7 +25,7 @@ const (
 // projectAPI answers the reads of the project view's catalogue by path and query.
 type projectAPI struct{}
 
-func (projectAPI) Get(_ context.Context, base, target string) (catalogue.Answer, error) {
+func (projectAPI) Get(_ context.Context, _, base, target string) (catalogue.Answer, error) {
 	u, err := url.Parse(target)
 	if err != nil {
 		return catalogue.Answer{}, err

@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,421 spec requirements:
-813 cover catalog features, 608 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,422 spec requirements:
+813 cover catalog features, 609 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>608 requirements</summary>
+<summary>609 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3160,6 +3160,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-AUTHZ-029 | Audit of authorization decisions | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-031 | Revocation journal entries and the narrowing comparator | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-041 | The built-in project `upstream` in the permission model | MVP | [authorization.md](../spec/authorization.md) |
+| R-AUTHZ-043 | A Bastion's distribution is a ceiling of every decision through it | P1 | [authorization.md](../spec/authorization.md) |
 | R-BAK-004 | Table registry and export classes | MVP | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-007 | Garbage-collection hold | MVP | [backup-and-restore.md](../spec/backup-and-restore.md) |
 | R-BAK-022 | State a restore rebuilds or invalidates | MVP | [backup-and-restore.md](../spec/backup-and-restore.md) |

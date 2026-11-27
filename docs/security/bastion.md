@@ -515,10 +515,10 @@ a refused token and a grace period.
 ## What a Bastion may distribute
 
 The owner's words of 2026-11-27 ([spec/bastion.md](../spec/bastion.md#what-a-bastion-may-distribute) R-BAS-134, superseding Q-BAS-6):
-`public` is the main installation's level, on its network; what leaves it through a Bastion is granted twice. **Stored and built** (W-41's
-B1): the lists and the choices, who changes them, and what a restore keeps. **Not built yet** (W-41's B2): the ceiling that holds every
-request through a Bastion to them; until it lands a Bastion serves what it served before, decided per request on the caller's credential
-alone.
+`public` is the main installation's level, on its network; what leaves it through a Bastion is granted twice. Built: the lists and the
+choices, who changes them, and what a restore keeps (W-41's B1); the ceiling that holds every request through a Bastion to them (W-41's
+B2, [spec/authorization.md](../spec/authorization.md) R-AUTHZ-043). A Bastion serves nothing until an administrator allows a project and
+its Owner chooses the repository.
 
 | Who | Changes what | With |
 |---|---|---|
@@ -526,9 +526,19 @@ alone.
 | The project's Owner, or `repositories:write-config` | the Bastions among those that allow the project that distribute a repository; never a Maintainer | the repository document's member `bastions` |
 | Nobody around the API | a choice whose project the Bastion does not allow: the database refuses it (`AI011`), deletes the choices with a project taken off a list and with a repository's move | migration `00159` |
 
-- **What an administrator can no longer do by accident** (once the ceiling holds): make a repository Public on the intranet and have it on
-  the internet; allow a project and send every repository of it out (the Owner chooses per repository); allow a project again and bring
-  back its old choices (the removal deleted them).
+- **What narrows.** The decision point holds every subject that came through a Bastion to what it distributes: a forward, the check and
+  the public catalogue's renderer carry the registration on the subject (`Subject.Bastion`), set by the one conversion from the
+  recognition, never from request data. An administrator's token, `content:bypass` and a leaked internal or CI token read through a
+  Bastion only the repositories distributed there; the leaked internal token of
+  [H-1052](visibility.md#h-1052--a-technical-token-or-a-ci-token-reads-every-internal-repository-not-only-what-it-was-made-for) no longer reads every `internal` repository
+  through it. A repository the Bastion does not distribute answers as one that does not exist (`404`, `401` without a credential), so the
+  door tells nothing about it. A virtual repository serves through a Bastion only its members distributed there, so a member added later
+  does not leak. A Bastion that distributes nothing public answers anonymous callers itself (its handshake's `anonymousReads` is false).
+  A narrowing reaches every main replica within the authorization's epoch bound and every Bastion within the feed's (a `grants` entry
+  drops its kept permission answers).
+- **What an administrator can no longer do by accident**: make a repository Public on the intranet and have it on the internet; allow a
+  project and send every repository of it out (the Owner chooses per repository); add a member to a distributed virtual repository and
+  send it out with it; allow a project again and bring back its old choices (the removal deleted them).
 - **A restore never widens it.** Taking a project off a list and taking a Bastion off a repository are journaled, and the replay deletes
   the restored rows again (Q-BAS-521). An allow and a choice are not journaled: a restore to a point before them takes them back, which
   narrows.
