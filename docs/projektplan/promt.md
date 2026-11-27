@@ -1545,6 +1545,21 @@ records the recorder that tells such a stall apart).
   `bastionreg`. Looked at: the Bastion card (W39-P2) and the Bastion's OCI set-up (Install alone). Found while looking: the
   set-up's picture at the Bastion still shows Quader's wall (a shared view batch M did not search); W40-P5 takes it. Still to
   land from the stack: W40-P2, P4b, W39-P5, W41-A, B1, C0, batch K.
+  **Landed on 2026-11-27, 15:56: W40-P2 and P4b, W39-P5, W41-A, B1 and C0, batch K, and the interface's raise to 13.** W40-P2:
+  the Bastion reads the scoped indexes and serves and lets crawlers find the project view (R-BAS-132); P4b: every row of the flat
+  list and of a package's versions offers its **Pull ▾** / **Install ▾**, at the main installation and at a Bastion, resolved when
+  the panel opens (R-UI-269), the owner's missing pull button. W39-P5: the settings pages' explanations behind ⓘ, and ⓘ nowhere
+  else (17 status icons became a warning or none). W41-A: Disable soft or hard told over the connection, the replicas confirm,
+  six states, the token untouched (R-BAS-133, migration 00158); its surface had been folded into 12 while 12 was unreleased, and
+  12 was released in v0.166.0 before it landed, so a commit raises the interface to 13 and lands with it (gated alone: the Bastion
+  and API units, `bastion`, `bastioniface`). W41-B1: the allow list and the opt-in stored, nothing decided on them yet (R-BAS-134,
+  migration 00159). W41-C0: a control fixed by the Helm configuration stays, unavailable, with its reason as its tooltip
+  (R-UI-270). Batch K closes item (4) of the 07:42 entry: the dash in every malware cell, the stacked-fits check in the window a
+  person has, the exact sort button, the usage walks without the second reload, a version column that no longer claims the
+  signer line's width, the Bastion limits walk's report written again. Gates on the stack: the landing gates, charts,
+  `ui-states`, the whole render set (754 passed, 1 failed: `admin-permissions`, fixed by batch B-1127j higher in the stack),
+  `bastion`, `bastionreg`, `backup`, `postgres`. Still on the stack: W41-C1 and C2, W40-P7 and P5, batch B-1127j; W41-B2 held
+  back until the owner has granted (C2 and D1 land first, so his Bastion never serves nothing).
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
@@ -1571,6 +1586,12 @@ records the recorder that tells such a stall apart).
   shows fifteen lines, each justified, against W39-P2's sixteen. Decided at landing: B2 lands together with C2 and D1, so the
   owner can grant on the screen the moment his Bastion starts serving only what is granted (D25: nothing until a project is
   allowed and its repositories chosen, `upstream/clamav` included).
+
+- **Read on 2026-11-27, 15:20: the owner's installation on v0.166.0** (the release of 13:48's landing: W39-P2's card, W40-P3's
+  set-up without a login, W40-P1's catalogue with interface version 12, W40-P4a). Main installation and Bastion both on 0.166.0,
+  every pod ready, no error and no interface mismatch in the last hour, the Bastion's web interface answers 200. Since 12 is
+  released, the stack's W41-A (which had folded the disable into the then unreleased 12) is raised to 13 in a commit of its own
+  on the stack (`f9830b35d`); W41-E and W41-D1 were told to fold their parts into 13.
 
 - **Read on 2026-11-27, 13:17: the owner's installation on v0.165.0** (releases of the day: v0.163.2 at 09:28 with B-1127f,
   the start-up crash; v0.164.0 at 11:10 with the Bastion card's web interface section and the Bastion's tower; v0.165.0 at 12:19
