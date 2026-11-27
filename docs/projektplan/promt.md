@@ -1575,6 +1575,19 @@ records the recorder that tells such a stall apart).
   stack: the landing gates, charts, `ui-states`, the whole render set (766 passed, 0 failed), `bastion`, `bastionreg`,
   `upstream`, `authz`. Still on the stack: batch B-1127k (five commits, gates running). Held back until the owner has granted:
   W41-B2, E, D2 and D1's seed.
+  **Landed on 2026-11-27, 19:04: batch B-1127k.** The audit log keeps a package's name whole in its Target column at 1,024 px;
+  German screens say "Signierer" everywhere (7 units said "Unterzeichner"); the server stores no English name it made up for an
+  upload's token, the command line's token and a declared group, and the screen names them in the reader's language (Q-UI-1653,
+  migration 00160, `created_via` gains `upload`); a trust anchor of the Helm configuration, the last project Owner and the boxes
+  whose reason the box can carry stay in place, greyed out, with the reason as tooltip (R-UI-270's last places). Gates on the
+  stack: the landing gates, charts, `ui-states`, the whole render set (766 passed, 0 failed), `identity`, `ansiblelocal`,
+  `nuget`. Its open points went to batch B-1127l (built by 18:40, on the stack, its gates next): the guide's headings in the
+  reader's language (Q-UI-86 amended: the heading is frame, the text under it stays English; a table per section, since 25 of
+  76 headings name a format's own acts and form no closed set), the npm and command-line logins' tokens named by the screen
+  (migration 00161; neither login is built yet), the scheduler's first tick holding mutating tasks until the read-only mode is
+  known, the first page's code 70 kB smaller (865.8 to 795.9 kB, under the 800 kB budget; its next step, the API services
+  provided where used, about 80 kB, is open). Still open from K: the Bastion card's render data carry the old declared-token
+  phrase (left for the held W41 chain's files).
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
@@ -1613,6 +1626,13 @@ records the recorder that tells such a stall apart).
   configuration and is kept (`fe2209c10`, the area passed locally). And `UI layout checks (screens, part 5 of 5)`,
   `admin-permissions` ("frontend" broken inside the word at 1,440 px), which batch B-1127j fixes, landed at 17:39. The older
   red runs are not read one by one; the run of the push of 17:39 and its fix shows what is left.
+  **18:30:** the run of the fix (46036051472) failed only in `e2e (access-long)`: the NuGet journey looked for the clients
+  `nuget.exe` and `Visual Studio 2022`, which W40-P7 names by the screen's table as `NuGet CLI (nuget.exe)` and `Visual Studio`
+  (`450ccb429`, not run locally: the journey needs the kind stack). The run of 17:39's push had failed once more in `UI layout
+  checks (part 1)`: `admin-bastions-projects` at 390 px, the section **Projects** focused but not open after its click; the
+  same screen passed in the next run and twice locally, so a flaky walk, recorded here. Neither run released: semantic-release
+  publishes only from a run of main's tip, and every later push, a `[skip ci]` one too, makes the run "behind". v0.168.0 came
+  from the run of `450ccb429` at 18:46.
 
 - **Read on 2026-11-27, 17:25: the owner's installation on v0.167.0** (the release of 15:56's landing: W40-P2 and P4b, W39-P5,
   W41-A, B1 and C0, batch K, interface 13). Every deployment on 0.167.0 and ready, main installation and Bastion both on
