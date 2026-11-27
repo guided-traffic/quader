@@ -49,7 +49,8 @@ type downloadLimitsArea struct {
 func (a *App) wireDownloadLimits(ctx context.Context, in infra) (downloadLimitsArea, error) {
 	log := a.log.With("component", "limits")
 	st := store.New(store.Options{Runner: in.db, Changes: in.changes, Audit: in.rec, Log: log})
-	idx := &limitsIndex{store: st, log: log, epoch: newLimitsIndexEpoch(a.tele.metrics.Registry())}
+	metrics := limits.NewMetrics(a.tele.metrics.Registry())
+	idx := newLimitsIndex(st.Snapshot, log, a.tele.metrics.Registry(), metrics)
 	idx.register(in.caches)
 	if err := a.startComponent(ctx, idx); err != nil {
 		return downloadLimitsArea{}, err
@@ -63,7 +64,6 @@ func (a *App) wireDownloadLimits(ctx context.Context, in infra) (downloadLimitsA
 		return downloadLimitsArea{}, err
 	}
 	share := &atomic.Pointer[func() int]{}
-	metrics := limits.NewMetrics(a.tele.metrics.Registry())
 	o := limits.Options{
 		Index: idx.get, Replica: a.id.Instance, FlushInterval: cfg.FlushInterval, LeaseTTL: cfg.Parallel.Lease,
 		ParallelWait: cfg.Parallel.Wait, MinPacing: cfg.Pacing.MinBytesPerSecond, Usage: buf, Blocks: st, Metrics: metrics,
@@ -87,7 +87,6 @@ func (a *App) wireDownloadLimits(ctx context.Context, in infra) (downloadLimitsA
 		o.Store, o.Available, o.Degraded = counters, counters.Available, counters.CountDegraded
 	}
 	eng := limits.NewEngine(o)
-	idx.onInstall = func(x *limits.Index) { metrics.SetMode(x.Settings().Mode) }
 	if err := a.startComponent(ctx, engineComponent{eng}); err != nil {
 		return downloadLimitsArea{}, err
 	}
@@ -220,9 +219,11 @@ func (a *App) limitsFailedCredential() func(*http.Request, error) {
 // of the repository configuration (a renamed or moved repository is a place of another name), and at least once a minute.
 // A replica that has not loaded it yet decides with the built-in defaults of an empty index: Enforce, every subject unlimited.
 type limitsIndex struct {
-	store     *store.Store
-	log       *slog.Logger
-	cur       atomic.Pointer[limits.Index]
+	snapshot func(context.Context) (limits.Snapshot, error)
+	log      *slog.Logger
+	cur      atomic.Pointer[limits.Index]
+	// onInstall runs on every index the replica installs, the first load in Start included. It is set at construction, never
+	// after: the reload loop reads it from the moment Start returns.
 	onInstall func(*limits.Index)
 	// epoch is quader_limits_index_epoch: the epoch of the area limits the index in use holds every change up to (Q-LIM-111)
 	epoch prometheus.Gauge
@@ -233,6 +234,15 @@ type limitsIndex struct {
 }
 
 const limitsIndexReload = time.Minute
+
+// newLimitsIndex builds the index over snapshot. Every installed index sets quader_limits_mode on metrics (R-LIM-030), the
+// first one too, so the gauge shows the mode from the start instead of from the first reload.
+func newLimitsIndex(snapshot func(context.Context) (limits.Snapshot, error), log *slog.Logger, reg prometheus.Registerer, metrics *limits.Metrics) *limitsIndex {
+	return &limitsIndex{
+		snapshot: snapshot, log: log, epoch: newLimitsIndexEpoch(reg),
+		onInstall: func(x *limits.Index) { metrics.SetMode(x.Settings().Mode) },
+	}
+}
 
 func (x *limitsIndex) get() *limits.Index { return x.cur.Load() }
 
@@ -286,7 +296,7 @@ func (x *limitsIndex) Start(ctx context.Context) error {
 func (x *limitsIndex) load(ctx context.Context) {
 	lctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	snap, err := x.store.Snapshot(lctx)
+	snap, err := x.snapshot(lctx)
 	if err != nil {
 		if ctx.Err() == nil {
 			x.log.Warn("the index of the download limits was not loaded; the last one stays", "error", err)
