@@ -200,7 +200,7 @@ func (s *Service) resolveLevels(ctx context.Context, qs *q.Queries, v *validatio
 	if o.out.Artifacts == visibility.Public && o.baseline.Artifacts != visibility.Public && fillsOnRead(d) {
 		v.warnings = append(v.warnings, Warning{
 			Code: WarningPublicPopulatesRemote, Pointer: "/visibility/artifacts",
-			Detail: "A request without a credential fills the cache of this repository: its cacheFillAction is read. Set it to deploy to let only a deploying caller fill it.",
+			Detail: "A request without a credential at this installation fills the cache of this repository: its cacheFillAction is read. Through a Bastion it never does. Set it to deploy to let only a deploying caller fill it.",
 		})
 	}
 	return o.out, nil

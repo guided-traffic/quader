@@ -227,7 +227,7 @@ describe('The visibility block of a repository (R-UI-055)', () => {
     await r.choose(LEVEL, 'Public');
     await r.save();
     const shown = text(r.root.querySelector('quader-repository-visibility')!);
-    expect(shown).toContain('A request without a credential fills the cache of this repository');
+    expect(shown).toContain('A request without a credential at this installation fills the cache of this repository');
     expect(shown).not.toContain('Anyone can fill the cache of this remote repository from its upstream.');
   });
 

@@ -28,7 +28,7 @@ export function repositoryWarningText(w: RepositoryWarning, members: readonly st
     case 'mirror_unbounded':
       return $localize`:@@repo.warning.mirror-unbounded:The mirror has neither a scope with a fixed prefix nor a storage limit: it stores everything the upstream offers and the rules deliver.`;
     case 'public_populates_remote':
-      return $localize`:@@repo.warning.public-fills:A request without a credential fills the cache of this repository, because filling it needs only the right to read. To let only a caller who may deploy fill it, set its cache fill action to deploy through the API.`;
+      return $localize`:@@repo.warning.public-fills:A request without a credential at this installation fills the cache of this repository, because filling it needs only the right to read; one through a Bastion never does. To let only a caller who may deploy fill it, set its cache fill action to deploy through the API.`;
     case 'public_not_allowed_lowered':
       return clientsLoweredWarning();
   }

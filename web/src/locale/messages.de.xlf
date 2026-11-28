@@ -32413,8 +32413,8 @@
         <note category="location">src/app/features/repositories/repository-warnings.ts:31</note>
       </notes>
       <segment>
-        <source>A request without a credential fills the cache of this repository, because filling it needs only the right to read. To let only a caller who may deploy fill it, set its cache fill action to deploy through the API.</source>
-        <target>Eine Anfrage ohne Zugangsdaten füllt den Cache dieses Repositorys, weil dafür das Recht zum Lesen genügt. Damit nur ein Aufrufer, der deployen darf, ihn füllt, setzen Sie seine Aktion zum Füllen des Caches über die API auf deploy.</target>
+        <source>A request without a credential at this installation fills the cache of this repository, because filling it needs only the right to read; one through a Bastion never does. To let only a caller who may deploy fill it, set its cache fill action to deploy through the API.</source>
+        <target>Eine Anfrage ohne Zugangsdaten an diese Installation füllt den Cache dieses Repositorys, weil dafür das Recht zum Lesen genügt; eine über einen Bastion tut das nie. Damit nur ein Aufrufer, der deployen darf, ihn füllt, setzen Sie seine Aktion zum Füllen des Caches über die API auf deploy.</target>
       </segment>
     </unit>
     <unit id="upstream.auth.none">

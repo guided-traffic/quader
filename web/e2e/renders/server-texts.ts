@@ -62,7 +62,7 @@ export async function* remoteSettingsFailures(page: Page): AsyncGenerator<string
       {
         code: 'public_populates_remote',
         pointer: '/visibility/artifacts',
-        detail: 'A request without a credential fills the cache of this repository: its cacheFillAction is read. Set it to deploy to let only a deploying caller fill it.',
+        detail: 'A request without a credential at this installation fills the cache of this repository: its cacheFillAction is read. Through a Bastion it never does. Set it to deploy to let only a deploying caller fill it.',
       },
     ];
     await route.fulfill({ response: res, body: JSON.stringify({ ...body, warnings }) });
