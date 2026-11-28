@@ -1696,6 +1696,8 @@ records the recorder that tells such a stall apart).
   the step now passes the job's Docker Hub account to syft by name (`SYFT_REGISTRY_AUTH_*`, `e76266d96`, `ci:`; the pin check of
   `tools/sbom-generator/check-pins.sh` takes the `-e` options; `actionlint` green; the next release shows it). The owner's installation
   on v0.169.2 at 05:04: 13 pods ready without a restart, migration 00162 applied in 33 ms, no error in the API's last ten minutes.
+  The CI run of `e76266d96` (46105020416) failed once in the layout checks' part 5 on Docker Hub's `502 Bad Gateway` for a layer of the
+  `postgres` image (the runner, not the change); its re-run passed at 05:52, so the run is green in every job.
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
