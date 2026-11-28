@@ -419,12 +419,23 @@ func (r *rig) setStub(m npmstub.Mode) {
 	}
 }
 
-// pass starts a pass now: the next pass is made due and the dispatch task runs on the replica.
+// pass starts a pass now: the next pass is made due and the dispatch task runs on the replica. It returns the database's time
+// before the dispatch, the time waitPass compares the job's created_at with.
 func (r *rig) pass(rep *testenv.Replica) time.Time {
 	r.t.Helper()
-	at := time.Now()
+	at := r.dbNow()
 	r.makeDue()
 	r.dispatch(rep)
+	return at
+}
+
+// dbNow is the database's clock now. A job's created_at is the database's now() (jobs.sql), so the time a test waits for a job
+// after is read on that clock: the host's clock and the container's differ by a few milliseconds, and a job created that close
+// after the host's time was missed (2026-11-26).
+func (r *rig) dbNow() time.Time {
+	r.t.Helper()
+	var at time.Time
+	r.st.Query(`SELECT clock_timestamp()`, func(rows pgx.Rows) error { return rows.Scan(&at) })
 	return at
 }
 

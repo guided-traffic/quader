@@ -264,10 +264,9 @@ func TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially(t *testing.T) {
 		if len(ts) < 6 {
 			t.Fatalf("%d tarball requests", len(ts))
 		}
-		// Requests 3, 4 and 5 are throttled, one at a time (the window is 1); the pause is the gap to the next request.
-		within(t, "first pause", ts[3].Sub(ts[2]), 450*time.Millisecond, 1400*time.Millisecond)
-		within(t, "second pause", ts[4].Sub(ts[3]), 950*time.Millisecond, 2400*time.Millisecond)
-		within(t, "third pause", ts[5].Sub(ts[4]), 1950*time.Millisecond, 4400*time.Millisecond)
+		// Requests 3, 4 and 5 are throttled, one at a time (the window is 1). The pause is the engine's wait, read from the
+		// injected clock; the gap between two requests at the stub is that wait plus the time a request takes to reach the stub,
+		// which a loaded host lengthens (1.67 s for a wait of at most 1 s on 2026-11-26), so the gap bounds nothing from above.
 		var waits []sleep
 		for _, s := range clock.sleeps() {
 			if s.d >= 400*time.Millisecond {
@@ -278,14 +277,21 @@ func TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially(t *testing.T) {
 			t.Fatalf("the engine slept %v, want three waits", waits)
 		}
 		// The engine decides a wait when the answer arrives and sleeps what is left of it, so a sleep is a little shorter than
-		// the wait (1.9986 s of a wait of at least 2 s on 2026-11-23). Each side is held where it is exact: the wait ends no
-		// earlier than its floor after the refused request reached the stub, and no sleep is longer than the ceiling.
+		// the wait (1.9986 s of a wait of at least 2 s on 2026-11-23). Each side is held where it is exact, whatever the host's
+		// load: the wait ends no earlier than its floor after the refused request reached the stub, no sleep is longer than the
+		// ceiling, and the next request reaches the stub only after the wait has ended (the pass sends nothing while it waits).
+		// Every time is the test process's own clock: the stub and the engine run in it.
 		for i, rng := range [][2]time.Duration{{500 * time.Millisecond, time.Second}, {time.Second, 2 * time.Second}, {2 * time.Second, 4 * time.Second}} {
 			if got := waits[i].end.Sub(ts[2+i]); got < rng[0] {
 				t.Errorf("wait %d ends %s after its refused request, want at least %s", i+1, got, rng[0])
 			}
 			if waits[i].d > rng[1] {
 				t.Errorf("wait %d sleeps %s, want at most %s", i+1, waits[i].d, rng[1])
+			}
+			t.Logf("wait %d: sleeps %s, ends %s after its refused request; the next request reaches the stub %s after its end",
+				i+1, waits[i].d.Round(time.Millisecond), waits[i].end.Sub(ts[2+i]).Round(time.Millisecond), ts[3+i].Sub(waits[i].end).Round(time.Millisecond))
+			if ts[3+i].Before(waits[i].end) {
+				t.Errorf("request %d reached the stub %s before wait %d ended", 4+i, waits[i].end.Sub(ts[3+i]), i+1)
 			}
 		}
 	})

@@ -189,7 +189,7 @@ func TestR_REPO_051_NpmPrivateRegistryTakesNamesAndTheHeldPackages(t *testing.T)
 		t.Fatalf("GET the tarball of @acme/held: %d %s", a.Status, a.Body)
 	}
 	r.publish("@acme/held", "1.1.0")
-	switched := time.Now()
+	switched := r.dbNow()
 	r.setDocument(run, remoteDocAt(r.upstream, "mirror", []string{"@acme/a", "@acme/*"}, nil, nil))
 	r.waitMirror(run, "the mode mirror", func(s repository.RemoteSettings) bool { return s.Mirrored() })
 
@@ -330,7 +330,7 @@ func TestR_REPO_051_NpmAHeldPackageThatTheFeedMissedIsRefreshedByTheNextFullPass
 		t.Fatalf("GET the tarball of @acme/held: %d %s", a.Status, a.Body)
 	}
 	r.publish("@acme/held", "1.1.0")
-	switched := time.Now()
+	switched := r.dbNow()
 	r.setDocument(run, remoteDocAt(r.upstream, "mirror", []string{"@acme/*"}, nil, nil))
 	r.waitMirror(run, "the mode mirror", func(s repository.RemoteSettings) bool { return s.Mirrored() })
 
