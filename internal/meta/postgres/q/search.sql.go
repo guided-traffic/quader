@@ -81,7 +81,7 @@ SELECT p.id, p.repo_id, (p.name COLLATE "C")::text AS name, p.display_name, r.fo
    AND lower(p.name) COLLATE "C" >= $2::text
    AND lower(p.name) COLLATE "C" < $3::text
    AND EXISTS (SELECT 1 FROM package_version_listing pv
-                WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT (pv.id = ANY($4::bigint[])))
+                WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT (pv.id = ANY($4::bigint[])) OFFSET 0)
  ORDER BY lower(p.name) COLLATE "C", r.format, p.repo_id
  LIMIT $5::int
 `
@@ -106,7 +106,9 @@ type SearchPackagesByPrefixRow struct {
 // or in part, in the order of packages_name_lower. low is the text and high the least string above every string that starts with
 // it: in byte order a name starts with the text exactly when it lies in [low, high), and the bounds are values, not a pattern, so
 // the B-tree serves a generic plan too and no character of the text is an operator. A package needs a live version its format
-// serves (withheld are the versions the formats do not serve, as on GET /api/v1/packages).
+// serves (withheld are the versions the formats do not serve, as on GET /api/v1/packages), checked per candidate: OFFSET 0 keeps the
+// EXISTS a check per row, which the planner otherwise flattened into a join that read every version of the installation and every
+// package by its id before the first candidate (about 100 ms with 50,000 packages, whatever the text).
 func (q *Queries) SearchPackagesByPrefix(ctx context.Context, arg SearchPackagesByPrefixParams) ([]SearchPackagesByPrefixRow, error) {
 	rows, err := q.db.Query(ctx, searchPackagesByPrefix,
 		arg.Repos,
@@ -150,7 +152,7 @@ SELECT p.id, p.repo_id, (p.name COLLATE "C")::text AS name, p.display_name, r.fo
                 @@ to_tsquery('simple'::regconfig, $2::text)))
    AND NOT (p.id = ANY($3::bigint[]))
    AND EXISTS (SELECT 1 FROM package_version_listing pv
-                WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT (pv.id = ANY($4::bigint[])))
+                WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT (pv.id = ANY($4::bigint[])) OFFSET 0)
  ORDER BY lower(p.name) COLLATE "C", r.format, p.repo_id
  LIMIT $5::int
 `
@@ -176,7 +178,8 @@ type SearchPackagesByWordsRow struct {
 // repositories, without the packages of statement A (skip). query is a to_tsquery text built from runs of a to z and 0 to 9 of
 // the text only ('w1':* & 'w2':*), so no operator of the tsquery syntax reaches it from a request. It runs after
 // SearchCustomPlans: planned for its text, it reads packages_name_words for a rare word and may walk packages_name_lower for a
-// word so common that the first max_rows names in order hold enough matches.
+// word so common that the first max_rows names in order hold enough matches. Its check of a served version is statement A's, per
+// candidate.
 func (q *Queries) SearchPackagesByWords(ctx context.Context, arg SearchPackagesByWordsParams) ([]SearchPackagesByWordsRow, error) {
 	rows, err := q.db.Query(ctx, searchPackagesByWords,
 		arg.Repos,

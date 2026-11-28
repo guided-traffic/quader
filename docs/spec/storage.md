@@ -254,6 +254,7 @@ CREATE TABLE packages (
     UNIQUE (repo_id, name)                     -- also serves the rev_seq reads (R-ARCH-012, R-ARCH-015)
 );
 CREATE INDEX packages_name ON packages (name); -- from M4b, built CONCURRENTLY in a step of its own: lookup by name across repositories (vulnerability-scanning.md R-VULN-011, Q-VULN-24)
+CREATE INDEX packages_name_bytes ON packages ((name COLLATE "C")); -- 00162, CONCURRENTLY: the package list's page in the bytewise order of the name (api-and-ui.md R-API-029, H-1683)
 
 CREATE TABLE package_versions (
     id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

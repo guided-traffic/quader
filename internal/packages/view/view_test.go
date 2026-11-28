@@ -522,3 +522,35 @@ func TestR_API_029_TheListByContentGroupsAndCutsAtAVersion(t *testing.T) {
 		t.Errorf("the position of a ranked version: %v", got)
 	}
 }
+
+// TestR_API_029_TheListReadsItsPageFirstOnlyInTheOrderOfTheName: the list reads the names of its page before their versions (the walk
+// of PackageViewList, H-1683) in the order of the name, either direction, with the filters of the format, the repository and the
+// project; a sort by time or relevance and every filter that a package's versions decide, or a name prefix, aggregate every version.
+func TestR_API_029_TheListReadsItsPageFirstOnlyInTheOrderOfTheName(t *testing.T) {
+	now := time.Now()
+	plain := Filter{Formats: []string{"npm"}, Repositories: []qname.Repo{{Project: "p", Key: "r"}}, HasRepositories: true, Project: "p"}
+	for _, c := range []struct {
+		name string
+		f    Filter
+		o    Order
+		want bool
+	}{
+		{"the name", plain, Order{Sort: "name"}, true},
+		{"the name, highest first", plain, Order{Sort: "name", Desc: true}, true},
+		{"the creation", plain, Order{Sort: "createdAt"}, false},
+		{"the update", plain, Order{Sort: "updatedAt", Desc: true}, false},
+		{"the relevance", plain, Order{Sort: "relevance"}, false},
+		{"a text", Filter{Q: "ui"}, Order{Sort: "name"}, false},
+		{"a keyword", Filter{Keyword: "ui"}, Order{Sort: "name"}, false},
+		{"a name prefix", Filter{NamePrefix: "@acme/"}, Order{Sort: "name"}, false},
+		{"deprecated", Filter{Deprecated: true}, Order{Sort: "name"}, false},
+		{"signed", Filter{Signed: true}, Order{Sort: "name"}, false},
+		{"dependsOn", Filter{DependsOn: "lib"}, Order{Sort: "name"}, false},
+		{"createdFrom", Filter{CreatedFrom: &now}, Order{Sort: "name"}, false},
+		{"createdTo", Filter{CreatedTo: &now}, Order{Sort: "name"}, false},
+	} {
+		if got := walks(c.f, c.o); got != c.want {
+			t.Errorf("R-API-029 %s: walks %v, want %v", c.name, got, c.want)
+		}
+	}
+}

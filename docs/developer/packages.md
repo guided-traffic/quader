@@ -59,11 +59,19 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
    highest first) and the limit; `dl` sums the downloads of the
    page's packages alone (the lead file or any file of a visible version by a join with `item_download_stats`; the document of an OCI version from the
    package's downloaded files, each counted once per visible version or tag that holds its bytes). Names are compared with collation `C`.
+   In the order of the name without a filter that needs every package's versions (`walks`: no `q`, `keyword`, `deprecated`, `signed`,
+   `dependsOn`, `createdFrom`, `createdTo` or name prefix; H-1683) the statement first walks `packages_name_bytes` (00162) from the cursor in
+   the direction of the sort (`walk`, one branch per direction): the names of at most `limit + 1` packages of the repositories the scope, the
+   filters and the formats leave (`walk_repos`), each with a visible version by the rule of `vis`, checked per package row (an `EXISTS` with
+   `OFFSET 0`). `vis` then holds the versions of those names alone (`= ANY(ARRAY(SELECT … FROM walk))`, an index condition; written as `IN`
+   the planner walked the whole index and filtered it), a superset of the page that `page` cuts to it, so the counts and times are those of
+   the page's packages. The service plans the statement for its values while the walk is asked or one package is named (`exact_name`).
+   Every other sort and filter aggregates every visible version of the scope.
 5. For the packages of the page it reads the candidates of their latest version (`PackageViewLatest`, Q-API-429): per package row its highest visible release
    by the stored sort key, its highest pre-release when it has no visible release, and a remote OCI repository's highest tag that is no pre-release and its
    highest pre-release tag (the generated column `tag_prerelease`, migration 00126, Q-API-435), each the first visible entry of an index
    (`package_versions_latest_release`, `package_versions_latest_prerelease`, `remote_cache_entries_tag_latest_release`,
-   `remote_cache_entries_tag_latest_prerelease`), and every visible row without a stored
+   `remote_cache_entries_tag_latest_prerelease`; the package rows themselves by their names in `packages_repo_id_name_key`), and every visible row without a stored
    key (Q-API-430; none once the fill has run), and the newest visible version the format does not rank, by its time, of the version rows and of a
    remote's tags (`package_versions_unranked`, `remote_cache_entries_tag_unranked`, Q-API-431). `latestOf` takes the latest among them: a release before a
    pre-release before an unranked version, the adapter's order within the first two, the time within the third; it names the
@@ -103,8 +111,8 @@ version per collection):
 The documentation with 200,000 entries of 2,000 collections among 50,000: the candidates 4.5 ms (a word of 200 entries, bitmap scan of
 `ansible_doc_entries_search`) and 31 ms (a word of every entry); the list 22 ms; the suggestions 31 ms (`do`), 41 ms (`doc`), 44 ms (`docker`),
 350 to 370 ms for a word of every entry (H-2157). The first build read the newest version of every collection and every entry of those with
-documentation: 770 ms. The package suggestions' 75 ms with 50,000 collections are the statements of R-API-064 whatever the text and were not
-changed here.
+documentation: 770 ms. The package suggestions' 75 ms with 50,000 collections and the list without a text were not changed here; their
+causes were read and removed on 2026-11-28 ([below](#the-package-list-and-the-suggestions-with-50000-packages-h-1683-measured)).
 
 Every transaction of the service runs with the server's JIT compilation off (`Service.read`, Q-API-428).
 
@@ -357,6 +365,53 @@ package list's `PackageViewVersionNames` (61 ms and every version to the service
 version rows of a package (the bound `TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit` holds; 0.1 ms for a remote image's latest tag).
 The version list in the order of the versions reads 51 rows a page (`PackageViewVersionKeyDesc`) instead of every name and a sort in the service.
 What is left is H-1683: the count over every visible version of the scope, and a package several repositories hold in the order of publication.
+The count is read for the page's packages alone in the order of the name since 2026-11-28 (next section).
+
+## The package list and the suggestions with 50,000 packages (H-1683), measured
+
+Measured on 2026-11-28, a measurement and not a test (its harness is not in the repository): the integration stack, one replica of the role
+web, one local npm repository with 1,000, 10,000 and 50,000 packages of one version each written by SQL (`<word>-w<n % 300>-plugin-<n>`, seven
+first words; no blobs, no format rows), `ANALYZE` after each step. The median of nine requests after a first, as an administrator; a reader
+with a policy on the repository answered within a few milliseconds of it. The statements' times are the medians of the replica's own runs (a
+query tracer on its pool). The machine runs other builders beside it.
+
+| Request (`GET`) | 1,000 before, after | 10,000 before, after | 50,000 before, after |
+|---|---|---|---|
+| `/api/v1/packages?limit=50` (the list without a text, sorted by name) | 28 ms, 31 ms | 66 ms, 31 ms | 153 ms, 28 ms |
+| the same, its second page | 24 ms, 26 ms | 67 ms, 26 ms | 162 ms, 33 ms |
+| `…&sort=-name` | 24 ms, 26 ms | 62 ms, 31 ms | 160 ms, 34 ms |
+| `…&sort=-updatedAt` (not changed: the order is the aggregate) | 24 ms, 25 ms | 60 ms, 42 ms | 165 ms, 124 ms |
+| `/api/v1/search/suggestions?q=react&kind=package&limit=5` (7,143 names start with it) | 11 ms, 11 ms | 19 ms, 13 ms | 132 ms, 12 ms |
+| the same with `q=plugin` (a word of every name; statement B) | 17 ms, 12 ms | 35 ms, 12 ms | 122 ms, 14 ms |
+| the same with `q=zzz` (no name) | 11 ms, 12 ms | 9 ms, 11 ms | 110 ms, 11 ms |
+| the same with `q=react-plugin-7` (no name starts with it; B with three words, 161 matches) | 13 ms, 14 ms | 18 ms, 13 ms | 139 ms, 20 ms |
+| `…?q=react&kind=repository,package,project,documentation&limit=5` (the top bar) | 14 ms, 13 ms | 21 ms, 13 ms | 130 ms, 16 ms |
+
+The causes, read from the plans (`EXPLAIN (ANALYZE, BUFFERS)` of the statements with the values the replica sent):
+
+- **The list** (`PackageViewList` 86 ms of 153 at 50,000): `vis` read every visible version of the scope, `grouped` sorted them for
+  `count(DISTINCT version)` (an external merge of 3.4 MB) and aggregated all 50,000 packages, and `page` took the first 51 by a top-N sort
+  over them; `holders` read every package once more, by a hash join (no index of collation `C` served the page's names; it reads
+  `packages_name_bytes` now). Now the walk reads about 65 package rows and their version checks, `vis` the versions of 51 names: 6 ms at every size.
+- **`PackageViewLatest`** (41 ms at 50,000, for the list and for the deprecation mark of the suggestions): its package rows were chosen by
+  `concat_ws(chr(31), format, name) = ANY(…)`, which no index serves, so every package of the scope was read and compared with every entry.
+  Now the names are taken out of the list and found in `packages_repo_id_name_key`: 1.2 ms at every size.
+- **Statements A and B of the suggestions** (90 to 100 ms at 50,000, whatever the text): the check of a served version, an `EXISTS` over the
+  view `package_version_listing`, was flattened into a semi-join; the planner took the distinct package ids of every version (it estimated
+  200 for the view's `UNION ALL`) and looked each package up by its id before the text's filter, so A and B read every version and every
+  package. With `OFFSET 0` the check stays one per candidate: A 1.5 to 2.4 ms, B 1.7 to 9.6 ms (B reads every package whose words match,
+  in a bitmap, and sorts them: `react-plugin-7` matches 161 of 50,000, a plan of 1 ms under `EXPLAIN`; the replica's median was 9.6 ms, not
+  read further).
+- **B for a word of nearly every name** reads the index of the names in order and stops at 200 candidates when the statistics know the word:
+  with the first measurement's names, seven words and a number, PostgreSQL kept too few words in `most_common_elems` and estimated every
+  prefix query at 2 % of the table, and B read and sorted all 50,000 matches (76 ms). With 300 more words in the names the estimate of
+  `'plugin':*` is the whole table and B walks `packages_name_lower` and reads 201 rows (2.5 ms). The names of a public registry have many thousand words.
+
+`sort=createdAt`, `sort=updatedAt`, `sort=relevance` and the filters that are decided on a package's versions (`q`, `keyword`, `deprecated`,
+`signed`, `dependsOn`, `createdFrom`, `createdTo`) and a name prefix (`namespace`) still aggregate every visible version of the scope, and so does
+a caller who reads a repository in part through the candidates of `Scope` (H-299). The tests `TestR_API_029_ThePackageListInTheOrderOfTheNameReadsItsPageAlone`
+and `TestR_API_064_APackageStatementChecksAServedVersionPerCandidate` of [test/integration/search](../../test/integration/search/page_reads_test.go) hold
+the reads.
 
 ## What is not built
 
@@ -364,7 +419,8 @@ What is left is H-1683: the count over every visible version of the scope, and a
 - Images of files embedded in a package (P1, R-ARCH-029).
 - CI snippets: no format supplies one; the npm templates are configure, install and publish, and the API renders the publish template only
   for a caller who may publish.
-- A count of a package's versions kept by the commit and the fill: the list counts every visible version of the scope, and a package several repositories
+- A count of a package's versions kept by the commit and the fill: the list sorted by time or relevance or filtered by what a package's versions
+  decide counts every visible version of the scope (in the order of the name without such a filter it counts the page's packages), and a package several repositories
   hold is listed in the order of publication by reading every visible version's name ([H-1683](../spec/api-and-ui.md#h-1683--the-version-list-of-a-package-several-repositories-hold-in-the-order-of-publication-reads-every-version-and-the-package-list-counts-every-version)).
 - A decision per row inside the statement: the rows of a narrowed repository are decided in Go ([H-299](../security/permissions.md#h-299--the-cost-of-a-package-list-for-a-caller-with-row-level-grants-depends-on-versions-the-caller-cannot-read)).
 - Verified in the integration area: the visibility of six callers, the sorts, filters, cursors, tags and setup answers of npm. Not verified: another format, a virtual

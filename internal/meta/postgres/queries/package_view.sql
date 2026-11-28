@@ -47,7 +47,50 @@
 -- join of the page's visible versions with the download statistics; of a format whose fetch is its document (OCI), from the files of
 -- the package that were downloaded, each counted once per visible version that holds its bytes, so a remote's tags are not read a
 -- second time. The downloads of a package outside the page are never read.
-WITH vis AS (
+-- walk, asked by the caller for the order of the name without a filter that needs the versions of every package (no q, keyword,
+-- deprecated, signed, dependsOn, createdFrom, createdTo or name_prefix), reads the page's packages before their versions (H-1683): the
+-- names of at most max_rows packages after the cursor in the order of packages_name_bytes (00162), each with a visible version by the
+-- rule of vis, checked per name (OFFSET 0 keeps the check a check per row; flattened into a join, the planner reads every version to
+-- find the packages that have one). walk_repos are the repositories of the scope, the filters repository and project and the formats.
+-- A name two repositories or two formats hold is one row per format. vis then holds the versions of those names alone, a superset of
+-- the page that the keyset and the limit of page cut to it, so the count and the times are read for the page's packages only. The
+-- branch of the other direction and the walk when it is not asked read nothing; the caller plans the statement for its values while
+-- walk is asked (Q-API-459).
+WITH walk AS (
+  (SELECT w.name, w.format
+     FROM (SELECT (p.name COLLATE "C")::text AS name, r.format
+             FROM packages p
+             JOIN repositories r ON r.id = p.repo_id
+            WHERE sqlc.arg(walk)::boolean AND NOT sqlc.arg(descending)::boolean
+              AND p.repo_id = ANY(sqlc.arg(walk_repos)::bigint[])
+              AND (p.name COLLATE "C") >= sqlc.arg(after_name)::text
+              AND EXISTS (SELECT 1 FROM package_version_listing pv
+                           WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+                             AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                                  OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+                          OFFSET 0)) w
+    WHERE (w.name, w.format) > (sqlc.arg(after_name)::text, sqlc.arg(after_format)::text)
+    GROUP BY w.name, w.format
+    ORDER BY w.name, w.format
+    LIMIT sqlc.arg(max_rows)::int)
+  UNION ALL
+  (SELECT w.name, w.format
+     FROM (SELECT (p.name COLLATE "C")::text AS name, r.format
+             FROM packages p
+             JOIN repositories r ON r.id = p.repo_id
+            WHERE sqlc.arg(walk)::boolean AND sqlc.arg(descending)::boolean
+              AND p.repo_id = ANY(sqlc.arg(walk_repos)::bigint[])
+              AND (NOT sqlc.arg(has_after)::boolean OR (p.name COLLATE "C") <= sqlc.arg(after_name)::text)
+              AND EXISTS (SELECT 1 FROM package_version_listing pv
+                           WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+                             AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                                  OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+                          OFFSET 0)) w
+    WHERE (NOT sqlc.arg(has_after)::boolean OR (w.name, w.format) < (sqlc.arg(after_name)::text, sqlc.arg(after_format)::text))
+    GROUP BY w.name, w.format
+    ORDER BY w.name DESC, w.format DESC
+    LIMIT sqlc.arg(max_rows)::int)
+), vis AS (
   SELECT pv.id AS vid, pv.version, pv.created_at, (p.name COLLATE "C")::text AS name, p.display_name, r.format, pv.sort_key,
          COALESCE(pv.prerelease, false) AS prerelease
     FROM package_version_listing pv
@@ -58,7 +101,8 @@ WITH vis AS (
      AND (cardinality(sqlc.arg(formats)::text[]) = 0 OR r.format = ANY(sqlc.arg(formats)::text[]))
      AND (NOT sqlc.arg(has_repos)::boolean OR p.repo_id = ANY(sqlc.arg(repos)::bigint[]))
      AND (sqlc.arg(name_prefix)::text = '' OR starts_with(lower(p.name), lower(sqlc.arg(name_prefix)::text)))
-     AND (sqlc.arg(exact_name)::text = '' OR (r.format = sqlc.arg(exact_format)::text AND p.name = sqlc.arg(exact_name)::text))
+     AND (sqlc.arg(exact_name)::text = '' OR (r.format = sqlc.arg(exact_format)::text AND (p.name COLLATE "C") = sqlc.arg(exact_name)::text))
+     AND (NOT sqlc.arg(walk)::boolean OR (p.name COLLATE "C") = ANY(ARRAY(SELECT w.name FROM walk w)))
      AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
           OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
 ), qr AS (
@@ -354,6 +398,8 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at
 -- A visible version row without a key (written before migration 00116 or by a replica of the release before it, until the background
 -- migration version_sort_key has filled it) is a candidate as well, every one of them (Q-API-430): the caller's order decides among
 -- them and the keyed candidates, so such a row is never passed over; once the rows are filled the branch reads nothing.
+-- The package rows are found by their names, taken out of packages, in the index packages_repo_id_name_key; the comparison of
+-- "<format>\x1f<name>" alone serves no index and read every package of the installation (H-1683).
 SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_id, l.version_id, l.version, l.created_at
   FROM packages p
   JOIN repositories r ON r.id = p.repo_id
@@ -455,6 +501,7 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
                 OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[])))
   ) l
  WHERE concat_ws(chr(31), r.format, p.name) = ANY(sqlc.arg(packages)::text[])
+   AND p.name = ANY(ARRAY(SELECT substr(k, strpos(k, chr(31)) + 1) FROM unnest(sqlc.arg(packages)::text[]) k))
    AND p.repo_id = ANY(sqlc.arg(scope)::bigint[])
    AND (NOT sqlc.arg(has_repos)::boolean OR p.repo_id = ANY(sqlc.arg(repos)::bigint[]))
  ORDER BY p.repo_id, l.version;

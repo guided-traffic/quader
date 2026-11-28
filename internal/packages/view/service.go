@@ -424,8 +424,15 @@ func (s *Service) List(ctx context.Context, sc Scope, f Filter, o Order, after *
 	if err != nil {
 		return nil, err
 	}
+	walk := walks(f, o)
+	var walkRepos []int64
+	if walk {
+		if walkRepos = sc.ofFormats(universe, formats); len(walkRepos) == 0 {
+			return nil, nil
+		}
+	}
 	p := q.PackageViewListParams{
-		Sort: o.Sort, Descending: o.Desc, MaxRows: rows32(limit + 1),
+		Sort: o.Sort, Descending: o.Desc, MaxRows: rows32(limit + 1), Walk: walk, WalkRepos: ids(walkRepos),
 		Withheld: ids(withheld), Formats: keys(formats), HasRepos: f.HasRepositories, Repos: ids(repos),
 		NamePrefix: f.NamePrefix, Whole: ids(sc.whole), Rows: keys(sc.rows),
 		Q: f.Q, QIds: ids(qIDs), QRanks: ranks(qRanks), Keyword: f.Keyword, KeywordIds: ids(kwIDs), Signed: f.Signed,
@@ -438,6 +445,15 @@ func (s *Service) List(ctx context.Context, sc Scope, f Filter, o Order, after *
 		p.AfterTime = stamp(&after.Time)
 	}
 	return s.packages(ctx, sc, p, withheld, f.HasRepositories, repos)
+}
+
+// walks reports whether the list statement reads the page's packages first, in the order of the name (the walk of PackageViewList,
+// H-1683): only the name decides the order and no filter needs the versions of every package to decide a package. A text, a keyword,
+// deprecated, signed, dependsOn and the creation times are decided on a package's visible versions, the sorts by time and by relevance
+// on all of them, and the name prefix matches the lower-cased name, which the order of the name does not hold together.
+func walks(f Filter, o Order) bool {
+	return o.Sort == "name" && f.Q == "" && f.Keyword == "" && f.NamePrefix == "" && !f.Deprecated && !f.Signed && f.DependsOn == "" &&
+		f.CreatedFrom == nil && f.CreatedTo == nil
 }
 
 // Package returns one package, found false when the scope holds no version of it.
@@ -454,6 +470,7 @@ func (s *Service) Package(ctx context.Context, sc Scope, format, name string) (P
 		Sort: "name", MaxRows: 1, Withheld: ids(withheld), Formats: []string{format},
 		ExactFormat: format, ExactName: name, Whole: ids(sc.whole), Rows: keys(sc.rows),
 		Repos: []int64{}, QIds: []int64{}, QRanks: []int32{}, KeywordIds: []int64{}, DeprecatedIds: []int64{}, DependsIds: []int64{},
+		WalkRepos: []int64{},
 	}
 	ps, err := s.packages(ctx, sc, p, withheld, false, nil)
 	if err != nil || len(ps) == 0 {
@@ -582,8 +599,10 @@ func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListPar
 	p.AnyFile, p.Document = s.fetchRules()
 	// A list of ids (a search's matches, a keyword's, the deprecated versions, the dependents of dependsOn) is planned for its values: a
 	// generic plan, which a prepared statement takes after its fifth run, knows neither its length nor the clause it makes void, and the
-	// list filtered by 5,000 dependents ran 1.5 s with it and 0.15 s planned for its values (Q-API-459, docs/developer/packages.md).
-	custom := len(p.QIds) > 0 || len(p.KeywordIds) > 0 || len(p.DeprecatedIds) > 0 || len(p.DependsIds) > 0
+	// list filtered by 5,000 dependents ran 1.5 s with it and 0.15 s planned for its values (Q-API-459, docs/developer/packages.md). So
+	// is the walk of a page by the name and the one package of exact_name: a generic plan keeps the clauses of the walk not asked and
+	// cannot take the index of the names through "NOT walk OR …", and read every version of the scope again (H-1683).
+	custom := len(p.QIds) > 0 || len(p.KeywordIds) > 0 || len(p.DeprecatedIds) > 0 || len(p.DependsIds) > 0 || p.Walk || p.ExactName != ""
 	if err := s.read(ctx, func(qs *q.Queries) (err error) {
 		if custom {
 			if err := qs.SearchCustomPlans(ctx); err != nil {

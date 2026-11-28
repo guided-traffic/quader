@@ -748,6 +748,7 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
                 OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($3::text[])))
   ) l
  WHERE concat_ws(chr(31), r.format, p.name) = ANY($4::text[])
+   AND p.name = ANY(ARRAY(SELECT substr(k, strpos(k, chr(31)) + 1) FROM unnest($4::text[]) k))
    AND p.repo_id = ANY($5::bigint[])
    AND (NOT $6::boolean OR p.repo_id = ANY($7::bigint[]))
  ORDER BY p.repo_id, l.version
@@ -789,6 +790,8 @@ type PackageViewLatestRow struct {
 // A visible version row without a key (written before migration 00116 or by a replica of the release before it, until the background
 // migration version_sort_key has filled it) is a candidate as well, every one of them (Q-API-430): the caller's order decides among
 // them and the keyed candidates, so such a row is never passed over; once the rows are filled the branch reads nothing.
+// The package rows are found by their names, taken out of packages, in the index packages_repo_id_name_key; the comparison of
+// "<format>\x1f<name>" alone serves no index and read every package of the installation (H-1683).
 func (q *Queries) PackageViewLatest(ctx context.Context, arg PackageViewLatestParams) ([]PackageViewLatestRow, error) {
 	rows, err := q.db.Query(ctx, packageViewLatest,
 		arg.Withheld,
@@ -930,55 +933,90 @@ func (q *Queries) PackageViewLatestOfPackages(ctx context.Context, arg PackageVi
 
 const packageViewList = `-- name: PackageViewList :many
 
-WITH vis AS (
+WITH walk AS (
+  (SELECT w.name, w.format
+     FROM (SELECT (p.name COLLATE "C")::text AS name, r.format
+             FROM packages p
+             JOIN repositories r ON r.id = p.repo_id
+            WHERE $3::boolean AND NOT $2::boolean
+              AND p.repo_id = ANY($4::bigint[])
+              AND (p.name COLLATE "C") >= $5::text
+              AND EXISTS (SELECT 1 FROM package_version_listing pv
+                           WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT (pv.id = ANY($6::bigint[]))
+                             AND (p.repo_id = ANY($7::bigint[])
+                                  OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($8::text[]))
+                          OFFSET 0)) w
+    WHERE (w.name, w.format) > ($5::text, $9::text)
+    GROUP BY w.name, w.format
+    ORDER BY w.name, w.format
+    LIMIT $10::int)
+  UNION ALL
+  (SELECT w.name, w.format
+     FROM (SELECT (p.name COLLATE "C")::text AS name, r.format
+             FROM packages p
+             JOIN repositories r ON r.id = p.repo_id
+            WHERE $3::boolean AND $2::boolean
+              AND p.repo_id = ANY($4::bigint[])
+              AND (NOT $11::boolean OR (p.name COLLATE "C") <= $5::text)
+              AND EXISTS (SELECT 1 FROM package_version_listing pv
+                           WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT (pv.id = ANY($6::bigint[]))
+                             AND (p.repo_id = ANY($7::bigint[])
+                                  OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($8::text[]))
+                          OFFSET 0)) w
+    WHERE (NOT $11::boolean OR (w.name, w.format) < ($5::text, $9::text))
+    GROUP BY w.name, w.format
+    ORDER BY w.name DESC, w.format DESC
+    LIMIT $10::int)
+), vis AS (
   SELECT pv.id AS vid, pv.version, pv.created_at, (p.name COLLATE "C")::text AS name, p.display_name, r.format, pv.sort_key,
          COALESCE(pv.prerelease, false) AS prerelease
     FROM package_version_listing pv
     JOIN packages p ON p.id = pv.package_id
     JOIN repositories r ON r.id = p.repo_id
    WHERE pv.trashed_at IS NULL
-     AND NOT (pv.id = ANY($3::bigint[]))
-     AND (cardinality($4::text[]) = 0 OR r.format = ANY($4::text[]))
-     AND (NOT $5::boolean OR p.repo_id = ANY($6::bigint[]))
-     AND ($7::text = '' OR starts_with(lower(p.name), lower($7::text)))
-     AND ($8::text = '' OR (r.format = $9::text AND p.name = $8::text))
-     AND (p.repo_id = ANY($10::bigint[])
-          OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($11::text[]))
+     AND NOT (pv.id = ANY($6::bigint[]))
+     AND (cardinality($12::text[]) = 0 OR r.format = ANY($12::text[]))
+     AND (NOT $13::boolean OR p.repo_id = ANY($14::bigint[]))
+     AND ($15::text = '' OR starts_with(lower(p.name), lower($15::text)))
+     AND ($16::text = '' OR (r.format = $17::text AND (p.name COLLATE "C") = $16::text))
+     AND (NOT $3::boolean OR (p.name COLLATE "C") = ANY(ARRAY(SELECT w.name FROM walk w)))
+     AND (p.repo_id = ANY($7::bigint[])
+          OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($8::text[]))
 ), qr AS (
   -- The two lists side by side: unnest in the select list zips arrays of one length.
-  SELECT unnest($12::bigint[]) AS id, unnest($13::integer[]) AS rank
+  SELECT unnest($18::bigint[]) AS id, unnest($19::integer[]) AS rank
 ), grouped AS (
   SELECT v.format, v.name, min(v.display_name)::text AS display_name,
          min(v.created_at)::timestamptz AS created_at, max(v.created_at)::timestamptz AS updated_at,
          count(DISTINCT v.version)::bigint AS version_count,
-         (CASE WHEN $14::text = '' THEN 0
-               ELSE GREATEST((CASE WHEN lower(v.name) = lower($14::text) THEN 3000
-                                   WHEN starts_with(lower(v.name), lower($14::text)) THEN 2000
-                                   WHEN position(lower($14::text) in lower(v.name)) > 0 THEN 1000
+         (CASE WHEN $20::text = '' THEN 0
+               ELSE GREATEST((CASE WHEN lower(v.name) = lower($20::text) THEN 3000
+                                   WHEN starts_with(lower(v.name), lower($20::text)) THEN 2000
+                                   WHEN position(lower($20::text) in lower(v.name)) > 0 THEN 1000
                                    ELSE 0 END),
-                             (CASE WHEN lower(min(v.display_name)) = lower($14::text) THEN 3000
-                                   WHEN starts_with(lower(min(v.display_name)), lower($14::text)) THEN 2000
-                                   WHEN position(lower($14::text) in lower(min(v.display_name))) > 0 THEN 1000
+                             (CASE WHEN lower(min(v.display_name)) = lower($20::text) THEN 3000
+                                   WHEN starts_with(lower(min(v.display_name)), lower($20::text)) THEN 2000
+                                   WHEN position(lower($20::text) in lower(min(v.display_name))) > 0 THEN 1000
                                    ELSE 0 END)) + COALESCE(max(qr.rank), 0) END)::bigint AS relevance,
          (array_agg(v.vid ORDER BY CASE WHEN v.sort_key >= '\x01'::bytea AND NOT v.prerelease THEN 0
                                         WHEN v.sort_key >= '\x01'::bytea THEN 1 ELSE 2 END,
                                    CASE WHEN v.sort_key >= '\x01'::bytea THEN v.sort_key END DESC NULLS LAST,
                                    v.created_at DESC, v.version DESC)
-            FILTER (WHERE $15::boolean OR $16::boolean))[1]::bigint AS latest_vid
+            FILTER (WHERE $21::boolean OR $22::boolean))[1]::bigint AS latest_vid
     FROM vis v
     LEFT JOIN qr ON qr.id = v.vid
    GROUP BY v.format, v.name
-  HAVING ($14::text = '' OR position(lower($14::text) in lower(v.name)) > 0
-          OR position(lower($14::text) in lower(min(v.display_name))) > 0 OR bool_or(qr.id IS NOT NULL))
-     AND ($17::text = '' OR bool_or(v.vid = ANY($18::bigint[])))
-     AND (NOT $19::boolean OR bool_or(v.vid = ANY($20::bigint[])))
-     AND (NOT $21::boolean OR min(v.created_at) >= NULLIF($22::text, '')::timestamptz)
-     AND (NOT $23::boolean OR min(v.created_at) < NULLIF($24::text, '')::timestamptz)
+  HAVING ($20::text = '' OR position(lower($20::text) in lower(v.name)) > 0
+          OR position(lower($20::text) in lower(min(v.display_name))) > 0 OR bool_or(qr.id IS NOT NULL))
+     AND ($23::text = '' OR bool_or(v.vid = ANY($24::bigint[])))
+     AND (NOT $25::boolean OR bool_or(v.vid = ANY($26::bigint[])))
+     AND (NOT $27::boolean OR min(v.created_at) >= NULLIF($28::text, '')::timestamptz)
+     AND (NOT $29::boolean OR min(v.created_at) < NULLIF($30::text, '')::timestamptz)
 ), page AS (
   SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count, g.relevance
     FROM grouped g
-   WHERE (NOT $16::boolean OR g.latest_vid = ANY($25::bigint[]))
-     AND (NOT $15::boolean OR EXISTS (
+   WHERE (NOT $22::boolean OR g.latest_vid = ANY($31::bigint[]))
+     AND (NOT $21::boolean OR EXISTS (
            SELECT 1
              FROM package_version_listing lv
              JOIN packages lp ON lp.id = lv.package_id
@@ -991,20 +1029,20 @@ WITH vis AS (
               AND (SELECT t.state FROM signature_trust t
                     WHERE t.signature_id = s.id AND (t.project_id IS NULL OR t.project_id = lr.project_id)
                     ORDER BY t.project_id NULLS LAST LIMIT 1) IN ('internal', 'public')))
-     AND (NOT $26::boolean
+     AND (NOT $11::boolean
       OR CASE $1::text
            WHEN 'createdAt' THEN CASE WHEN $2::boolean
-                THEN (g.created_at, g.name, g.format) < (NULLIF($27::text, '')::timestamptz, $28::text, $29::text)
-                ELSE (g.created_at, g.name, g.format) > (NULLIF($27::text, '')::timestamptz, $28::text, $29::text) END
+                THEN (g.created_at, g.name, g.format) < (NULLIF($32::text, '')::timestamptz, $5::text, $9::text)
+                ELSE (g.created_at, g.name, g.format) > (NULLIF($32::text, '')::timestamptz, $5::text, $9::text) END
            WHEN 'updatedAt' THEN CASE WHEN $2::boolean
-                THEN (g.updated_at, g.name, g.format) < (NULLIF($27::text, '')::timestamptz, $28::text, $29::text)
-                ELSE (g.updated_at, g.name, g.format) > (NULLIF($27::text, '')::timestamptz, $28::text, $29::text) END
+                THEN (g.updated_at, g.name, g.format) < (NULLIF($32::text, '')::timestamptz, $5::text, $9::text)
+                ELSE (g.updated_at, g.name, g.format) > (NULLIF($32::text, '')::timestamptz, $5::text, $9::text) END
            WHEN 'relevance' THEN CASE WHEN $2::boolean
-                THEN (-g.relevance, g.name, g.format) < (-$30::bigint, $28::text, $29::text)
-                ELSE (-g.relevance, g.name, g.format) > (-$30::bigint, $28::text, $29::text) END
+                THEN (-g.relevance, g.name, g.format) < (-$33::bigint, $5::text, $9::text)
+                ELSE (-g.relevance, g.name, g.format) > (-$33::bigint, $5::text, $9::text) END
            ELSE CASE WHEN $2::boolean
-                THEN (g.name, g.format) < ($28::text, $29::text)
-                ELSE (g.name, g.format) > ($28::text, $29::text) END
+                THEN (g.name, g.format) < ($5::text, $9::text)
+                ELSE (g.name, g.format) > ($5::text, $9::text) END
          END)
    ORDER BY
    (CASE WHEN $1::text = 'createdAt' AND NOT $2::boolean THEN g.created_at END) ASC NULLS LAST,
@@ -1017,15 +1055,15 @@ WITH vis AS (
    (CASE WHEN $2::boolean THEN g.name END) DESC NULLS LAST,
    (CASE WHEN NOT $2::boolean THEN g.format END) ASC NULLS LAST,
    (CASE WHEN $2::boolean THEN g.format END) DESC NULLS LAST
-   LIMIT $31::int
+   LIMIT $10::int
 ), holders AS (
   -- The package rows of the page's packages in the scope.
   SELECT g.format, g.name, p.id AS package_id, p.repo_id, p.name AS pname
     FROM page g
     JOIN repositories r ON r.format = g.format
     JOIN packages p ON p.repo_id = r.id AND p.name = g.name
-   WHERE (NOT $5::boolean OR p.repo_id = ANY($6::bigint[]))
-     AND (p.repo_id = ANY($10::bigint[]) OR cardinality($11::text[]) > 0)
+   WHERE (NOT $13::boolean OR p.repo_id = ANY($14::bigint[]))
+     AND (p.repo_id = ANY($7::bigint[]) OR cardinality($8::text[]) > 0)
 ), dl AS (
   SELECT f.format, f.name, sum(f.downloads)::bigint AS downloads
     FROM (-- the lead file of a visible version
@@ -1033,10 +1071,10 @@ WITH vis AS (
             FROM holders h
             JOIN package_versions pv ON pv.package_id = h.package_id AND pv.trashed_at IS NULL
             JOIN item_download_stats s ON s.item_id = pv.lead_item_id
-           WHERE NOT (h.format = ANY($32::text[]) OR h.format = ANY($33::text[]))
-             AND NOT (pv.id = ANY($3::bigint[]))
-             AND (h.repo_id = ANY($10::bigint[])
-                  OR concat_ws(chr(31), h.repo_id::text, h.pname, pv.version) = ANY($11::text[]))
+           WHERE NOT (h.format = ANY($34::text[]) OR h.format = ANY($35::text[]))
+             AND NOT (pv.id = ANY($6::bigint[]))
+             AND (h.repo_id = ANY($7::bigint[])
+                  OR concat_ws(chr(31), h.repo_id::text, h.pname, pv.version) = ANY($8::text[]))
           UNION ALL
           -- any file of a visible version
           SELECT h.format, h.name, s.downloads
@@ -1044,10 +1082,10 @@ WITH vis AS (
             JOIN package_versions pv ON pv.package_id = h.package_id AND pv.trashed_at IS NULL
             JOIN items i ON i.version_id = pv.id AND i.kind = 'file'
             JOIN item_download_stats s ON s.item_id = i.id
-           WHERE h.format = ANY($32::text[])
-             AND NOT (pv.id = ANY($3::bigint[]))
-             AND (h.repo_id = ANY($10::bigint[])
-                  OR concat_ws(chr(31), h.repo_id::text, h.pname, pv.version) = ANY($11::text[]))
+           WHERE h.format = ANY($34::text[])
+             AND NOT (pv.id = ANY($6::bigint[]))
+             AND (h.repo_id = ANY($7::bigint[])
+                  OR concat_ws(chr(31), h.repo_id::text, h.pname, pv.version) = ANY($8::text[]))
           UNION ALL
           -- a downloaded file of the package that holds the bytes of a visible version's document: the version's lead item (a stored
           -- tag) or a remote's tag entry, and that belongs to no other version
@@ -1055,20 +1093,20 @@ WITH vis AS (
                  (SELECT count(*) FROM items l JOIN package_versions pv ON pv.id = l.version_id AND pv.lead_item_id = l.id
                    WHERE l.blob_sha256 = i.blob_sha256 AND pv.package_id = h.package_id AND pv.trashed_at IS NULL
                      AND (i.version_id IS NULL OR i.version_id = pv.id)
-                     AND NOT (pv.id = ANY($3::bigint[]))
-                     AND (h.repo_id = ANY($10::bigint[])
-                          OR concat_ws(chr(31), h.repo_id::text, h.pname, pv.version) = ANY($11::text[])))
+                     AND NOT (pv.id = ANY($6::bigint[]))
+                     AND (h.repo_id = ANY($7::bigint[])
+                          OR concat_ws(chr(31), h.repo_id::text, h.pname, pv.version) = ANY($8::text[])))
                + (SELECT count(*) FROM oci_remote_tags t
                    WHERE t.package_id = h.package_id AND t.manifest_sha256 = i.blob_sha256
                      AND (i.version_id IS NULL OR i.version_id = t.id)
-                     AND NOT (t.id = ANY($3::bigint[]))
-                     AND (h.repo_id = ANY($10::bigint[])
-                          OR concat_ws(chr(31), h.repo_id::text, h.pname, t.version) = ANY($11::text[]))))
+                     AND NOT (t.id = ANY($6::bigint[]))
+                     AND (h.repo_id = ANY($7::bigint[])
+                          OR concat_ws(chr(31), h.repo_id::text, h.pname, t.version) = ANY($8::text[]))))
             FROM holders h
             JOIN items i ON i.repo_id = h.repo_id AND i.kind = 'file'
                         AND i.path >= h.pname || '/' AND i.path < h.pname || '0' AND starts_with(i.path, h.pname || '/')
             JOIN item_download_stats s ON s.item_id = i.id
-           WHERE h.format = ANY($33::text[])) f
+           WHERE h.format = ANY($35::text[])) f
    GROUP BY f.format, f.name
 )
 SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count, COALESCE(d.downloads, 0)::bigint AS downloads,
@@ -1091,15 +1129,21 @@ SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_c
 type PackageViewListParams struct {
 	Sort           string
 	Descending     bool
+	Walk           bool
+	WalkRepos      []int64
+	AfterName      string
 	Withheld       []int64
+	Whole          []int64
+	Rows           []string
+	AfterFormat    string
+	MaxRows        int32
+	HasAfter       bool
 	Formats        []string
 	HasRepos       bool
 	Repos          []int64
 	NamePrefix     string
 	ExactName      string
 	ExactFormat    string
-	Whole          []int64
-	Rows           []string
 	QIds           []int64
 	QRanks         []int32
 	Q              string
@@ -1114,12 +1158,8 @@ type PackageViewListParams struct {
 	HasTo          bool
 	CreatedTo      string
 	DeprecatedIds  []int64
-	HasAfter       bool
 	AfterTime      string
-	AfterName      string
-	AfterFormat    string
 	AfterRelevance int64
-	MaxRows        int32
 	AnyFile        []string
 	Document       []string
 }
@@ -1184,19 +1224,34 @@ type PackageViewListRow struct {
 // join of the page's visible versions with the download statistics; of a format whose fetch is its document (OCI), from the files of
 // the package that were downloaded, each counted once per visible version that holds its bytes, so a remote's tags are not read a
 // second time. The downloads of a package outside the page are never read.
+// walk, asked by the caller for the order of the name without a filter that needs the versions of every package (no q, keyword,
+// deprecated, signed, dependsOn, createdFrom, createdTo or name_prefix), reads the page's packages before their versions (H-1683): the
+// names of at most max_rows packages after the cursor in the order of packages_name_bytes (00162), each with a visible version by the
+// rule of vis, checked per name (OFFSET 0 keeps the check a check per row; flattened into a join, the planner reads every version to
+// find the packages that have one). walk_repos are the repositories of the scope, the filters repository and project and the formats.
+// A name two repositories or two formats hold is one row per format. vis then holds the versions of those names alone, a superset of
+// the page that the keyset and the limit of page cut to it, so the count and the times are read for the page's packages only. The
+// branch of the other direction and the walk when it is not asked read nothing; the caller plans the statement for its values while
+// walk is asked (Q-API-459).
 func (q *Queries) PackageViewList(ctx context.Context, arg PackageViewListParams) ([]PackageViewListRow, error) {
 	rows, err := q.db.Query(ctx, packageViewList,
 		arg.Sort,
 		arg.Descending,
+		arg.Walk,
+		arg.WalkRepos,
+		arg.AfterName,
 		arg.Withheld,
+		arg.Whole,
+		arg.Rows,
+		arg.AfterFormat,
+		arg.MaxRows,
+		arg.HasAfter,
 		arg.Formats,
 		arg.HasRepos,
 		arg.Repos,
 		arg.NamePrefix,
 		arg.ExactName,
 		arg.ExactFormat,
-		arg.Whole,
-		arg.Rows,
 		arg.QIds,
 		arg.QRanks,
 		arg.Q,
@@ -1211,12 +1266,8 @@ func (q *Queries) PackageViewList(ctx context.Context, arg PackageViewListParams
 		arg.HasTo,
 		arg.CreatedTo,
 		arg.DeprecatedIds,
-		arg.HasAfter,
 		arg.AfterTime,
-		arg.AfterName,
-		arg.AfterFormat,
 		arg.AfterRelevance,
-		arg.MaxRows,
 		arg.AnyFile,
 		arg.Document,
 	)

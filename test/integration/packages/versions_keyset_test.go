@@ -79,7 +79,7 @@ func TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit(t *testing.T) {
 		"q_ids": "'{}'", "q_ranks": "'{}'", "signed": "false", "after_relevance": "0", "keyword": "''", "keyword_ids": "'{}'", "has_from": "false",
 		"created_from": "''", "has_to": "false", "created_to": "''", "deprecated": "false", "deprecated_ids": "'{}'", "depends": "false", "depends_ids": "'{}'", "has_after": "false",
 		"sort": "'name'", "descending": "false", "after_time": "''", "after_name": "''",
-		"after_format": "''", "max_rows": "51",
+		"after_format": "''", "max_rows": "51", "walk": "false", "walk_repos": "'{}'",
 	})
 	if loops := e.st.SubPlanLoops(list); loops > 51 {
 		t.Errorf("the package list ran a subplan %v times over 2,001 versions", loops)

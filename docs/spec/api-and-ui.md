@@ -1703,6 +1703,10 @@ remain as their owners define them.)
   key its format gives it puts it in, on every page and as a candidate of the latest version, until a background migration has filled it
   ([Q-API-430](#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it)); a package several repositories hold, in the order of publication, reads every visible version's name and sorts them in the service
   ([H-1683](#h-1683--the-version-list-of-a-package-several-repositories-hold-in-the-order-of-publication-reads-every-version-and-the-package-list-counts-every-version)).
+  The package list in the order of the name, without a filter that a package's versions decide (`q`, `keyword`, `deprecated`, `signed`,
+  `dependsOn`, `createdFrom`, `createdTo`) and without a name prefix or `namespace`, reads the names of its page first, in the bytewise order
+  of the name from the cursor, each with a visible version, and counts and dates the versions of those packages alone; the answer is the one
+  of the full aggregation, page for page.
   Remote repositories contribute their cached versions only,
   and a version the format withholds (npm: a tombstoned one, R-NPM-047) is not counted anywhere.
 - What the generic rows do not hold - description, keywords, licenses, the README and the `metadata` - comes from
@@ -1807,6 +1811,9 @@ Acceptance criteria:
 - `GET …/versions/1.4.0/readme` for a README containing `<script>` returns HTML without it.
 - `@team-a/ui` is in a repository whose artifacts are `public` and whose wiki is `internal`: an anonymous `GET
   …/versions/1.4.0` answers `"hasReadme": false` and `GET …/versions/1.4.0/readme` 404; an internal user gets `true` and 200.
+- The list in the order of the name answers with the read of its page's names what it answers with the full aggregation, lowest and
+  highest first, on the first page and after a cursor, for a reader of every repository and for one who reads a repository in part, and
+  reads a bounded number of package and version rows where the full aggregation reads all of them (integration area `search`).
 
 ### R-API-030 · Client setup snippets
 Priority: **MVP** · Covers: UI-023
@@ -2939,7 +2946,7 @@ How each kind is read ([Q-API-273](#q-api-273--repositories-are-matched-over-the
 |---|---|---|---|
 | repository | the repositories of the request's grant index, in memory; no statement | — | every active repository, 10,000 in the reference environment ([architecture.md](architecture.md) R-ARCH-027 P-15) |
 | project | one statement over `project`, as the project list | none | every project |
-| package | statement A: names that start with `q` in the repositories the caller reads whole or in part, as the range `low <= lower(p.name) COLLATE "C" < high`, where `low` is `q` and `high` the least string above every string that starts with `q`, ordered by the same expression, at most 200 rows; statement B, only when A found fewer than `limit + 1` readable packages: names whose words begin with the words of `q` (`p.name_words @@ to_tsquery('simple', 'w1:* & w2:*')`), without A's rows, at most 200 rows. Every row needs a live, served version: `EXISTS` over `package_version_listing` (`package_versions_live`), without the withheld versions of the formats, read as `GET /api/v1/packages` reads them. Both run in one transaction after `SET LOCAL plan_cache_mode = force_custom_plan` | A: `packages_name_lower`; B: `packages_name_words` | 400 candidate rows, one served-version check each |
+| package | statement A: names that start with `q` in the repositories the caller reads whole or in part, as the range `low <= lower(p.name) COLLATE "C" < high`, where `low` is `q` and `high` the least string above every string that starts with `q`, ordered by the same expression, at most 200 rows; statement B, only when A found fewer than `limit + 1` readable packages: names whose words begin with the words of `q` (`p.name_words @@ to_tsquery('simple', 'w1:* & w2:*')`), without A's rows, at most 200 rows. Every row needs a live, served version: `EXISTS` over `package_version_listing` (`package_versions_live`), without the withheld versions of the formats, read as `GET /api/v1/packages` reads them, a check per candidate row (`OFFSET 0` keeps the planner from turning it into a join over every version; measured on 2026-11-28, [packages.md](../developer/packages.md#the-package-list-and-the-suggestions-with-50000-packages-h-1683-measured)). Both run in one transaction after `SET LOCAL plan_cache_mode = force_custom_plan` | A: `packages_name_lower`; B: `packages_name_words` | 400 candidate rows, one served-version check each |
 | user, group, service account | one statement each over `principal` with `app_user` (and `user_avatars` for the avatar), `user_group` or `service_account`, `kind` fixed, `strpos` on the lower-cased columns, ranked in the statement and cut at `limit + 1` | none (`principal` is unique on `kind, name`) | every user, group or service account |
 
 - The words of a tsquery are runs of `a` to `z` and `0` to `9` taken from `q`, so no operator of the tsquery syntax reaches the
@@ -2960,6 +2967,8 @@ Acceptance criteria:
 - With `SET enable_seqscan = off`, `EXPLAIN` of statement A shows `packages_name_lower` and of statement B `packages_name_words`.
 - A request with the five kinds costs the same number of statements with 10 and with 10,000 matching packages (integration area
   `querybudget`).
+- The plans of statements A and B check the served version per candidate (a subplan), and a text that few names start with or that no
+  word begins with reads no version row past its candidates (integration area `search`).
 
 ### R-API-031 · Users, groups and service accounts
 Priority: **MVP** · Covers: ADMAPI-004, ADMAPI-005, ADMAPI-006, ADMAPI-007, ADMAPI-008, ADMAPI-009, ADMAPI-012, ADMAPI-013, ADMAPI-014, ADMAPI-015, ADMAPI-016, ADMAPI-017, ADMAPI-018
@@ -33569,13 +33578,18 @@ of publication for a package that one repository of the caller's scope holds (Q-
 repositories hold (a name in a local repository and in a remote's cache, a virtual repository's members), in the order of publication
 (`-publishedAt`), it reads the name and the creation time of every visible version, one cheap row each, and sorts them in the
 service: a version's place is its oldest visible row, which a keyset over each holder cannot see without a lookup per row. The package
-list reads one cheap row per visible version of the caller's scope to count the versions of each package and to find its first and last
-creation; the latest version and the downloads are read for the page's packages alone (Q-API-429). Live today; real for a package with
+list sorted by its creation, its update or the relevance of a text, or filtered by what a package's versions decide (`q`, `keyword`,
+`deprecated`, `signed`, `dependsOn`, `createdFrom`, `createdTo`) or by a name prefix (`namespace`), reads one cheap row per visible version of
+the caller's scope to count the versions of each package and to find its first and last creation; the latest version and the downloads are
+read for the page's packages alone (Q-API-429). In the order of the name without those filters, the default of the list, it reads the names
+of the page first and the versions of those packages alone (R-API-029). Live today; real for a package with
 tens of thousands of versions: measured on 2026-11-24 with 100,000 versions, a page of a package two repositories hold took 0.21 s in the
 order of publication (0.03 s in the order of the versions), the package list 0.19 s, and with 100,000 tags of a remote image 0.41 s
-([packages.md](../developer/packages.md#a-package-with-100000-versions-h-1683-measured)). Counts kept by the commit and the fill would end
-the second part; they would have to follow every rule of what a caller may see (the scope's rows, withheld versions, a remote's listing
-rules that change with a download), and none is built.
+([packages.md](../developer/packages.md#a-package-with-100000-versions-h-1683-measured)); and real for a repository of tens of thousands of
+packages, a mirror's: measured on 2026-11-28 with 50,000 packages, the list sorted by its update took 0.12 s and the list by name 0.03 s, as
+with 1,000 ([packages.md](../developer/packages.md#the-package-list-and-the-suggestions-with-50000-packages-h-1683-measured)). Counts kept by the
+commit and the fill would end the second part; they would have to follow every rule of what a caller may see (the scope's rows, withheld
+versions, a remote's listing rules that change with a download), and none is built.
 
 ### H-1901 · The second part of the order of the versions of a package several repositories hold reads every unranked version
 

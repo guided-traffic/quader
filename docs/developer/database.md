@@ -946,6 +946,10 @@ transaction: the partial GIN index `packages_display_words` on the words of the 
 lower(name)`, built `CONCURRENTLY`, so the search field's suggestions find a role by its owner (R-API-064, Q-UI-1261). It holds only
 the rows whose display name is more than the name's casing (Ansible roles today) and writes no row; `name_words` stays the name's, since
 a stored generated column that took the display name would rewrite every package.
+[00162_packages_name_bytes](../../internal/meta/postgres/migrations/00162_packages_name_bytes.sql) is one statement without a transaction
+as well: `packages_name_bytes` on `packages ((name COLLATE "C"))`, built `CONCURRENTLY`. The package list compares names bytewise; the walk
+of a page in the order of the name and the lookups of the page's packages by their names read it ([packages.md](packages.md#the-package-list-and-the-suggestions-with-50000-packages-h-1683-measured),
+H-1683). `packages_name` (00036) has the database's collation and serves neither.
 
 ## Who depends on what (00139)
 

@@ -85,7 +85,7 @@ func TestMeasureUsedBy(t *testing.T) {
 			"keyword": "''", "keyword_ids": "'{}'::bigint[]", "signed": "false", "deprecated": "false", "deprecated_ids": "'{}'::bigint[]",
 			"depends": "true", "depends_ids": "'" + ids + "'::bigint[]", "has_from": "false", "created_from": "''", "has_to": "false",
 			"created_to": "''", "has_after": "false", "after_name": "''", "after_format": "''", "after_time": "''", "after_relevance": "0",
-			"any_file": "'{}'::text[]", "document": "'{oci}'::text[]",
+			"any_file": "'{}'::text[]", "document": "'{oci}'::text[]", "walk": "false", "walk_repos": "'{}'::bigint[]",
 		})
 		versions := testenv.QueryText(t, "package_view.sql", "PackageViewDependentVersions", map[string]string{
 			"repos": "'" + whole + "'::bigint[]", "names": "'{lib}'::text[]", "self": "'lib'", "max_rows": "100001",
