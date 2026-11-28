@@ -5410,7 +5410,13 @@ anonymous callers of a Bastion together, and the paths on which an anonymous req
   populate check refuses the anonymous subject of a forward ([authorization.md](authorization.md) R-AUTHZ-008): the caller reads what the
   remote holds, an expired document as it is, a version or blob it does not hold is `403 populate_not_permitted` (through a virtual
   repository the remote member is no candidate, so the format's not-found), and no request of it reaches the upstream. What a token holder,
-  a mirror's pass or a download ahead (R-CUR-010) filled is served to the anonymous caller like every cached item.
+  a mirror's pass or a download ahead (R-CUR-010) filled is served to the anonymous caller like every cached item. Since the full read
+  shape includes the populate right (R-BAS-012, Q-BAS-28), the anonymous caller's shape on a public remote that fills on read, and on a
+  virtual repository over one, is `partial`: the main installation renders its documents for a caller that does not fill. Where its
+  document is the shared entry's bytes, the main installation answers the Bastion's conditional request `304`, and the Bastion keeps
+  that `304` as the anonymous URL answer, so the entry serves every anonymous caller while it is fresh, as a kept anonymous copy does,
+  instead of one conditional request per read (`onPrivate` in [forward.go](../../internal/bastion/engine/forward.go)); a caller with a
+  token whose shape is partial is still asked about on every use.
 - **The anonymous `/v2/_catalog`** is answered from W-35's public catalogue once that exists; until then it is forwarded under the ceiling.
 - **Anonymous protocol searches** (npm, NuGet, Ansible Galaxy) stay forwarded per request and `pass`, under the ceiling: rendering them
   needs format knowledge, which the Bastion does not hold (R-BAS-001).
@@ -16626,7 +16632,7 @@ carries its Bastion (R-AUTHZ-043).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The populate check refuses the anonymous caller through a Bastion (`Subject.Anonymous && Subject.Bastion != ""`) (chosen) | An internet caller reads what the remote holds: a cached item and an expired document as they are; an uncached one is `403 populate_not_permitted` (a virtual repository's remote member is no candidate); no request reaches the upstream | Closes the gap whatever the quota, the number of addresses or replicas; one condition in the one check every format and the virtual resolver already ask, no setting, no counter; the refusal is answered from the Bastion's kept refusal for the anonymous key afterwards (R-BAS-020), so repeated asks cost the main installation nothing | The first anonymous pull of a tag nobody fetched is refused, and a mutable tag (`latest`) or an npm document stays as last fetched until a token holder, a mirror's pass or a download ahead refreshes it; a public pull-through mirror for anonymous internet users is no longer possible through a Bastion |
+| (a) The populate check refuses the anonymous caller through a Bastion (`Subject.Anonymous && Subject.Bastion != ""`), and the Bastion keeps the main installation's `304` of an anonymous document as the anonymous URL answer (chosen) | An internet caller reads what the remote holds: a cached item and an expired document as they are; an uncached one is `403 populate_not_permitted` (a virtual repository's remote member is no candidate); no request reaches the upstream | Closes the gap whatever the quota, the number of addresses or replicas; one condition in the one check every format and the virtual resolver already ask, no setting, no counter; the refusal is answered from the Bastion's kept refusal for the anonymous key afterwards (R-BAS-020), so repeated asks cost the main installation nothing | The first anonymous pull of a tag nobody fetched is refused, and a mutable tag (`latest`) or an npm document stays as last fetched until a token holder, a mirror's pass or a download ahead refreshes it; a public pull-through mirror for anonymous internet users is no longer possible through a Bastion; the refusal a Bastion kept for the anonymous key outlives a later fill by up to `bastion.answers.period` (5 minutes by default) |
 | (b) A ceiling of anonymous fills per registration across addresses, answered as (a) above it | The first pull of a new tag works until the ceiling | A figure on the card and a counter shared by the main installation's replicas; the quota is spent up to the ceiling, and a caller who exhausts it denies the first pull to every other anonymous user, so under attack it is (a) after the quota is gone |
 | (c) A switch per registration, "anonymous callers may fill remote repositories", off by default | An administrator who wants a public pull-through mirror turns it on | A setting for a case the owner's principle (the Bastion shields the main installation, the smallest footprint) argues against; with it on the gap is back in full |
 | (d) Keep it, bounded by the per-address misses, the anonymous ceiling and the distribution | Nothing changes | 36,000 upstream fetches an hour exceed any upstream's anonymous or free quota many times |
@@ -16636,9 +16642,17 @@ remote's cache is what the organization distributes. An administrator who wants 
 mirror (R-REPO-053), downloads ahead (R-CUR-010), or gives the clients a token; a caller with a token through a Bastion fills as at the
 main installation's own door. A refusal is recorded as an audit event only where anonymous denials are
 (`audit.record_anonymous_denials`, off by default), so a flood of anonymous misses writes no event per request. No setting, no change of
-the interface between the Bastion and the main installation. **Applied in the spec:** R-BAS-094, [authorization.md](authorization.md)
-R-AUTHZ-008 and R-AUTHZ-015; code: `anonymousThroughBastion` in [populate.go](../../internal/authz/populate.go); test:
-`TestR_AUTHZ_008_R_BAS_094_AnAnonymousCallerThroughABastionNeverPopulates`.
+the interface between the Bastion and the main installation. The populate right is part of the full read shape (Q-BAS-28: the bytes the
+main installation renders differ for a caller that does not fill, an npm document of a virtual repository among them, and a `404` it
+marks absent would otherwise be replayed to full readers who could fill), so the anonymous caller is now a partial reader of every
+public remote that fills on read and of every virtual repository over one. Found by the integration case
+`TestR_BAS_035_PerAddressLimits`: an anonymous read of a document a full reader keeps shared became one conditional request per read
+(a `304`, the same bytes), which the per-address misses then refused; the Bastion now keeps that `304` as the anonymous URL answer for
+`bastion.answers.period`, served only while the entry is fresh, so ten anonymous reads cost one check and one conditional request.
+**Applied in the spec:** R-BAS-094, [authorization.md](authorization.md) R-AUTHZ-008 and R-AUTHZ-015; code: `anonymousThroughBastion`
+in [populate.go](../../internal/authz/populate.go), `onPrivate` in [forward.go](../../internal/bastion/engine/forward.go); tests:
+`TestR_AUTHZ_008_R_BAS_094_AnAnonymousCallerThroughABastionNeverPopulates`,
+`TestR_BAS_094_A304ForTheAnonymousCallerServesTheSharedEntryWhileItIsFresh`.
 
 ### Q-BAS-532 · robots.txt keeps only the lines a crawler needs
 

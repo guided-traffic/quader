@@ -426,8 +426,15 @@ func (e *engine) onPrivate(q *rq, resp *mainclient.Response, sent time.Time, bl 
 		// The Bastion's own condition named the shared entry's validator and the main installation answered 304 for
 		// this caller: the caller's rendition is the entry's bytes (R-NPM-013's validators are derived from what the
 		// caller may read). The entry is served as this caller's 200, without renewing it: it is not this caller's
-		// to renew (R-BAS-023). Passing the 304 on would answer a request that carried no condition.
+		// to renew (R-BAS-023). Passing the 304 on would answer a request that carried no condition. For the anonymous caller,
+		// whose answers every anonymous caller shares, the 304 is kept as its URL answer: the entry serves the anonymous callers
+		// while it is fresh, as their kept copy would (R-BAS-094), and not one conditional request per read: since the anonymous
+		// caller never fills a remote repository, its shape on a public remote, and on a virtual repository over one, is partial
+		// (Q-BAS-531).
 		_ = resp.Body.Close()
+		if q.cred.anonymous {
+			e.putURL(q, sent, true, nil)
+		}
 		if !e.serveEntry(q, *bl.ent, metrics.ResultChecked) {
 			e.forward(q, mainclient.KindForward, "", nil)
 		}
