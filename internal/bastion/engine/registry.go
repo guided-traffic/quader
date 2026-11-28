@@ -45,8 +45,8 @@ func (e *engine) readTokenForm(q *rq) {
 	if pw == "" {
 		return
 	}
-	// A form with a password takes an authenticated slot and the authenticated limits; a malformed token in it is
-	// refused before anything is sent (stepCredentials, R-BAS-036).
+	// A form with a password is a request with a credential; a well-formed token in it takes the authenticated limits and slot,
+	// a malformed one the anonymous request limit (Q-BAS-529) and is refused before anything is sent (stepCredentials, R-BAS-036).
 	q.hasAuth = true
 	q.cred, q.credOK = parseToken(pw, "form")
 }

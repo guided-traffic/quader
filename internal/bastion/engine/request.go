@@ -374,13 +374,13 @@ func (e *engine) stepBlocked(q *rq) bool {
 // readPath is step 3: only /api/<format>/<projectKey>/<repoKey>/…, /files/<projectKey>/<repoKey>/…, the registry root
 // /v2/… and a bound host's prefixes are served (R-BAS-003, R-BAS-050, R-BAS-051, R-BAS-057). A path that is not served is
 // answered 404 by stepRefusal, after the request limit; below /v2/ NAME_UNKNOWN in the distribution's shape. The credential
-// of the request is read once the family is known, because a registry token is a credential below /v2/ only (R-BAS-052).
+// of the request is read once the family is known, because a registry token is a credential below /v2/ only (R-BAS-052); it is
+// read for a path that is not served too, because its syntax chooses the class of the limit that counts the request (Q-BAS-529).
 func (e *engine) readPath(q *rq) {
 	c, ok := e.classifyRq(q)
 	if !ok {
 		q.fam = c.fam
 		q.refusal, q.refusalReason = errs.E(errs.NotFound, errs.CodeNotFound, "Nothing is served at this address."), metrics.RefusedNotServed
-		return
 	}
 	q.cred, q.credOK = parseCredential(q.r.Header, q.fam)
 	// An anonymous registry token is no credential: the request takes the anonymous limits and slots (Q-BAS-168).
@@ -446,12 +446,12 @@ func (e *engine) stepLimits(q *rq) bool {
 	return e.admit(q, e.d.Guard.Request(q.ctx(), q.addr, q.limitClass()))
 }
 
-// limitClass is the class of the request limit: authenticated for a request that carries a credential, the form's password of a
-// token request included, whatever the credential is worth (H-2447). The credential's syntax and checksum are read before the
-// limit (readPath, readTokenForm), so a class that takes a malformed credential for none is q.hasAuth && q.credOK here, with no
-// step moved; a class that waits for the main installation's word would move the limit behind stepCredentials and put a request
-// to the main installation before it.
-func (q *rq) limitClass() guard.Credentialed { return guard.Credentialed(q.hasAuth) }
+// limitClass is the class of the request limit (R-BAS-035, Q-BAS-529): authenticated for a request that carries a credential of a
+// form the Bastion reads, the form's password of a token request included; anonymous for one without, and for one whose header or
+// password the Bastion refuses itself (no scheme it reads, an unreadable Basic, an unknown prefix, a failed checksum, an empty
+// token, a Bastion token). The syntax and the checksum are read before the limit (readPath, readTokenForm); a well-formed
+// credential stays in the authenticated class until the main installation refuses it, which R-BAS-036 counts.
+func (q *rq) limitClass() guard.Credentialed { return guard.Credentialed(q.hasAuth && q.credOK) }
 
 // stepCredentials is step 4, second half (R-BAS-019, R-BAS-036): the credential of a read, refused before any
 // request when it is malformed, a Bastion token or of an unknown type; anonymous only while the main
@@ -518,7 +518,7 @@ func (e *engine) refuseVerdict(q *rq, v guard.Verdict) {
 	if facts.RateLimitedStatus == http.StatusServiceUnavailable {
 		kind = errs.Unavailable
 	}
-	name, quota, window := e.policyOf(q, v.Reason, q.cred.anonymous || !q.hasAuth)
+	name, quota, window := e.policyOf(q, v.Reason, !bool(q.limitClass()))
 	wait := oneWait(v.RetryAfter)
 	told := facts.CapRetryAfter(wait)
 	q.limiter = name

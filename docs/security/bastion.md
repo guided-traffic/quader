@@ -228,6 +228,13 @@ Without Valkey every counter and block holds per replica at the configured value
   Bastion's hosts ([Q-BAS-527](../spec/bastion.md#q-bas-527--a-request-for-a-foreign-host-takes-no-token)). The count costs a `404` one
   limiter call more, 0.7 µs in memory and with Valkey one round trip until the address is blocked
   ([Q-BAS-528](../spec/bastion.md#q-bas-528--a-not-served-request-costs-one-valkey-round-trip-more-until-its-address-is-blocked)).
+- **The class is the credential's form, not its presence** ([Q-BAS-529](../spec/bastion.md#q-bas-529--a-credential-the-bastion-refuses-itself-counts-in-the-anonymous-request-class),
+  H-2447 closed on 2026-11-28). A request counts in the authenticated class only when its `Authorization` header, or the token form's
+  password, holds a credential the Bastion reads (a scheme it reads, a readable Basic, a known prefix and the checksum); a junk header,
+  an unknown prefix, an empty token or a Bastion token counts in the anonymous class and is answered `401 invalid_token` locally. A
+  well-formed token stays in the authenticated class until the main installation refuses it, and the failed-authentication timeout
+  bounds how many such refusals an address collects. Before, any non-empty header bought the authenticated figures (four times the
+  anonymous rate): about 12,000 junk Basic credentials at about 100 a second in the attack of 2026-11-27 were never limited.
 - Each refusal of a request limit, a miss limit or a timeout counts toward one threshold. Above it the address is blocked, for 15 minutes
   and twice as long for each further block within 24 h, up to `max_duration`. A blocked address costs the Bastion one comparison in memory
   and is answered `429 address_blocked`; its requests are not logged one by one, the block is, once.
@@ -1676,17 +1683,6 @@ registration, and an anonymous flood or a run of misses that reaches both deploy
 installation divides by the number of deployments it heard (it learns that number only from contacts that come and go, so a deployment
 that falls silent would leave the other at half its figure for a day), or one shared state across the deployments, which their separate
 clusters do not have. The manual tells the administrator to set half the figure for a pair.
-
-### H-2447 · Any Authorization header puts a caller in the authenticated class of the per-address limit
-
-Stage: R-BAS-035, step 4 of the request ([request.go](../../internal/bastion/engine/request.go) `stepLimits`, `q.hasAuth`). Subject: the
-per-address request limit of an anonymous caller. Live in every installation. The class of the limit is chosen before the credential is
-checked: a request with any non-empty `Authorization` header counts against the authenticated figures (built in: 200 requests a second,
-burst 4,000) instead of the anonymous ones (50, burst 1,000). A malformed credential is then refused locally with `401 invalid_token`
-(R-BAS-036 counts it as a failed authentication, but its timeout guards only the main installation's lookups of well-formed credentials).
-What makes it real: an anonymous caller who sends a junk header gets four times the anonymous rate; seen in the authorized test of
-2026-11-27, 19:23 to 19:35 UTC, where about 12,000 junk Basic credentials at about 100 a second were neither limited nor refused with
-`429`. Each answer cost the Bastion about 0.1 ms and nothing reached the main installation.
 
 ### H-2449 · Without Valkey every limit and block counts per replica
 

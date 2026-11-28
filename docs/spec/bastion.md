@@ -1265,7 +1265,8 @@ without sessions:
   invalid_token` with the challenge of R-AUTH-002 for the path family and counts as a failed authentication (R-BAS-036). The
   types `pat`, `sat` and `cit` are accepted; below `/v2/` also the registry token `rgt` by its own syntax, which has no checksum
   (R-BAS-052); `bst` and an unknown prefix answer the same `401` and count. On `/v2/_token` the credential is the one the token
-  service reads: the Basic password of a `GET`, the form's `password` of a `POST` (R-BAS-051).
+  service reads: the Basic password of a `GET`, the form's `password` of a `POST` (R-BAS-051). Such a credential takes the anonymous
+  request limit of R-BAS-035, not the authenticated one ([Q-BAS-529](#q-bas-529--a-credential-the-bastion-refuses-itself-counts-in-the-anonymous-request-class)).
 - **Anonymous.** A request without a credential is anonymous exactly when the main installation serves anonymous reads
   (owner, [Q-BAS-12](#q-bas-12--anonymous-reads-as-on-the-main-installation-with-misses-absorbed-at-the-bastion)): with
   `anonymousReads: false` from the handshake the Bastion answers `401 credentials_required` with the challenge itself, without a
@@ -2151,6 +2152,15 @@ Quader's knowledge of credentials and misses:
   an address or not (`404 not_found`, `405`, `403 read_only`, `413`, a disabled replica's `503`, the registry root and its token
   service alike). A refusal of the limit is `429 rate_limited` with `Retry-After`, whatever the path. Before, a path that was no
   address was answered before the limit and a scanner that asked no page was never limited or blocked (the attack of 2026-11-27).
+- **The class is the credential's form** (*revised on 2026-11-28*, H-2447,
+  [Q-BAS-529](#q-bas-529--a-credential-the-bastion-refuses-itself-counts-in-the-anonymous-request-class)). A request counts in the
+  authenticated class when its `Authorization` header, or the form's `password` of `POST /v2/_token`, holds a credential the Bastion
+  reads (R-BAS-019: a scheme it reads, a readable Basic, a known prefix, the checksum, a registry token's form below `/v2/`). A
+  credential the Bastion refuses itself (no scheme it reads, an unreadable Basic or one without a colon, an empty token, an unknown
+  prefix, a failed checksum, a Bastion token) counts in the anonymous class, like a request without one; an anonymous registry token
+  already did (Q-BAS-168). A well-formed credential the main installation then refuses stays in the authenticated class until it is
+  refused, and R-BAS-036 counts it. Before, any non-empty header bought the authenticated figures: about 12,000 junk Basic
+  credentials at about 100 a second in the attack of 2026-11-27 were never limited.
 - **Misses** per client address: requests that need the main installation (forwards, checks, conditional requests, probes),
   `missesPerMinute` of the two classes of callers; a page is never a miss. A refused miss answers `429 rate_limited`; hits of the same
   address keep being served.
@@ -2185,6 +2195,10 @@ with a credential 50 and 200, misses 300 and 30 a minute, the defaults before R-
 - An address that asks for 330 misses a minute with a credential (limit 300) is admitted about 300 a minute from the second
   minute on, answers `rate_limited` for the rest, and is not blocked; the same holds for an anonymous client at 11 requests a
   second against 10, with and without Valkey.
+- Unit, microseconds per request (`TestR_BAS_035_R_BAS_036_AMalformedCredentialCountsInTheAnonymousRequestClass` in
+  [credclass_test.go](../../internal/bastion/engine/credclass_test.go)): seven malformed headers and a token form's junk password are
+  `401 invalid_token` for the anonymous burst of 40 and `429 rate_limited` from the 41st under the anonymous policy; 41 requests of
+  another address with a well-formed token on a path that is no address are all `404`, inside the authenticated burst.
 - Unit, microseconds per request ([everyrequest_test.go](../../internal/bastion/engine/everyrequest_test.go),
   `TestR_BAS_035_R_BAS_037_APathThatIsNoAddressCountsAgainstItsAddress`): paths that are no address (`/wp-admin/admin-ajax.php`,
   `/.env`, `POST /xmlrpc.php`, `/api/v1/system/ping`) answer `404` for the burst of 40 and `429 rate_limited` with `Retry-After` from the
@@ -16474,7 +16488,9 @@ before the limit, taking a malformed credential for none is a one-line change th
 interface reads no credential, so its non-page requests are anonymous whatever `Authorization` says. A refusal is `429 rate_limited` with
 `Retry-After` whatever the path; a blocked address keeps answering `429 address_blocked` first. **Applied in the spec:** R-BAS-018,
 R-BAS-035, R-BAS-037, R-BAS-117, R-BAS-133; code: `readPath`, `readTokenForm`, `stepRefusal`, `stepLimits` of the engine, `admit` and
-`pageRequest` of [gui.go](../../internal/bastion/gui/gui.go).
+`pageRequest` of [gui.go](../../internal/bastion/gui/gui.go). *Amended on 2026-11-28:* the one-line change is made, a malformed
+credential counts in the anonymous class
+([Q-BAS-529](#q-bas-529--a-credential-the-bastion-refuses-itself-counts-in-the-anonymous-request-class)).
 
 ### Q-BAS-526 · The web interface's files and data count as pages
 
@@ -16527,6 +16543,31 @@ count); a blocked address none, the block is held in memory.
 | (c) Ask the limiter only after the path, for a not-served path only every n-th request | Fewer round trips | The count is no longer the count; a scan with n−1 junk paths per address request is free again |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-035; H-455 names the cost per request.
+
+### Q-BAS-529 · A credential the Bastion refuses itself counts in the anonymous request class
+
+Status: **Decided by the development agent** on 2026-11-28 (H-2447 of the security page, batch B-1128a after the authorized attack of
+2026-11-27) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-019, R-BAS-035, R-BAS-036, Q-BAS-525. The class of the request limit was chosen by whether the request carried any
+non-empty `Authorization` header (or a password in the token form), before the credential was checked: a junk header bought the
+authenticated figures (built in 200 a second with a burst of 4,000 against 50 and 1,000). In the attack of 2026-11-27, 19:23 to 19:35 UTC,
+about 12,000 junk Basic credentials at about 100 a second were answered `401 invalid_token` and never limited; each answer cost about
+0.1 ms and nothing reached the main installation. The syntax and the checksum of a credential are read before the limit since
+Q-BAS-525 (`readPath`, `readTokenForm`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The class after the credential's form: authenticated only for a credential the Bastion reads (`q.hasAuth && q.credOK` in `limitClass`), read for a path that is no address too (chosen) | A junk header is worth exactly no header; a well-formed credential keeps its figures until the main installation refuses it, which R-BAS-036 counts | One line and the credential read for a refused path (a parse of the header, no request); the step order of R-BAS-018 stays | A well-formed but unknown token still takes the authenticated figures until its first refusal; R-BAS-036's timeout bounds that, after 20 failures |
+| (b) The class after the main installation's verdict | Only a credential the main installation accepted buys the authenticated figures | Unknown tokens limited at the anonymous figures too | The limit moves behind the credential step: the first request of every unknown token reaches the main installation before any limit counts it, the opposite of what the Bastion is for |
+| (c) A malformed credential counts as a refusal toward the block threshold, in whichever class | A junk flood is blocked fastest | A client with a broken token in its configuration collects refusals at its normal rate and blocks its address, partners behind it included; the threshold would count answers, not floods (Q-BAS-525's option (c)) |
+| (d) A bucket of its own for malformed credentials | A junk sender apart from the anonymous callers of its address | A sixth figure pair on the card for a case no client has |
+
+**Choice:** (a). The form's password of `POST /v2/_token` takes the class of its syntax the same way (`readTokenForm` sets `credOK` from
+`parseToken`), and a request that carries both reads the form's. The refusal's `RateLimit-Policy` names the class that refused
+(`policyOf` reads `limitClass`). A malformed credential is still `401 invalid_token` and still a failed authentication of R-BAS-036.
+**Applied in the spec:** R-BAS-019, R-BAS-035; code: `limitClass`, `readPath` and `policyOf` of
+[request.go](../../internal/bastion/engine/request.go); test: `TestR_BAS_035_R_BAS_036_AMalformedCredentialCountsInTheAnonymousRequestClass`.
 
 ## What this does not cover
 
