@@ -1689,6 +1689,13 @@ records the recorder that tells such a stall apart).
   `ociremote`, `querybudget`. Open: sorting by `createdAt`, `updatedAt` or relevance and the filters that depend on versions still read
   every version (124 ms at 50,000 for `-updatedAt`); the remedy is H-1683's stored per-package figures, its own package if the UI ever
   sorts by update by default. Not verified: formats other than npm at that size, real registry names' statistics.
+  **The release of v0.169.2 published no chart at first (read 04:52).** The CI run of the landing (46098897170) was green in every job,
+  but `Release Docker & Helm` (46100115324) failed in "Generate the SPDX SBOM at the syft pin": syft runs as a container of its own,
+  without the runner's Docker login, and its anonymous read of the pushed tag hit Docker Hub's `TOOMANYREQUESTS`; the image was pushed
+  and tagged, the chart job skipped, so Flux saw no 0.169.2 for an hour. The failed job's re-run (04:53, the workflow of the tag) passed;
+  the step now passes the job's Docker Hub account to syft by name (`SYFT_REGISTRY_AUTH_*`, `e76266d96`, `ci:`; the pin check of
+  `tools/sbom-generator/check-pins.sh` takes the `-e` options; `actionlint` green; the next release shows it). The owner's installation
+  on v0.169.2 at 05:04: 13 pods ready without a restart, migration 00162 applied in 33 ms, no error in the API's last ten minutes.
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
