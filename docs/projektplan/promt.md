@@ -1652,6 +1652,23 @@ records the recorder that tells such a stall apart).
   gates, the web gates, `mirror`, the two screens ten times; on main: vet of `mirror`, the e2e type check. Open from it: the workflows'
   loop over namespaces for the cluster state lacks the Bastion's (28 copies; move it into `cluster-logs.sh` once if wanted); one of
   `performance.yml`'s 19 `make e2e` steps has no log step of its own (likely `e2e-backup`, two sets under one step; not confirmed).
+  **Landed on 2026-11-28, 02:08: batch B-1128a, the Bastion's open points from the attack** (five commits, built 01:25 to 02:00, and one
+  of mine). (1) H-2447 closed: a request counts in the authenticated class only when the Bastion can read its credential (`limitClass`:
+  `q.hasAuth && q.credOK`, the token form's password included; `RateLimit-Policy` names the class that refused; Q-BAS-529). (2) A
+  malformed credential stays `401 invalid_token` during the failed-authentication timeout and still counts; the anonymous limit bounds it
+  (Q-BAS-530, no code; derived, not measured: a sender of junk at 50 to 100 a second is limited, not blocked). (3) H-2450 closed: the
+  main installation's populate check refuses an anonymous caller through a Bastion, so it gets what a remote holds (an expired document as
+  it is) and an uncached item is `403 populate_not_permitted`; the upstream's quota is never spent from the internet (Q-BAS-531,
+  R-AUTHZ-008, R-AUTHZ-015, R-BAS-094); since an anonymous caller is now a partial reader of a remote that fills on read, the Bastion keeps
+  the main installation's `304` as the answer shared by anonymous callers, so a cached document costs one check per
+  `bastion.answers.period` instead of one per read. Behaviour the owner should know: the first anonymous pull of a tag nobody fetched is
+  refused through a Bastion; a mirror remote, a download ahead or a token is the way. (4) The crawl file loses `Allow: /ui/`, which
+  allowed what nothing disallowed; its `Disallow` lines each stop a fetch and name public paths only (Q-BAS-532). Mine: the warning of a
+  public remote that fills on read says it holds at this installation and never through a Bastion (server detail, screen, German; the
+  screen `failure-repository-settings` rendered and looked at). Gates by its builder: the Go gates, `bastion`, `bastionreg`,
+  `bastionshared`, `proxy`, `ociremote`; on the stack: build, the full unit run, `generate-check`, `make coverage` without a diff, the
+  repository tests, `web-i18n-check`. Open: `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` failed once in the builder's
+  first run (the catalogue's outcome still `pending` right after the documents), passed in its rerun; a second occurrence is a finding.
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
