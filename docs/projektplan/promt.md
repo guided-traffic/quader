@@ -1675,6 +1675,21 @@ records the recorder that tells such a stall apart).
   logs and no warning in the Bastion's. The CI run of the landing (46091385937) is green in every job, the first since the run of
   `450ccb429` on 2026-11-27, 18:29.
 
+- **Closed on 2026-11-28, 03:37 by batch B-1128c: the package list and the package suggestions at a mirror's size** (the entry of
+  2026-11-26, 03:54 in section 8; built 03:00 to 03:33, `.dev/briefs/batch-b1128c.md`, one commit). Causes, read from the plans: the list
+  without a text read and sorted every visible version for its counts and aggregated every package before cutting its page;
+  `PackageViewLatest` matched packages by `concat_ws(format, name)`, which no index serves; the suggestions' check for a served version
+  became a join over every version before the text filtered. Now: in the order of the name, without a filter that depends on versions,
+  the list reads its page's names first through a new index `packages_name_bytes` (migration 00162, `COLLATE "C"`, built concurrently)
+  and counts the versions of those alone, in one statement; `PackageViewLatest` also matches `p.name = ANY(…)`; the suggestions check a
+  served version per candidate (`OFFSET 0` in the `EXISTS`). Answers unchanged. Median at 1,000 / 10,000 / 50,000 packages: the list 31 /
+  31 / 28 ms (was 28 / 66 / 153), the suggestions 11 / 13 / 12 ms (was 11 / 19 / 132); the table with the causes in
+  `docs/developer/packages.md`. Tests: two in the area `search` (about 1.8 s, 3,067 tiny packages by SQL; each fails without its fix) and a
+  unit case. Gates by its builder: the Go gates, `make coverage` without a diff, `search`, `packages`, `conventions`, `postgres`,
+  `ociremote`, `querybudget`. Open: sorting by `createdAt`, `updatedAt` or relevance and the filters that depend on versions still read
+  every version (124 ms at 50,000 for `-updatedAt`); the remedy is H-1683's stored per-package figures, its own package if the UI ever
+  sorts by update by default. Not verified: formats other than npm at that size, real registry names' statistics.
+
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
   reads as if there could be one Bastion only (each card folds); the head names the Bastion, its ingress address in grey and
