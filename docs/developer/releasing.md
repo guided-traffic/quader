@@ -133,13 +133,16 @@ which bounds the install in time ([OS packages in the jobs](#os-packages-in-the-
 | Semantic Release | – | needs the static checks, unit, web, chart, image, the scans, `workflows`, `coverage` and `release-tooling`; the integration, S3 conformance and kind legs and the two coverage jobs that need them still run and do not gate it until the first stable release (Q-ARCH-457); runs only on a push to `main`; publishes the release ([release flow](#release-flow)), then the newest evidence record and coverage badge onto the branch `coverage` ([tools/publish-coverage-record.sh](../../tools/publish-coverage-record.sh), a step that cannot fail the job; Q-ARCH-811); holds `contents: read` and `actions: read`, and the App's token (`contents: write`, no `workflows`) for the tag, the release and the branch's push. A gating job that failed or was cancelled at its limit skips it; re-running the failed jobs of the run runs it after them ([when a gating job hung](#when-a-gating-job-failed-on-the-network)) |
 
 A kind leg that fails keeps its cluster state as the artifact `e2e-cluster-state-<set>` (14 days): per namespace the pods, their
-descriptions and the events, and the logs of every pod of `quader` and of the edge (`ingress-controller`) whole, with the kubelet's
+descriptions and the events, and the logs of every pod of `quader`, of every other namespace that still holds a pod of either chart (a
+Bastion the set did not remove, a second installation) and of the edge (`ingress-controller`) whole, with the kubelet's
 timestamps, compressed, plus the previous instance of every container that restarted ([deploy/dev/cluster-logs.sh](../../deploy/dev/cluster-logs.sh),
 called by every such step). The logs are whole because [kind.yaml](../../deploy/dev/kind.yaml) raises the kubelet's `containerLogMaxSize`
 to 200Mi (`kubectl logs` reads only the current file, so the default 10Mi rotation cut the window of a failure out of the log), and the edge writes an
 access line per request with HAProxy's termination state ([haproxy-values.yaml](../../deploy/dev/haproxy-values.yaml)), whose flags name the side
 that ended a connection. Read a log with `zcat log-<ns>-<pod>.txt.gz`. The size is the logs' size, about a tenth of it compressed; it is bounded by the
-run, not by a tail.
+run, not by a tail. A pod deleted before the step, a Bastion the set removed at its end or a replica a profile's upgrade replaced, is
+not there; its log is in the evidence's `kept-pod-logs/` of `e2e-artifacts-<set>`, kept for every leg, green or red
+([e2e.md](e2e.md#reading-a-stall)).
 
 The workflows pin their actions by major version tag (`actions/checkout@v7`), the way the
 organisation's other repositories do. Two actions are pinned by a release tag instead:

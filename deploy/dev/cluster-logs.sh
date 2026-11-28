@@ -4,8 +4,11 @@
 #
 #   cluster-logs.sh <dir>
 #
-# What it keeps, per pod of the namespaces quader (every quader pod, the Valkey, PostgreSQL and test pods included) and
-# ingress-controller (the edge, HAProxy Ingress):
+# What it keeps, per pod of the namespace quader (every quader pod, the Valkey, PostgreSQL and test pods included), of every other
+# namespace that holds a pod of either chart at the end (a Bastion's, quader-bastion, when the set's teardown did not remove it or
+# QUADER_E2E_BASTION_KEEP=1 kept it; a second installation such as quader-restore) and of ingress-controller (the edge, HAProxy
+# Ingress). A Bastion the set removed at its end is no pod here: its logs are in the evidence's kept-pod-logs/ (e2e-evidence.sh).
+# Per pod:
 #   log-<ns>-<pod>.txt.gz                      every container, from the start of the container's current log, no tail limit,
 #                                              every line timestamped by the kubelet (--timestamps), so a failure window in the
 #                                              test output can be cut out of every log by its time
@@ -22,7 +25,11 @@ set -u
 dir="${1:?usage: cluster-logs.sh <dir>}"
 ctx="kind-${QUADER_DEV_CLUSTER:-$("$(dirname "${BASH_SOURCE[0]}")/dev-tag.sh" --cluster)}"
 mkdir -p "$dir"
-for ns in quader ingress-controller; do
+# the namespaces of the products' pods, found by the charts' name label, beside the two that are always read
+product_ns="$(kubectl --context "$ctx" get pods -A -l 'app.kubernetes.io/name in (quader,quader-bastion)' \
+  -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' 2>/dev/null | sort -u | grep -vx -e quader -e ingress-controller)"
+# shellcheck disable=SC2086 # the namespaces are DNS labels, one word each
+for ns in quader $product_ns ingress-controller; do
   for p in $(kubectl --context "$ctx" -n "$ns" get pods -o name 2>/dev/null); do
     name="${p#pod/}"
     kubectl --context "$ctx" -n "$ns" logs "$p" --all-containers --timestamps 2>&1 | gzip -c > "$dir/log-$ns-$name.txt.gz" || true
