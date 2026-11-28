@@ -267,8 +267,17 @@ func TestJobAccessAndPaging(t *testing.T) {
 			if len(seen) != len(all) || len(replicas) < 2 {
 				t.Fatalf("sort %s: %d of %d jobs, %d replicas", sort, len(seen), len(all), len(replicas))
 			}
+			// As times, not as text: RFC 3339 drops a fraction's trailing zeros, so "…56.07Z" sorts after "…56.074144Z" as text.
 			for i := 1; i < len(order); i++ {
-				if (sort[0] == '-') == (order[i] > order[i-1]) && order[i] != order[i-1] {
+				prev, err := time.Parse(time.RFC3339Nano, order[i-1])
+				if err != nil {
+					t.Fatal(err)
+				}
+				cur, err := time.Parse(time.RFC3339Nano, order[i])
+				if err != nil {
+					t.Fatal(err)
+				}
+				if (sort[0] == '-') == cur.After(prev) && !cur.Equal(prev) {
 					t.Fatalf("sort %s: %s before %s", sort, order[i-1], order[i])
 				}
 			}
