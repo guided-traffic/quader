@@ -1635,6 +1635,23 @@ records the recorder that tells such a stall apart).
   runs on a change of the distribution and hourly, R-BAS-105; to be read again after 02:10). Next: batch B-1128a
   (`.dev/briefs/batch-b1128a.md`): H-2447 (the class after the credential's syntax), malformed credentials and the failed-authentication
   timeout, H-2450 (anonymous misses spending the upstream's quota) and the crawl file the tester read as disclosure.
+  **Read on 2026-11-28, 01:33: the CI run of the B2 landing** (46084772819): `e2e (access-long)` and `e2e (bastion)` green again (red since
+  19:04, the two test fixes of the landing); red only `integration (shard c)`, `TestJobAccessAndPaging` (R-API-010, R-API-051): the walk
+  compared the jobs' enqueue times as text, and RFC 3339 drops a fraction's trailing zeros, so "…56.07Z" sorted after "…56.074144Z"; it
+  compares times now (`398b701d9`, the test passed against the integration stack; red only when a time ends on a zero, no landing's cause).
+  **Landed on 2026-11-28, 02:00: batch B-1128b, the tools and flaky tests of section 8** (four `test:` commits, built 01:35 to 01:55,
+  `.dev/briefs/batch-b1128b.md`). (1) The entry of 2026-11-26, 06:18 was mostly wrong: every kind leg's failure step has kept the living
+  pods' logs since 2026-11-05 (`deploy/dev/cluster-logs.sh`; the run behind the entry holds the API pod's whole log); what was missing is
+  a Bastion or second installation still running at the leg's end, now read from every namespace with a pod of either chart (one more
+  `kubectl get pods -A`, on failure only; not run on a kind cluster). (2) `test/integration/locked.sh` skips an instance whose containers
+  are gone, stopped or unhealthy and names them with the command that brings it back (one `docker ps`, 75 ms; shown with two instances of
+  its own). (3) The mirror's back-off tests read each wait from the engine's injected clock instead of bounding the gap at the stub by the
+  wall clock, and `pass()` reads the database's clock, since a job's `created_at` is the database's `now()`; 5 runs under a load of 34 on
+  20 cores green, the area green in 231 s. (4) The walks of `upstream-deb` and `admin-bastions-projects` wait for the render their click
+  moves (a click pressed before a re-render and released after it fired nothing): ten runs each, 10 of 10. Gates by its builder: the Go
+  gates, the web gates, `mirror`, the two screens ten times; on main: vet of `mirror`, the e2e type check. Open from it: the workflows'
+  loop over namespaces for the cluster state lacks the Bastion's (28 copies; move it into `cluster-logs.sh` once if wanted); one of
+  `performance.yml`'s 19 `make e2e` steps has no log step of its own (likely `e2e-backup`, two sets under one step; not confirmed).
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
