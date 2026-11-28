@@ -1141,14 +1141,21 @@ the remote request path (R-REPO-025, step 9) is this setting.
   link or a README image could otherwise make an administrator's browser bring an
   attacker-chosen package into a frozen mirror. Package clients authenticate with tokens and are
   not affected; the UI shows cached content only.
+- **No populating for an anonymous caller through a Bastion** ([bastion.md](bastion.md)
+  [Q-BAS-531](bastion.md#q-bas-531--an-anonymous-caller-through-a-bastion-reads-what-a-remote-holds-and-never-fills-it)). A request a
+  Bastion forwarded for a caller without a credential (the subject carries the Bastion, R-AUTHZ-043) MUST NOT pass the populate check,
+  whatever the repository's level and `cacheFillAction` say: it gets what the cache holds, exactly like a caller without the populate
+  action. A Bastion faces the internet, and a fill there would let anyone spend the installation's upstream requests and its quota at
+  the upstream (Docker Hub's pull limit). A caller with a token through a Bastion populates as at the main installation's own door;
+  a mirror's passes and a download ahead (R-CUR-010) fill for anonymous readers too.
 - **Public populating is flagged.** A read by a visibility level passes the populate check like a read by a grant
-  (R-AUTHZ-035). When a write sets the artifacts of a remote repository whose `cacheFillAction` is `read` to `public`, or
+  (R-AUTHZ-035), at the main installation's own door. When a write sets the artifacts of a remote repository whose `cacheFillAction` is `read` to `public`, or
   sets `cacheFillAction: read` on a remote repository whose artifacts are `public`, the repository API saves it and
   returns the warning `public_populates_remote`: every caller on the network can then make Quader download arbitrary
   upstream packages, and the warning makes that visible when the repository is opened
   ([Q-AUTHZ-278](#q-authz-278--a-public-remote-repository-is-filled-by-anonymous-callers-and-the-write-that-opens-it-warns)).
-- **One check, asked two ways.** The check is `MayPopulate` of R-AUTHZ-015: the session cookie and
-  an endpoint with `cache_fill: false` ([endpoints.md](endpoints.md) R-EP-019) refuse first, then
+- **One check, asked two ways.** The check is `MayPopulate` of R-AUTHZ-015: the session cookie,
+  an endpoint with `cache_fill: false` ([endpoints.md](endpoints.md) R-EP-019) and the anonymous caller through a Bastion refuse first, then
   `read` and the action of `cacheFillAction`; a `cacheFillAction` that names neither refuses. The
   endpoint's setting travels in the subject with the endpoint's name (Q-AUTHZ-153). Where a refusal
   is answered from the cache (an expired document served stale, a virtual member counted as a
@@ -1186,6 +1193,11 @@ Acceptance criteria:
   /api/npm/web/npmjs/is-odd` for the uncached package, carrying only Carol's session cookie, answers
   403 `populate_not_permitted`, and the test upstream records no request. The same request with
   Carol's personal access token fetches the package.
+- Unit (`TestR_AUTHZ_008_R_BAS_094_AnAnonymousCallerThroughABastionNeverPopulates` in
+  [bastion_populate_test.go](../../internal/authz/bastion_populate_test.go), milliseconds, an index of two repositories): on a public
+  remote that fills on read and that a Bastion distributes, the anonymous caller through the Bastion reads, is refused the populate
+  check (`403 populate_not_permitted` with nothing cached) and reads a virtual repository's remote member from its cache only; the
+  anonymous caller at the main installation's door and a token holder through the Bastion populate.
 - In the `public` project `web`, a merge patch `{"visibility": {"artifacts": "public"}}` on `npmjs` (`cacheFillAction:
   read`) answers 200 with `"warnings": ["public_populates_remote"]`; the same patch on a remote repository with
   `cacheFillAction: deploy` answers 200 without that warning.
@@ -1736,6 +1748,9 @@ func MayPopulate(sub Subject, idx *Index, m Repo, mc Coordinate) bool {
     }
     if sub.Endpoint != "" && !sub.CacheFill {                       // the endpoint's cache_fill, endpoints.md R-EP-019
         return false
+    }
+    if sub.Anonymous && sub.Bastion != "" {                         // the anonymous caller through a Bastion, bastion.md
+        return false                                                // Q-BAS-531
     }
     return Allowed(sub, idx, Read, mc) && Allowed(sub, idx, m.PopulateAction, mc)
 }

@@ -13,12 +13,13 @@ import (
 // The populate check of R-AUTHZ-008 and MemberUsable of R-AUTHZ-015. Fetching a
 // path a remote repository has not cached, and refreshing an expired metadata
 // document, bring new content into the cache: they need read plus the action the
-// repository's cacheFillAction names. Three rules refuse whatever the grants
+// repository's cacheFillAction names. Four rules refuse whatever the grants
 // say: a request that came with the session cookie, a request on an endpoint
-// with cache_fill: false (R-EP-019, carried in the subject, Q-AUTHZ-153), and a
-// remote repository whose cacheFillAction names no action. Whether a request
-// needs its upstream (nothing cached, or an expired document) is the remote
-// engine's to know; this file only answers whether it may.
+// with cache_fill: false (R-EP-019, carried in the subject, Q-AUTHZ-153), an
+// anonymous caller through a Bastion (bastion.md Q-BAS-531), and a remote
+// repository whose cacheFillAction names no action. Whether a request needs its
+// upstream (nothing cached, or an expired document) is the remote engine's to
+// know; this file only answers whether it may.
 
 // populateAction is the action a remote repository's cacheFillAction names: read
 // by default (Q-AUTHZ-4), deploy for a frozen mirror. ok is false for a value
@@ -44,6 +45,11 @@ func sessionCredential(sub Subject) bool {
 // A subject without an endpoint (a job, a command) has no such ceiling.
 func endpointFills(sub Subject) bool { return sub.Endpoint == "" || sub.CacheFill }
 
+// anonymousThroughBastion reports whether the subject is the anonymous caller of a request a Bastion forwarded (Subject.Bastion). It
+// reads what a remote repository holds and never makes it fetch from its upstream: an internet caller does not spend the
+// installation's upstream requests and its quota there, such as Docker Hub's pull limit (bastion.md Q-BAS-531, H-2450).
+func anonymousThroughBastion(sub Subject) bool { return sub.Anonymous && sub.Bastion != "" }
+
 // populate decides the populate check on a coordinate of a remote repository.
 // readRefused says that the refusal is the read decision itself, which the caller
 // answers and audits as a read.
@@ -59,7 +65,7 @@ func (e *Engine) populate(idx *Index, sub Subject, c Coordinate) (d Decision, re
 	if r == nil || r.Class != repository.Remote {
 		return deny, false // only a remote repository has an upstream to fill from
 	}
-	if sessionCredential(sub) || !endpointFills(sub) || isSystem(sub) || isCertificate(sub) {
+	if sessionCredential(sub) || !endpointFills(sub) || isSystem(sub) || isCertificate(sub) || anonymousThroughBastion(sub) {
 		// A system subject never populates (R-AUTHZ-008): the scanner's pull reads what a remote holds, and a layer it lacks
 		// is populate_not_permitted (Q-VULN-165).
 		return deny, false

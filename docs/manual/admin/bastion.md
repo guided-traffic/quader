@@ -295,6 +295,12 @@ The figures count per client address, not per person: many people or build jobs 
 
 Besides the limits per address, a Bastion bounds what all anonymous clients together may cause at the main installation: by default 100 requests a second with a burst of 2,000, and 36,000 an hour, for the whole Bastion. Only requests the Bastion has to send to the main installation count (a file it serves from its cache does not); above the figure an anonymous client is answered `503` `busy` and told when to try again, while signed-in clients and everything cached are still served. The hour holds, for example, 75 cold `npm ci` of 475 packages or 36,000 `docker pull`s of a cached image. The ceiling is the registration's, under **Details** on its card.
 
+An anonymous client of a Bastion never makes a remote repository fetch from its upstream: it gets what the remote already holds, an
+older copy of a document included, and a version or layer nobody has fetched yet is answered **not permitted** (`403`
+`populate_not_permitted`). So nobody on the internet can spend your quota at Docker Hub or another upstream through a Bastion. What your
+own builds, a signed-in client of the Bastion, a mirror or a download ahead brought into the remote is served to everyone who may read
+it. To give anonymous visitors new versions as they appear, make the remote a mirror, or give the clients a token.
+
 ### Limits on the card
 
 Each card in **Admin area › Bastions** has a section **Limits**, after the rows of the web interface and the direct reads. Each row has its name on the left and its control on the right (one under the other on a narrow screen); the info sign after a name says what the setting does, on hover, on keyboard focus, or pinned by a tap. In plain view:

@@ -5405,6 +5405,12 @@ anonymous callers of a Bastion together, and the paths on which an anonymous req
   anonymous key and the cache key, and reused for `bastion.cache.metadata_revalidate_after` without a conditional request, under the
   feed's `content` entries like a shared document (R-BAS-023). It is never written to the cache backend.
 - **Writes** are refused by the Bastion itself (R-BAS-095); no probe reaches the main installation.
+- **An anonymous caller never fills a remote repository** (*added on 2026-11-28*, H-2450,
+  [Q-BAS-531](#q-bas-531--an-anonymous-caller-through-a-bastion-reads-what-a-remote-holds-and-never-fills-it)). The main installation's
+  populate check refuses the anonymous subject of a forward ([authorization.md](authorization.md) R-AUTHZ-008): the caller reads what the
+  remote holds, an expired document as it is, a version or blob it does not hold is `403 populate_not_permitted` (through a virtual
+  repository the remote member is no candidate, so the format's not-found), and no request of it reaches the upstream. What a token holder,
+  a mirror's pass or a download ahead (R-CUR-010) filled is served to the anonymous caller like every cached item.
 - **The anonymous `/v2/_catalog`** is answered from W-35's public catalogue once that exists; until then it is forwarded under the ceiling.
 - **Anonymous protocol searches** (npm, NuGet, Ansible Galaxy) stay forwarded per request and `pass`, under the ceiling: rendering them
   needs format knowledge, which the Bastion does not hold (R-BAS-001).
@@ -5435,7 +5441,7 @@ at 10 ms an answer is about 1,600 requests a second at the main installation fro
 
 | # | Path | Per anonymous request after E14a |
 |---|---|---|
-| 1 | The forward of a miss | one per miss; a cold anonymous pull of an image of two blobs sent four forwards and nothing else (measured) |
+| 1 | The forward of a miss | one per miss; a cold anonymous pull of an image of two blobs sent four forwards and nothing else (measured); since Q-BAS-531 none of them makes a remote repository fetch from its upstream |
 | 2 | A `404` not marked `absent` | one per request |
 | 3 | `pass` routes | the token service none (measured); search, npm's `-/whoami` and `/v2/_catalog` one per request |
 | 4 | The check | none per request: one per repository and answer period for all anonymous callers together |
@@ -16599,6 +16605,38 @@ sends junk credentials at r a second above the anonymous 50 collects (r − 50) 
 **Choice:** (b). No code changes: `stepCredentials` refuses a malformed credential before it asks the timeout, and `FailedAuth` still
 counts it, so 20 malformed credentials put the address's well-formed unknown tokens into the timeout as before. **Applied in the spec:**
 R-BAS-036; test: `TestR_BAS_035_R_BAS_036_AMalformedCredentialCountsInTheAnonymousRequestClass`.
+
+### Q-BAS-531 · An anonymous caller through a Bastion reads what a remote holds and never fills it
+
+Status: **Decided by the development agent** on 2026-11-28 (H-2450 of the security page, batch B-1128a after the authorized attack of
+2026-11-27) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-094, R-BAS-134, [authorization.md](authorization.md) R-AUTHZ-008, R-AUTHZ-035, Q-AUTHZ-278. A read of a remote repository
+that it has not cached is a fill: the main installation fetches from the upstream, and the request counts against the installation's
+quota there (Docker Hub's pull limit, a vendor's rate limit). Through a Bastion an anonymous caller could cause one per name it asks for:
+bounded per address (1,000 misses a minute built in, per replica without Valkey, H-2449), by the anonymous ceiling of R-BAS-094 (36,000
+requests an hour at the main installation for all anonymous callers of a Bastion together) and since W-41 by the remotes an administrator
+allows and an Owner opts in (R-BAS-134), never by the upstream's quota. In the test of 2026-11-27 two anonymous reads of a public Docker
+Hub image (`tags/list` 819 ms, a manifest 452 ms) went through to the upstream. The main installation already has the mechanism for a
+caller who may read but not fill: the populate check (R-AUTHZ-008), which a session cookie, an endpoint with `cache_fill: false`, a
+system subject and a frozen mirror's `cacheFillAction: deploy` use; such a caller gets what the cache holds. The subject of a forward
+carries its Bastion (R-AUTHZ-043).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The populate check refuses the anonymous caller through a Bastion (`Subject.Anonymous && Subject.Bastion != ""`) (chosen) | An internet caller reads what the remote holds: a cached item and an expired document as they are; an uncached one is `403 populate_not_permitted` (a virtual repository's remote member is no candidate); no request reaches the upstream | Closes the gap whatever the quota, the number of addresses or replicas; one condition in the one check every format and the virtual resolver already ask, no setting, no counter; the refusal is answered from the Bastion's kept refusal for the anonymous key afterwards (R-BAS-020), so repeated asks cost the main installation nothing | The first anonymous pull of a tag nobody fetched is refused, and a mutable tag (`latest`) or an npm document stays as last fetched until a token holder, a mirror's pass or a download ahead refreshes it; a public pull-through mirror for anonymous internet users is no longer possible through a Bastion |
+| (b) A ceiling of anonymous fills per registration across addresses, answered as (a) above it | The first pull of a new tag works until the ceiling | A figure on the card and a counter shared by the main installation's replicas; the quota is spent up to the ceiling, and a caller who exhausts it denies the first pull to every other anonymous user, so under attack it is (a) after the quota is gone |
+| (c) A switch per registration, "anonymous callers may fill remote repositories", off by default | An administrator who wants a public pull-through mirror turns it on | A setting for a case the owner's principle (the Bastion shields the main installation, the smallest footprint) argues against; with it on the gap is back in full |
+| (d) Keep it, bounded by the per-address misses, the anonymous ceiling and the distribution | Nothing changes | 36,000 upstream fetches an hour exceed any upstream's anonymous or free quota many times |
+
+**Choice:** (a). What a plain user expects of a public remote behind a Bastion is that what the organization pulled is there: the
+remote's cache is what the organization distributes. An administrator who wants anonymous visitors to get new versions makes the remote a
+mirror (R-REPO-053), downloads ahead (R-CUR-010), or gives the clients a token; a caller with a token through a Bastion fills as at the
+main installation's own door. A refusal is recorded as an audit event only where anonymous denials are
+(`audit.record_anonymous_denials`, off by default), so a flood of anonymous misses writes no event per request. No setting, no change of
+the interface between the Bastion and the main installation. **Applied in the spec:** R-BAS-094, [authorization.md](authorization.md)
+R-AUTHZ-008 and R-AUTHZ-015; code: `anonymousThroughBastion` in [populate.go](../../internal/authz/populate.go); test:
+`TestR_AUTHZ_008_R_BAS_094_AnAnonymousCallerThroughABastionNeverPopulates`.
 
 ## What this does not cover
 

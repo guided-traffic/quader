@@ -206,6 +206,7 @@ network also in `server.trusted_proxies` ([H-2349](#h-2349--a-bastions-network-t
 | Bastion limits | credential or not, misses, failures | per-address request rates (anonymous stricter), per-address miss budgets, the failed-authentication timeout | R-BAS-035, R-BAS-036 |
 | Concurrency budget | requests to the main installation | at most `max_concurrent` across replicas, anonymous at most a share; collapsed misses | R-BAS-025 |
 | Cache room | the stored bytes of each area, from its listings and its own commits | a fill that would take its area past `max_bytes` is not kept, and a sweep starts at once above 95 %, so a flood of distinct artifacts cannot fill the cache volume or get the pod evicted; what was served twice is evicted after what was served once, within 80 % of an area, so single requests for distinct artifacts do not evict what others read twice (H-2272, H-2290) | R-BAS-089, R-BAS-098 |
+| Main installation's populate check | that a forward's caller is anonymous | an anonymous caller through a Bastion reads what a remote repository holds and never makes it fetch from its upstream, so no internet caller spends the upstream's quota (Docker Hub's pull limit); an uncached item is `403 populate_not_permitted` ([Q-BAS-531](../spec/bastion.md#q-bas-531--an-anonymous-caller-through-a-bastion-reads-what-a-remote-holds-and-never-fills-it), H-2450 closed on 2026-11-28) | R-AUTHZ-008, R-BAS-094 |
 | Main installation | the real client, through the registration's own networks (`egress`) for a recognized Bastion request | its own rate limits, throttle and audit, applied to the client, not to the Bastion; with an empty list, or from an unlisted address, to the Bastion's address for all its callers (H-2291) | R-BAS-017 |
 
 Without Valkey every counter and block holds per replica at the configured value divided by the chart's replica count (H-389).
@@ -1693,15 +1694,3 @@ timeout and the block list. Live in every installation without Valkey. Each repl
 caller whose requests the ingress spreads over n replicas gets n times every figure, and a block or timeout set by one replica does not hold
 at the others. What makes it real: an installation with several replicas and no Valkey; in the test of 2026-11-27 one replica set the
 failed-authentication timeout after 20 failures while the other had not. Configuring Valkey closes it; this page does not require it.
-
-### H-2450 · An anonymous caller can make a remote repository fetch from its upstream through the Bastion
-
-Stage: a forward of a `Download` or `Metadata` route to a remote repository (R-BAS-115's note on fills, the misses of R-BAS-035). Subject:
-the main installation's upstream requests and its quota at the upstream (for Docker Hub its pull limit). Live wherever a remote repository is
-served through a Bastion to anonymous callers. A read of a version the remote has not cached is a miss: the main installation fetches it from
-the upstream. Misses are bounded per address (built in: 1,000 a minute for anonymous callers, per replica without Valkey, H-2449) and by the
-Bastion's budgets, not by the upstream's quota. What makes it real: an internet caller who asks for many uncached names under a public remote
-repository spends the main installation's upstream quota; in the test of 2026-11-27 two anonymous reads of a public Docker Hub image
-(`tags/list` 819 ms, a manifest 452 ms) went through to the upstream. Not verified: how many misses an anonymous caller can cause before a
-budget refuses. W-41's distribution narrows it to the remote repositories an administrator allows and an Owner opts in; a remote's delivery
-mode and rules ([remote-curation.md](../spec/remote-curation.md) R-CUR-001, decided before a fill by R-CUR-003) narrow it further.
