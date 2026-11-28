@@ -1652,7 +1652,7 @@ records the recorder that tells such a stall apart).
   gates, the web gates, `mirror`, the two screens ten times; on main: vet of `mirror`, the e2e type check. Open from it: the workflows'
   loop over namespaces for the cluster state lacks the Bastion's (28 copies; move it into `cluster-logs.sh` once if wanted); one of
   `performance.yml`'s 19 `make e2e` steps has no log step of its own (likely `e2e-backup`, two sets under one step; not confirmed).
-  **Landed on 2026-11-28, 02:08: batch B-1128a, the Bastion's open points from the attack** (five commits, built 01:25 to 02:00, and one
+  **Landed on 2026-11-28, 02:06: batch B-1128a, the Bastion's open points from the attack** (five commits, built 01:25 to 02:00, and one
   of mine). (1) H-2447 closed: a request counts in the authenticated class only when the Bastion can read its credential (`limitClass`:
   `q.hasAuth && q.credOK`, the token form's password included; `RateLimit-Policy` names the class that refused; Q-BAS-529). (2) A
   malformed credential stays `401 invalid_token` during the failed-authentication timeout and still counts; the anonymous limit bounds it
@@ -1669,6 +1669,11 @@ records the recorder that tells such a stall apart).
   `bastionshared`, `proxy`, `ociremote`; on the stack: build, the full unit run, `generate-check`, `make coverage` without a diff, the
   repository tests, `web-i18n-check`. Open: `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` failed once in the builder's
   first run (the catalogue's outcome still `pending` right after the documents), passed in its rerun; a second occurrence is a finding.
+  **Read on 2026-11-28, 02:15 to 02:56.** The owner's Bastion's public start page, read once anonymously at 02:15, lists no project: the
+  hourly run (R-BAS-105) dropped what the catalogue built before B2 had shown, so page and delivery agree. v0.169.1 (B-1128a) released at
+  02:28; his installation on it at 02:39, 13 pods ready without a restart, the migration job succeeded, no error in the last ten minutes'
+  logs and no warning in the Bastion's. The CI run of the landing (46091385937) is green in every job, the first since the run of
+  `450ccb429` on 2026-11-27, 18:29.
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
