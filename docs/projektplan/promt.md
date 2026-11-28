@@ -1699,6 +1699,16 @@ records the recorder that tells such a stall apart).
   The CI run of `e76266d96` (46105020416) failed once in the layout checks' part 5 on Docker Hub's `502 Bad Gateway` for a layer of the
   `postgres` image (the runner, not the change); its re-run passed at 05:52, so the run is green in every job.
 
+- **Decided on 2026-11-28, 10:40, the owner: local LLM models are the first topic after the beta features.** His words: "Der ganze LLM
+  Part den du ausgearbeitet hast gehört in die FULL.md. Es soll das erste Thema sein, dass wir nach den BETA-Features abarbeiten." The
+  research of 2026-11-27 (a researcher read the clients' sources and the public endpoints) is in the repository now,
+  [llm-models.md](llm-models.md), and FULL.md has block L before every other block after the beta: L1 Hugging Face remote (read path
+  without Xet), L2 Ollama as a format of its own on the OCI format's internals, L3 Hugging Face local and virtual (Xet), L4 OCI model
+  artifacts in the existing OCI format (sizes and client tests, no new format), L5 the generic format for plain files, L6 ModelScope on
+  demand; LM Studio, Jan and GPT4All cannot be pointed at a mirror. The block letters B to G stay (spec pages cite them); the row
+  "Hugging Face models and datasets" of block D keeps the datasets only. This sets the order after the beta; the rule of 2026-11-23
+  (no new format before he declares the existing ones finished) is otherwise unchanged.
+
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
   reads as if there could be one Bastion only (each card folds); the head names the Bastion, its ingress address in grey and

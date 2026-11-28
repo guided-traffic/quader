@@ -1,7 +1,7 @@
 # Quader · Full product plan after the beta
 
 **Status:** ⚪ not started · 🟡 in progress or partly done · 🟢 done
-**Last updated:** 2026-11-20
+**Last updated:** 2026-11-28
 
 Everything that goes beyond the beta release in [BETA.md](BETA.md): the beta phase, the remaining
 registry types, and platform features. Releases after the beta are cut by Semantic Release from the
@@ -21,7 +21,8 @@ repositories) before it counts as done.
 | Block | Content | Status |
 |---|---|---|
 | [A · Beta phase](#a--beta-phase) | Beta feedback, upgrade path, import tooling, user documentation | 🟡 |
-| [B · Registries after the beta](#b--registries-after-the-beta-p1) | Ansible Galaxy first, then generic, PyPI, Helm, OCI/Docker, Go, Maven | 🟡 |
+| [L · Local LLM models](#l--local-llm-models-first-after-the-beta-features) | **The first topic after the beta features** (owner, 2026-11-28): Hugging Face, Ollama, OCI model artifacts | ⚪ |
+| [B · Registries after the beta](#b--registries-after-the-beta-p1) | Ansible Galaxy first, then, after block L, generic, PyPI, Helm, OCI/Docker, Go, Maven | 🟡 |
 | [C · Platform features](#c--platform-features-p1) | npm/NuGet completion, retention, search, webhooks, identity breadth, HA breadth, curation | ⚪ |
 | [D · Further registries](#d--further-registries-p2) | 37 more registry types | ⚪ |
 | [E · Further platform work](#e--further-platform-work-p2) | Replication, query language, more storage back ends, … | ⚪ |
@@ -38,11 +39,65 @@ repositories) before it counts as done.
 - 🟢 User documentation: getting started, client setup per registry, administration, backup and restore, operations runbook ([docs/manual](../manual/README.md))
 - ⚪ The release that closes the beta phase (cut by Semantic Release)
 
+## L · Local LLM models (first after the beta features)
+
+By the owner's decision of 2026-11-28 the first topic after the beta features, before every other block below: Quader keeps and
+serves the models that local LLM tools load. The research behind each point (the clients read in their sources on 2026-11-27, live
+reads of the public endpoints, what is verified and what is inferred): [llm-models.md](llm-models.md).
+
+**What the tools load.** Two weight formats carry nearly all of it: **GGUF**, one self-contained file per model or quantisation
+(Ollama, LM Studio, Jan, GPT4All, llama.cpp, LocalAI, llamafile, KoboldCpp), and **safetensors** with its side files
+(`config.json`, the tokenizer, the chat template; transformers, vLLM, SGLang). Apple's MLX, GPTQ, AWQ, EXL2 and EXL3 are safetensors
+with a quantisation block; PyTorch pickles, ONNX and OpenVINO are minor. For a repository they are large opaque files addressed by
+SHA-256: what decides the work is the distribution protocol, not the file format. One GGUF reached through Hugging Face, Ollama and
+OCI has the same SHA-256 and is stored once.
+
+In the order of reach per unit of work:
+
+- ⚪ **L1 · Hugging Face, remote, the read path without Xet.** The origin of almost every weight local tools use; Ollama's `hf.co`
+  path ends in its `resolve` URLs too. One format: the Hub HTTP API (model info, tree, refs, `resolve` with the Hub's headers), which
+  carries GGUF, safetensors, MLX and ONNX alike. One variable (`HF_ENDPOINT`, `MODEL_ENDPOINT` for llama.cpp) points transformers,
+  diffusers, vLLM, SGLang, mlx_lm, llama.cpp, LocalAI, RamaLama and NIM at Quader. The plain read path serves every file up to 50 GB
+  without Xet. With it a host-root binding of the format (Ollama's view needs it). Gated models need the acceptance per user at the
+  upstream.
+- ⚪ **L2 · Ollama, a format of its own on the OCI format's internals** (its manifest parser, blob store, upload sessions and remote
+  engine): a remote of `registry.ollama.ai`, a local class, and the Ollama view on the Hugging Face format (hf.co builds an Ollama
+  `/v2/` from GGUF repositories on the fly). Not a mode of the OCI format, because five things differ: names of exactly
+  `host/namespace/model:tag` on a host root; the token handshake signed with an ed25519 key (a user registers the Ollama public key);
+  a blob `GET` that must answer with a `Location` valid for the whole download (Ollama reads 16 ranges of one URL); Ollama's own list
+  type and layer media types (`application/vnd.ollama.image.model` and others); and an upstream without a tags list. Ollama has no
+  mirror setting: the mirror's host in the model's name is the only way in, and a client in a private network needs `HTTPS_PROXY`
+  (the setup screen says so).
+- ⚪ **L3 · Hugging Face, local and virtual,** to keep own fine-tunes: the upload API (preupload, the NDJSON commit, LFS batch) and,
+  with current clients, the Xet write path (without it every uploader sets `HF_HUB_DISABLE_XET=1`); the Xet read path comes with it
+  and lifts the 50 GB limit.
+- ⚪ **L4 · OCI model artifacts in the existing OCI format, no new format:** Docker Model Runner (`application/vnd.docker.ai.*`), CNCF
+  ModelPack (Docker Hub's `ai/` namespace ships it), KitOps ModelKit, ORAS artifacts, KServe modelcars, RamaLama images. The OCI
+  format stores them already; what is missing: upload, part and spool sizes for models (`storage.upload.max_size` is 10 GiB by default,
+  a 65 GB GGUF layer is refused), the clients `docker model`, `modctl`, `kit` and `oras` among the format's tested clients, and
+  optionally a ModelPack config's architecture, parameter size and quantisation on the screens.
+- ⚪ **L5 · Plain files: the generic format as it is,** for llamafile, KoboldCpp, `llama.cpp -mu`, and the files sideloaded into
+  LM Studio, Jan and GPT4All.
+- ⚪ **L6 · ModelScope only on demand** (its own API, `MODELSCOPE_ENDPOINT`; it matters in China and as a source for vLLM and NIM).
+
+**For every package:** model files are tens of gigabytes, so range requests and resume (every client uses them; Ollama 16 parallel
+ranges of one URL, `huggingface_hub` and llama.cpp `bytes=n-` with a mandatory `206`), a spool per replica of at least the largest
+file times the concurrent transfers, and the malware scan: a weight file above 1 GiB cannot be split and is `unscannable` today; the
+meaningful check for model files is a scan of the imports of pickle files (`.bin`, `.pt`, `.pkl`), as the Hugging Face Hub does.
+Tests as for every format (CLAUDE.md "Tests stay runnable"): model-sized payloads are no test data; size is tested once, where it is
+the point.
+
+**Not reachable, and not built:** LM Studio, Jan and GPT4All download from huggingface.co inside their own applications, ignore
+`HF_ENDPOINT` and have no mirror or proxy setting; Quader reaches them only through files sideloaded by hand (`lms import`). No format
+for Kaggle (it cannot be mirrored), the NGC command line (no override; NIM is reached through Hugging Face), PyTorch Hub, TF Hub,
+MLflow and Triton.
+
 ## B · Registries after the beta (P1)
 
 Each registry: spec page → implementation → integration tests → e2e tests → client setup in the UI.
-Ansible Galaxy goes first because it replaces a system the owner runs today. The other orders
-follow the [roadmap's format order](../coverage/roadmap.md#p1-format-expansion-order).
+Ansible Galaxy goes first because it replaces a system the owner runs today. Block L comes before the rest of
+this block (owner, 2026-11-28). The other orders follow the
+[roadmap's format order](../coverage/roadmap.md#p1-format-expansion-order).
 
 ### F0 · Ansible Galaxy (replaces the existing Galaxy)
 - 🟢 Spec page [formats/ansible.md](../spec/formats/ansible.md) ([catalog](../features/formats/ansible.md))
@@ -195,7 +250,7 @@ all four columns green.
 | RPM | ⚪ | ⚪ | ⚪ | ⚪ |
 | Alpine Linux | ⚪ | ⚪ | ⚪ | ⚪ |
 | Opkg | ⚪ | ⚪ | ⚪ | ⚪ |
-| Hugging Face models and datasets | ⚪ | ⚪ | ⚪ | ⚪ |
+| Hugging Face datasets (the Hub API of [block L](#l--local-llm-models-first-after-the-beta-features), repository type `dataset`) | ⚪ | ⚪ | ⚪ | ⚪ |
 | Git LFS | ⚪ | ⚪ | ⚪ | ⚪ |
 | Version-control archives (remote) | ⚪ | ⚪ | ⚪ | ⚪ |
 | VS Code compatible extension galleries: VS Code, Cursor, Kiro, Windsurf / Devin (remote) | ⚪ | ⚪ | ⚪ | ⚪ |
