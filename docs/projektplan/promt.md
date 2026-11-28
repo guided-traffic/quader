@@ -1613,7 +1613,7 @@ records the recorder that tells such a stall apart).
   error or warning in the Bastion's log of the last five minutes. The CI run of that push: the layout checks' part 5 failed once on
   `upstream-deb` at 1,024 px (one of two host fields after 15 s) and passed on its re-run (flaky, the first time seen); `e2e (access-long)`
   and `e2e (bastion)` red since K's landing at 19:04, by tests the landings had made stale (fixed below).
-  **Landed on 2026-11-28, 00:55: W41-B2, E, D2 and D1's seed, with four fixes.** B2: a Bastion serves only the repositories distributed
+  **Landed on 2026-11-28, 00:52: W41-B2, E, D2 and D1's seed, with four fixes.** B2: a Bastion serves only the repositories distributed
   through it, whoever asks (the distribution a ceiling in the decision point beside the endpoint's exposure; Q-BAS-522, Q-BAS-523,
   Q-AUTHZ-341, Q-AUTHZ-342). E: two deployments under one token share one catalogue on a stable base URL, each serving it with its own
   address (Q-BAS-524; H-2446: a pair admits the anonymous ceiling, the slots and the throughput each). D2: Set up client's **Install
@@ -1628,6 +1628,13 @@ records the recorder that tells such a stall apart).
   passed), `bastion`, `bastionreg`, `authz`, `bastionsetup`, `bastioniface`, `bastionshared`, `packages`, the bundle budgets; after the
   fixes the web unit run (2,644 passed), lint, `web-i18n-check`. From the release on the owner's Bastion serves nothing until he allows
   `upstream` on its card and ticks `artifacts` at `upstream/docker-hub` (told him at 22:45).
+  **Read on 2026-11-28, 01:18: the owner's installation on v0.169.0** (released 01:07): every pod ready, no restart, one TLS handshake
+  reset from an ingress pod in the Bastion's log. Read anonymously at 01:20 (three requests): the token service answers `401
+  credentials_required` ("anonymous access is off", Q-BAS-522: no public repository is distributed through `artifacts` yet), so an
+  anonymous pull is refused; the web interface still lists `upstream/docker-hub` from the catalogue built before the release (the builder
+  runs on a change of the distribution and hourly, R-BAS-105; to be read again after 02:10). Next: batch B-1128a
+  (`.dev/briefs/batch-b1128a.md`): H-2447 (the class after the credential's syntax), malformed credentials and the failed-authentication
+  timeout, H-2450 (anonymous misses spending the upstream's quota) and the crawl file the tester read as disclosure.
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
