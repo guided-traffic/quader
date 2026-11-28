@@ -331,7 +331,16 @@ until the command and every process that kept the descriptor (the test binaries 
 ended, also when the wrapper is killed. A bare `lockf <file> <command>` is not a substitute: it removes the file when its command
 ends, so a process still waiting on the removed file and one that creates it anew both run, and a killed `lockf` leaves its
 command running without the lock. A candidate is an instance whose env file exists: `make integration-down` removes it, but a
-stack whose containers stopped some other way (a restart of Docker) keeps it and fails the run that takes it.
+stack whose containers stopped some other way (a restart of Docker) keeps it. So once it holds an instance's lock, `locked.sh`
+asks Docker for the containers of the instance's compose project (one `docker ps`, about 50 ms): an instance with a container
+that is gone, stopped or failing its health check is let go and skipped for the rest of the run, with a line that names those
+containers and the way back; a pinned instance, or the only one, that does not serve ends the script with exit 1, and so does a
+run whose every candidate does not serve. A check still starting counts as serving.
+
+```text
+locked.sh: 2026-11-28 01:28:15 skipping instance 8 (quader-it8) does not serve, its env file stands: valkey-sentinel-2 exited (0), …, seaweedfs exited (137), net exited (143); take it down and up again in /Users/hfi/repos/quader (make integration-down INSTANCE=8 && make integration-up INSTANCE=8)
+locked.sh: 2026-11-28 01:28:15 took instance 9 (quader-it9) after waiting 0 s (pid 88330): sh -c echo "ran on instance $QUADER_TEST_INSTANCE"
+```
 
 `make test-integration` reads the env file of `INSTANCE` (default `QUADER_TEST_INSTANCE`, then 1) of the main checkout by
 itself, also from a worktree, but takes no lock: the pipeline starts one stack per job and runs it that way, unchanged.

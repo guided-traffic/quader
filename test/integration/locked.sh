@@ -15,7 +15,10 @@
 #
 # Which instance: QUADER_TEST_INSTANCE pins one, and the script waits for that instance's lock without a timeout. Without it every
 # instance whose env file exists in the main checkout is a candidate: the script takes the first whose lock is free without
-# waiting, and when every one is taken it tries them all again every two seconds, so it takes whichever becomes free first. It
+# waiting, and when every one is taken it tries them all again every two seconds, so it takes whichever becomes free first. An
+# instance whose stack does not serve is skipped once its lock is held, with a line on stderr that names the containers: one of
+# its containers is gone, stopped or failing its health check (the env file outlives a restart of the container runtime, which
+# stops every container at once). A pinned instance, or the only candidate, that does not serve ends the script with exit 1. It
 # says on stderr which instance it took and how long it waited, then loads that instance's env file and runs the command in the
 # current directory. It exports QUADER_TEST_INSTANCE as the instance it took, so `make test-integration` reads that instance's env
 # file and rotate-cert.sh acts on that instance's containers.
@@ -104,6 +107,46 @@ take() {
   return 1
 }
 
+# serves <instance> succeeds when every container of the instance's compose project runs and none fails its health check (the
+# compose file's checks: pg_isready, a Valkey PING, PgBouncer's port, SeaweedFS's status); a container whose check is still
+# starting counts as serving. Otherwise it sets WHY to the containers that do not serve. It is asked with the lock held, so no
+# run of this script is inside the instance; one `docker ps` of about 50 ms. Without a docker command nothing can be told and
+# the instance counts as serving.
+serves() {
+  it_instance "$1" "$main"
+  WHY=""
+  command -v docker >/dev/null || return 0
+  local rows name state status bad=""
+  if ! rows="$(docker ps -a --filter "label=com.docker.compose.project=$IT_PROJECT" --format '{{.Names}} {{.State}} {{.Status}}' 2>&1)"; then
+    WHY="the container runtime does not answer (${rows%%$'\n'*})"
+    return 1
+  fi
+  if [ -z "$rows" ]; then
+    WHY="no container of the compose project $IT_PROJECT exists"
+    return 1
+  fi
+  while read -r name state status; do
+    if [ "$state" = exited ]; then
+      # "Exited (255) 37 hours ago": the code says how it ended (255 all at once: the container runtime restarted)
+      status="${status#Exited }"
+      bad="$bad, ${name#"$IT_PROJECT"-} exited ${status%%)*})"
+    elif [ "$state" != running ]; then
+      bad="$bad, ${name#"$IT_PROJECT"-} $state"
+    else
+      case "$status" in *"(unhealthy)"*) bad="$bad, ${name#"$IT_PROJECT"-} unhealthy" ;; esac
+    fi
+  done <<<"$rows"
+  [ -z "$bad" ] && return 0
+  WHY="${bad#, }"
+  return 1
+}
+
+# skip_line <instance>: what is said of an instance that does not serve, with what brings it back.
+skip_line() {
+  echo "instance $1 ($IT_PROJECT) does not serve, its env file stands: $WHY; take it down and up again in $main" \
+    "(make integration-down INSTANCE=$1 && make integration-up INSTANCE=$1)"
+}
+
 start="$(date +%s)"
 chosen=""
 took="took"
@@ -114,19 +157,38 @@ if [ "$candidates" = "${QUADER_TEST_INSTANCE:-}" ] && it_instance "$candidates" 
   took="already holds"
 elif [ "$candidates" = "${candidates%% *}" ]; then
   until take "$candidates" wait; do :; done
+  if ! serves "$candidates"; then
+    exec 9>&-
+    say "$(skip_line "$candidates")"
+    exit 1
+  fi
   chosen="$candidates"
 else
   waiting=""
+  # the instances still in the running: one that does not serve leaves it for this run, said once
+  live="$candidates"
   while [ -z "$chosen" ]; do
-    for n in $candidates; do
+    for n in $live; do
       if take "$n" nowait; then
-        chosen="$n"
-        break
+        if serves "$n"; then
+          chosen="$n"
+          break
+        fi
+        exec 9>&-
+        say "skipping $(skip_line "$n")"
+        live=" $live "
+        live="${live/ $n / }"
+        live="${live# }"
+        live="${live% }"
       fi
     done
     if [ -z "$chosen" ]; then
+      if [ -z "$live" ]; then
+        say "no instance of the integration stack serves (instances $candidates)"
+        exit 1
+      fi
       if [ -z "$waiting" ]; then
-        say "waiting for a free instance of the integration stack (instances $candidates are all taken)"
+        say "waiting for a free instance of the integration stack (instances $live are all taken)"
         waiting=1
       fi
       sleep 2
