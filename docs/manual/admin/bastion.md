@@ -438,7 +438,6 @@ The pages are made to be found: every page's address answers with its title, its
 
   ```text
   User-agent: *
-  Allow: /ui/
   Disallow: /ui/data/*vulnerabilit
   Disallow: /api/
   Disallow: /files/
@@ -447,7 +446,7 @@ The pages are made to be found: every page's address answers with its title, its
   Sitemap: https://packages.example.com/sitemap.xml
   ```
 
-  The package paths are disallowed and download links are marked `nofollow`, so a crawler that keeps to the rules costs the main installation nothing. While the web interface is off it says `Disallow: /` to every crawler.
+  The package paths are disallowed and download links are marked `nofollow`, so a crawler that keeps to the rules costs the main installation nothing. Every line names a public address of the Bastion that its pages and the install commands name anyway; none is an internal path. While the web interface is off it says `Disallow: /` to every crawler.
 - `/sitemap.xml`, an index of the files `/sitemap/<n>.xml` of at most 50,000 addresses each: the start page, every project's repositories and its list of packages, every public repository's page of those projects (a generic repository's is the root of its files), every package's page, with **Documentation** on every entry of the newest versions' documentation, and the imprint and privacy notice that have a text, each in English and German. A version's own page is not listed; the package's page links it. With **Hide repositories** on, the sitemap lists no project's repositories and no repository's page but the root of a generic repository's files, and a crawler's text of every page names no repository.
 
 The vulnerabilities never enter a search result: their data is disallowed, an address that opens them is marked `noindex`, and the grade and the findings are excluded from snippets. A page whose package became private answers **not found** at once, but a search engine keeps its entry and snippet until it visits the address again, which can take days; use the search engine's removal tool for an address that must go at once.

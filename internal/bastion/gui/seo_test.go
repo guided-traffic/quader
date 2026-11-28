@@ -250,7 +250,8 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 
 	rec := do(h, http.MethodGet, "/robots.txt")
 	if body := rec.Body.String(); rec.Code != 200 || rec.Header().Get("Content-Type") != "text/plain; charset=utf-8" ||
-		!strings.Contains(body, "Allow: /ui/\nDisallow: /ui/data/*vulnerabilit\nDisallow: /api/\nDisallow: /files/\nDisallow: /v2/\n") ||
+		!strings.HasPrefix(body, "User-agent: *\nDisallow: /ui/data/*vulnerabilit\nDisallow: /api/\nDisallow: /files/\nDisallow: /v2/\n\n") ||
+		strings.Contains(body, "Allow:") ||
 		!strings.Contains(body, "Sitemap: "+base+"/sitemap.xml\n") {
 		t.Errorf("robots.txt = %d %s", rec.Code, body)
 	}

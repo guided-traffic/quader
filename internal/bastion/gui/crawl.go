@@ -29,12 +29,12 @@ const (
 	maxSitemapURLs = 50000
 )
 
-// robotsOn keeps a crawler on the pages and off everything that costs the main installation or names findings: the package API's
-// families (a crawler that heeds the file costs the main installation nothing), and the documents of the open findings, which a
-// rendering crawler would otherwise fetch (W-35's B.11). The data of the pages stay allowed, so that a rendering crawler can render
-// them; they answer X-Robots-Tag: noindex.
+// robotsOn keeps a crawler off what the pages link or load that is no page (Q-BAS-532): the documents of the open findings, which a
+// rendering crawler would otherwise fetch (W-35's B.11), and the package API's three families, which the pages' download links point
+// into (an npm tarball, a file, an image's blob) and whose nofollow a search engine may take as a hint only. Every line names a public
+// path of the Bastion that its pages and commands already name; nothing else is allowed explicitly, because nothing else is disallowed.
+// The data of the pages stay allowed, so that a rendering crawler can render them; they answer X-Robots-Tag: noindex.
 const robotsOn = "User-agent: *\n" +
-	"Allow: /ui/\n" +
 	"Disallow: /ui/data/*vulnerabilit\n" +
 	"Disallow: /api/\n" +
 	"Disallow: /files/\n" +

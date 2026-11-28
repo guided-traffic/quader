@@ -7240,8 +7240,9 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 - **`/robots.txt`** ([Q-BAS-411](#q-bas-411--robotstxt-keeps-a-crawler-off-the-package-api-and-the-findings-documents-and-lets-it-render-the-pages)).
-  While the web interface is on: `Allow: /ui/`, `Disallow: /ui/data/*vulnerabilit`, `Disallow: /api/`, `Disallow: /files/`,
-  `Disallow: /v2/` and `Sitemap: <server.base_url>/sitemap.xml`. The data of the pages stay allowed, so that a crawler that renders the
+  While the web interface is on: `Disallow: /ui/data/*vulnerabilit`, `Disallow: /api/`, `Disallow: /files/`, `Disallow: /v2/` and
+  `Sitemap: <server.base_url>/sitemap.xml`; no `Allow` line (*revised on 2026-11-28*,
+  [Q-BAS-532](#q-bas-532--robotstxt-keeps-only-the-lines-a-crawler-needs)). The data of the pages stay allowed, so that a crawler that renders the
   application can render a page; they answer `X-Robots-Tag: noindex` (every answer below `/ui/data/`). While the web interface is off:
   `Disallow: /` for every crawler. While the replica knows neither its switches nor a state: `503 not_ready`, which a crawler takes as
   "try again later" rather than as a rule. `text/plain`, `no-cache` with an ETag; answered also while the switch `gui` is off.
@@ -14630,7 +14631,8 @@ Context: R-BAS-122. A crawler that renders the application reads its data below 
 | (a) `Allow: /ui/`; `Disallow: /ui/data/*vulnerabilit`, `/api/`, `/files/`, `/v2/`; the data `X-Robots-Tag: noindex`; off `Disallow: /`; undecided `503` (chosen) | A rendering crawler renders a page and does not fetch the findings | A crawler that heeds the file costs the main installation nothing; the data are no result; a replica that starts does not give a rule it might take back | The pattern `*` is an extension of the standard (the large search engines read it) |
 | (b) `Disallow: /ui/data/` | — | — | A rendering crawler sees every page empty |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-122.
+**Choice:** (a). **Applied in the spec:** R-BAS-122. *Amended on 2026-11-28:* the line `Allow: /ui/` is gone, each other line kept
+([Q-BAS-532](#q-bas-532--robotstxt-keeps-only-the-lines-a-crawler-needs)).
 
 ### Q-BAS-412 · The sitemap lists the start, the projects, the packages and the legal pages, split at 50,000 and kept per revision
 
@@ -16637,6 +16639,32 @@ main installation's own door. A refusal is recorded as an audit event only where
 the interface between the Bastion and the main installation. **Applied in the spec:** R-BAS-094, [authorization.md](authorization.md)
 R-AUTHZ-008 and R-AUTHZ-015; code: `anonymousThroughBastion` in [populate.go](../../internal/authz/populate.go); test:
 `TestR_AUTHZ_008_R_BAS_094_AnAnonymousCallerThroughABastionNeverPopulates`.
+
+### Q-BAS-532 · robots.txt keeps only the lines a crawler needs
+
+Status: **Decided by the development agent** on 2026-11-28 (batch B-1128a, after the authorized attack of 2026-11-27) — selected from
+the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-122, Q-BAS-411, R-BAS-107. The tester read `robots.txt` as a disclosure of internal paths. Every path it named is the
+Bastion's own public address: `/api/`, `/files/` and `/v2/` are the package API's families, which every set-up command, every client and
+the pages' download links use (a version's file downloads through the package route, `/api/<format>/…`, `/files/…` or `/v2/…`,
+Q-BAS-398), and `/ui/data/…/vulnerabilities` is the document the package page's script fetches; nothing names the main installation, its
+host or its management API. Whether each line is needed, by what a crawler does: a search engine follows the links of a page and, if it
+renders, the data the page loads; a package client reads no `robots.txt`. The download links carry `rel="nofollow"`, which the largest
+search engine treats as a hint, not a rule; a crawler that follows one fetches a tarball, a file or an image's blob from the Bastion (its
+bandwidth, a forward for an uncached one). A page's findings are kept out of a result by not letting a rendering crawler fetch their
+document (`noindex` and `data-nosnippet` keep a fetched document out of the index and the snippet, not out of the rendered text).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the file as built | — | Nothing changes | `Allow: /ui/` allows what nothing disallows |
+| (b) Keep each `Disallow` (the findings' documents, `/api/`, `/files/`, `/v2/`) and the sitemap; drop `Allow: /ui/` (chosen) | Each line stops a fetch a crawler would otherwise make from a page | The file says only what changes a crawler's behaviour; it names nothing that the pages and the commands do not already name | The four public paths stay listed, which a scanner reads as it reads any page's links |
+| (c) An allow list: `Disallow: /`, `Allow: /ui/`, `Allow: /$`, `Allow: /sitemap` | Names no family of the package API | A crawler that reads no `Allow` (the original convention before RFC 9309) skips the whole host; the root, the sitemap and every later page outside `/ui/` need a line of their own; the findings' line is still needed |
+| (d) Only the findings' line; the download links' `nofollow` for the rest | Names no family | A search engine that takes `nofollow` as a hint downloads artifacts through the pages, which costs the Bastion and, for an uncached one, the main installation |
+
+**Choice:** (b). The disclosure the tester saw is none: a scanner that wants the families reads them from any page's download link or
+command. **Applied in the spec:** R-BAS-122; code: `robotsOn` in [crawl.go](../../internal/bastion/gui/crawl.go); test:
+`TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot`.
 
 ## What this does not cover
 
