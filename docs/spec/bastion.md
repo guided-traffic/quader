@@ -2224,6 +2224,10 @@ Priority: **MVP** · Covers: quader-only
   `Retry-After` and is not sent to the main installation; a credential with a usable answer keeps working, so colleagues behind
   one address are not cut off ([Q-BAS-36](#q-bas-36--a-failed-authentication-timeout-refuses-unverified-credentials-only));
   anonymous requests stay anonymous requests.
+- A credential the Bastion refuses itself (R-BAS-019) is answered `401 invalid_token` during the timeout as at any other time, not
+  `429 auth_timeout`, and still counts as a failure: it costs the main installation nothing, and it counts in the anonymous request
+  class of R-BAS-035 (Q-BAS-529), whose limit and the block of R-BAS-037 bound how many an address sends
+  ([Q-BAS-530](#q-bas-530--a-malformed-credential-during-the-failed-authentication-timeout-stays-401)).
 - The counter is a count-only limiter of R-ARCH-034 (`bastion.failed_auth`). Its window is 1 s to 12 h, the range of the
   limiters of R-ARCH-034
   ([Q-BAS-128](#q-bas-128--the-local-forms-evict-in-constant-time-the-block-decision-locks-per-address-and-the-window-range-is-the-limiters)); the
@@ -2243,6 +2247,9 @@ Acceptance criteria:
 
 - 21 random well-formed tokens from one address: the 21st and every later unknown token within 15 minutes answer `429
   auth_timeout` without a request to the main installation; `$FULL`, used from that address before, keeps working.
+- Unit (`TestR_BAS_035_R_BAS_036_AMalformedCredentialCountsInTheAnonymousRequestClass`, microseconds per request, at the small figures
+  of R-BAS-035's criteria): 20 malformed credentials start the timeout; the 21st to the 40th are still `401 invalid_token`, while a
+  well-formed unknown token of the same address is `429 auth_timeout` without a request.
 
 ### R-BAS-037 · Blocking of flooding addresses and the shared block list
 Priority: **MVP** · Covers: quader-only
@@ -16565,9 +16572,33 @@ Q-BAS-525 (`readPath`, `readTokenForm`).
 
 **Choice:** (a). The form's password of `POST /v2/_token` takes the class of its syntax the same way (`readTokenForm` sets `credOK` from
 `parseToken`), and a request that carries both reads the form's. The refusal's `RateLimit-Policy` names the class that refused
-(`policyOf` reads `limitClass`). A malformed credential is still `401 invalid_token` and still a failed authentication of R-BAS-036.
+(`policyOf` reads `limitClass`). A malformed credential is still `401 invalid_token` and still a failed authentication of R-BAS-036;
+what it is answered during the timeout is [Q-BAS-530](#q-bas-530--a-malformed-credential-during-the-failed-authentication-timeout-stays-401).
 **Applied in the spec:** R-BAS-019, R-BAS-035; code: `limitClass`, `readPath` and `policyOf` of
 [request.go](../../internal/bastion/engine/request.go); test: `TestR_BAS_035_R_BAS_036_AMalformedCredentialCountsInTheAnonymousRequestClass`.
+
+### Q-BAS-530 · A malformed credential during the failed-authentication timeout stays 401
+
+Status: **Decided by the development agent** on 2026-11-28 (batch B-1128a, after H-2447) — selected from the options below; the owner
+reviews it at the walkthrough.
+
+Context: R-BAS-019, R-BAS-036, Q-BAS-36, Q-BAS-529. The timeout refuses, with `429 auth_timeout`, a well-formed credential for which the
+Bastion holds no usable answer, before it is sent to the main installation. A malformed credential is refused locally with `401
+invalid_token` and counted by `FailedAuth`, but `stepCredentials` answers it before it asks the timeout, so during the timeout it is still
+`401`. A local `401` cost about 0.1 ms at the listener in the attack of 2026-11-27 (measured there); nothing of it reaches the main
+installation. Since Q-BAS-529 it counts in the anonymous request class. At the built-in figures (derived, not measured): an address that
+sends junk credentials at r a second above the anonymous 50 collects (r − 50) × 60 refusals of the request limit a minute, so the block's
+3,000 refusals a minute are passed above 100 a second; at 100 a second, the rate of the attack, it is at the threshold.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) During the timeout a malformed credential is `429 auth_timeout` like a well-formed one | One answer for every bad credential of an address in its timeout; each is a refusal toward the block, so a junk sender above 50 a second is blocked, not only limited | One guard call more per malformed request (with Valkey a round trip), for a request that costs 0.1 ms; the user of a mistyped token reads "too many failed authentications, try again in 15 minutes" and waits for nothing, where `invalid_token` names what to fix |
+| (b) A malformed credential is `401 invalid_token` during the timeout as at any time; the anonymous request limit of Q-BAS-529 bounds it (chosen) | The timeout keeps its purpose (Q-BAS-36: it refuses what would have to be checked at the main installation); a junk header is worth no header, limited and blocked like any anonymous flood | A junk sender between 50 and 100 a second is limited to 50 and not blocked, as an anonymous client asking unserved paths at that rate is not (Q-BAS-525) |
+| (c) A malformed credential is no failed authentication at all | The timeout counts only what the main installation would have been asked | An address that mixes junk with guesses reaches the timeout later; R-BAS-036's definition changes for no gain at the main installation |
+
+**Choice:** (b). No code changes: `stepCredentials` refuses a malformed credential before it asks the timeout, and `FailedAuth` still
+counts it, so 20 malformed credentials put the address's well-formed unknown tokens into the timeout as before. **Applied in the spec:**
+R-BAS-036; test: `TestR_BAS_035_R_BAS_036_AMalformedCredentialCountsInTheAnonymousRequestClass`.
 
 ## What this does not cover
 

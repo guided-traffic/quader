@@ -10731,10 +10731,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-440 questions on [spec/bastion.md](spec/bastion.md).
+441 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 440 questions</summary>
+<summary>Q-BAS: 441 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11178,6 +11178,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-527](spec/bastion.md#q-bas-527--a-request-for-a-foreign-host-takes-no-token) | A request for a foreign host takes no token | Decided by the development agent on 2026-11-27 (H-2448) | (a) The host step stays first and takes no token | — |
 | [Q-BAS-528](spec/bastion.md#q-bas-528--a-not-served-request-costs-one-valkey-round-trip-more-until-its-address-is-blocked) | A not-served request costs one Valkey round trip more until its address is blocked | Decided by the development agent on 2026-11-27 (H-2448) | (a) Count every request at the shared limiter | — |
 | [Q-BAS-529](spec/bastion.md#q-bas-529--a-credential-the-bastion-refuses-itself-counts-in-the-anonymous-request-class) | A credential the Bastion refuses itself counts in the anonymous request class | Decided by the development agent on 2026-11-28 (H-2447 of the security page, batch B-1128a after the authorized attack of 2026-11-27) | (a) The class after the credential's form: authenticated only for a credential the Bastion reads (`q.hasAuth && q.credOK` in `limitClass`), read for a path that is no address too | — |
+| [Q-BAS-530](spec/bastion.md#q-bas-530--a-malformed-credential-during-the-failed-authentication-timeout-stays-401) | A malformed credential during the failed-authentication timeout stays 401 | Decided by the development agent on 2026-11-28 (batch B-1128a, after H-2447) | (b) A malformed credential is `401 invalid_token` during the timeout as at any time; the anonymous request limit of Q-BAS-529 bounds it | — |
 
 </details>
 

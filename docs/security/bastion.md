@@ -240,7 +240,9 @@ Without Valkey every counter and block holds per replica at the configured value
   and is answered `429 address_blocked`; its requests are not logged one by one, the block is, once.
 - The failed-authentication timeout refuses only a credential for which the Bastion holds no usable answer; a partner's known token
   behind the same address keeps working, and the guesser keeps anonymous access (Q-BAS-36). It cannot be used to cut a colleague off: the
-  count is of the unverified credentials the address sent.
+  count is of the unverified credentials the address sent. A credential the Bastion refuses itself counts as a failure but is answered
+  `401 invalid_token` during the timeout too, not `429`: it costs the main installation nothing, and its address's anonymous request
+  limit and the block bound it ([Q-BAS-530](../spec/bastion.md#q-bas-530--a-malformed-credential-during-the-failed-authentication-timeout-stays-401)).
 - A limit admits up to its rate and a refused request or miss consumes nothing, so a client slightly over its limit is not starved and does not
   collect the refusals that block (Q-BAS-127; before, at 330 misses a minute against 300 no miss was admitted from the second minute and the
   address was blocked for 15 minutes, doubling to 24 hours, with its hits, which cut off every partner behind a shared address). A flood of several
