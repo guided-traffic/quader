@@ -202,14 +202,20 @@ jobs:
       # The SPDX file of the release is written by the pinned syft image (SYFT_IMAGE, the same version as the attestation above,
       # Q-HA-204). The image is read from the registry by the tag asserted above (`registry:` keeps syft off the runner's Docker
       # daemon), and nothing is downloaded from GitHub at release time (F-120). The output is the file of the former
-      # step that wrapped the syft CLI: spdx-json, same name, same place for the upload below.
+      # step that wrapped the syft CLI: spdx-json, same name, same place for the upload below. syft reads the registry with the
+      # job's Docker Hub account, as the push did: its container does not see the runner's login, and an anonymous read of the
+      # tag ran into Docker Hub's unauthenticated pull limit on 2026-11-28 (the release of v0.169.2 published no chart). The
+      # values reach the container by name (-e NAME), never on its command line.
       - name: Generate the SPDX SBOM at the syft pin
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          SYFT_REGISTRY_AUTH_AUTHORITY: index.docker.io
+          SYFT_REGISTRY_AUTH_USERNAME: guidedtraffic
+          SYFT_REGISTRY_AUTH_PASSWORD: ${{ secrets.DOCKERHUB_PAT }}
         run: |
           set -euo pipefail
           out="${GITHUB_WORKSPACE}/guidedtraffic-quader_${VERSION}.spdx.json"
-          docker run --rm "${SYFT_IMAGE}" "registry:guidedtraffic/quader:${VERSION}" -o spdx-json > "$out"
+          docker run --rm -e SYFT_REGISTRY_AUTH_AUTHORITY -e SYFT_REGISTRY_AUTH_USERNAME -e SYFT_REGISTRY_AUTH_PASSWORD "${SYFT_IMAGE}" "registry:guidedtraffic/quader:${VERSION}" -o spdx-json > "$out"
           test -s "$out"
 
       - name: Upload the SPDX SBOM as a workflow artifact

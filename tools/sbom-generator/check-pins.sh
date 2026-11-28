@@ -30,7 +30,7 @@ fi
 
 # The SPDX file runs the syft image of the pin (SYFT_IMAGE, Q-HA-204) on the registry tag of the release, and the attestation comes from the
 # generator, not from BuildKit's own scanner. No step downloads syft from GitHub (F-120).
-grep -qE '^\s+docker run --rm "\$\{SYFT_IMAGE\}" "registry:guidedtraffic/quader:\$\{VERSION\}" -o spdx-json > ' "$wf" || bad "$wf: the SPDX step must run the image SYFT_IMAGE on the release tag"
+grep -qE '^\s+docker run --rm( -e SYFT_REGISTRY_AUTH_[A-Z]+)* "\$\{SYFT_IMAGE\}" "registry:guidedtraffic/quader:\$\{VERSION\}" -o spdx-json > ' "$wf" || bad "$wf: the SPDX step must run the image SYFT_IMAGE on the release tag"
 grep -qE '^\s+sbom: generator=\$\{\{ steps\.[a-z_]+\.outputs\.[a-z_]+ \}\}$' "$wf" || bad "$wf: the build step must set sbom to the generator of tools/sbom-generator"
 if grep -nE 'buildkit-syft-scanner|syft-version:|anchore/sbom-action|anchore/syft/releases|^\s+sbom: (true|false)$' "$wf"; then
   bad "$wf: BuildKit's bundled scanner, a syft download or a literal syft version is in use"
