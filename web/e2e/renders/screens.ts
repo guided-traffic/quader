@@ -2003,11 +2003,19 @@ function upstreamWalk(preset: string | null, full: boolean): Screen['walk'] {
       await page.locator('#f-remote-url').fill('https://registry.example-company.com/team/');
       yield 'typed-url';
     }
-    await upstream.getByRole('button', { name: 'Upstream details' }).click();
+    const details = upstream.getByRole('button', { name: 'Upstream details' });
+    await details.click();
+    await expect(details).toHaveAttribute('aria-expanded', 'true');
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
     const rows = upstream.locator('.host-row input[type="text"]');
     const n = (await rows.count()) + 2;
-    await upstream.getByRole('button', { name: 'Add host' }).click();
-    await upstream.getByRole('button', { name: 'Add host' }).click();
+    // Each click adds a row above the button, drawn by the render after the click: the next click waits for it. A click whose press
+    // lands before that render and whose release after it, on the moved button's old place, is no click (one row of two at 1,024 px,
+    // 2026-11-27).
+    const add = upstream.getByRole('button', { name: 'Add host' });
+    await add.click();
+    await expect(rows).toHaveCount(n - 1);
+    await add.click();
     await expect(rows).toHaveCount(n);
     await rows.nth(n - 2).fill('cdn.registry.example-company.com');
     await rows.nth(n - 1).fill('a-very-long-host-name-of-a-token-service.eu-central.example-co.com');

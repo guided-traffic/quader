@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 import { Api, expectStatus, mainProject, psql } from './seed';
 
 /**
@@ -676,12 +676,21 @@ export async function* bastionProjects(page: Page): AsyncGenerator<string> {
   const cards = page.locator('main quader-bastion-card');
   await expect(cards).toHaveCount(2);
   const settled = (): Promise<unknown> => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
-  for (const [i, state] of [[0, 'two'], [1, 'empty']] as const) {
-    const card = cards.nth(i);
-    const fold = card.locator('.head button.fold');
+  // The card opens with its sections' reads in flight: the projects' answer writes the section's count and its line into the toggle,
+  // and the card's opening moves it. A click pressed before that render and released after it is no click: the toggle took the focus
+  // and stayed closed (390 px, 2026-11-27). So a card is clicked into once it has opened and the section holds its line.
+  const opened = async (card: Locator, fold: Locator): Promise<Locator> => {
     await fold.click();
     await expect(fold).toHaveAttribute('aria-expanded', 'true');
     const section = card.locator('[data-testid="bastion-projects"] button[aria-expanded]');
+    await expect(section.locator('.note')).toBeVisible();
+    await settled();
+    return section;
+  };
+  for (const [i, state] of [[0, 'two'], [1, 'empty']] as const) {
+    const card = cards.nth(i);
+    const fold = card.locator('.head button.fold');
+    const section = await opened(card, fold);
     await section.click();
     await expect(section).toHaveAttribute('aria-expanded', 'true');
     await settled();
@@ -692,8 +701,9 @@ export async function* bastionProjects(page: Page): AsyncGenerator<string> {
     await expect(fold).toHaveAttribute('aria-expanded', 'false');
   }
   const artifacts = cards.nth(0);
-  await artifacts.locator('.head button.fold').click();
-  await artifacts.locator('[data-testid="bastion-projects"] button[aria-expanded]').click();
+  const section = await opened(artifacts, artifacts.locator('.head button.fold'));
+  await section.click();
+  await expect(section).toHaveAttribute('aria-expanded', 'true');
   await settled();
   const field = artifacts.locator('[data-testid="bastion-projects-allow"] input[role="combobox"]');
   await field.scrollIntoViewIfNeeded();
